@@ -1,0 +1,35 @@
+# Role
+
+ADMIN
+
+PL
+
+DEV
+
+TESTER
+
+# Priority
+
+BLOCKER
+
+CRITICAL
+
+MAJOR (기본값)
+
+MINOR
+
+TRIVIAL
+
+# IssueStatus
+
+NEW
+
+ASSIGNED
+
+FIXED
+
+RESOLVED
+
+CLOSED
+
+REOPENED
