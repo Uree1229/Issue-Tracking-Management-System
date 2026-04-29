@@ -77,4 +77,13 @@ public class Comment {
     public void setIssue(Issue issue) {
         this.issue = issue;
     }
+
+    // BE: static factory method 컨벤션 만족 위해 추가
+    public static Comment create(String content, Account author, Issue issue) {
+        Comment comment = new Comment();
+        comment.content = content;
+        comment.author = author;
+        comment.issue = issue;
+        return comment;
+    }
 }

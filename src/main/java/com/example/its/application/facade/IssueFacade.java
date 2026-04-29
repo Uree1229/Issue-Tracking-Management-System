@@ -1,0 +1,71 @@
+package com.example.its.application.facade;
+
+import com.example.its.application.service.*;
+import com.example.its.shared.dto.issue.*;
+
+import java.util.List;
+
+public class IssueFacade {
+
+    private final IssueService issueService;
+    private final IssueSearchService issueSearchService;
+    private final IssueStatisticsService issueStatisticsService;
+    private final AssigneeRecommendationService recommendationService;
+
+    public IssueFacade(IssueService issueService, IssueSearchService issueSearchService,
+                       IssueStatisticsService issueStatisticsService,
+                       AssigneeRecommendationService recommendationService) {
+        this.issueService = issueService;
+        this.issueSearchService = issueSearchService;
+        this.issueStatisticsService = issueStatisticsService;
+        this.recommendationService = recommendationService;
+    }
+
+    // 이슈 상세 조회 및 등록
+    public IssueDetailResponse getIssue(Long id) {
+        return issueService.getIssueDetail(id);
+    }
+
+    public IssueDetailResponse registerIssue(IssueCreateRequest request) {
+        return issueService.registerIssue(request);
+    }
+
+    // 이슈 검색 및 통계
+    public List<IssueSummaryResponse> searchIssues(IssueSearchCondition condition) {
+        return issueSearchService.searchIssues(condition);
+    }
+
+    public StatisticsResponse getStatistics(Long projectId) {
+        return issueStatisticsService.getProjectStatistics(projectId);
+    }
+
+    // 담당자 추천 알고리즘 호출
+    public List<RecommendationResponse> recommendAssignees(Long projectId, List<Long> tagIds) {
+        return recommendationService.recommendAssignees(projectId, tagIds);
+    }
+
+    // 상태 전이 (Status Transitions)
+    public void assign(Long issueId, Long plId, Long devId) {
+        issueService.assignAssignee(issueId, plId, devId);
+    }
+
+    public void fix(Long issueId, Long devId, String comment) {
+        issueService.markFixed(issueId, devId, comment);
+    }
+
+    public void resolve(Long issueId, Long testerId) {
+        issueService.verifyResolved(issueId, testerId);
+    }
+
+    public void fail(Long issueId, Long testerId, String reason) {
+        issueService.verifyFailed(issueId, testerId, reason);
+    }
+
+    public void close(Long issueId, Long plId) {
+        issueService.closeIssue(issueId, plId);
+    }
+
+    public void reopen(Long issueId, Long accountId, String reason) {
+        issueService.reOpenIssue(issueId, accountId, reason);
+    }
+}
