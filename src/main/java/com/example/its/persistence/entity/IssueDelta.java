@@ -163,9 +163,17 @@ public class IssueDelta {
         this.newStatus = newStatus;
     }
 
-    public static IssueDelta create(IssueStatus oldStatus, IssueStatus newStatus) {
+    public static IssueDelta create(String oldTitle, String newTitle,
+                                    String oldContent, String newContent,
+                                    Priority oldPriority, Priority newPriority,
+                                    IssueStatus oldStatus, IssueStatus newStatus) {
         IssueDelta delta = new IssueDelta();
-        // Setter가 없다면 필드 직접 접근(delta.oldStatus = oldStatus;)으로 변경 가능
+        delta.setOldTitle(oldTitle);
+        delta.setNewTitle(newTitle);
+        delta.setOldContent(oldContent);
+        delta.setNewContent(newContent);
+        delta.setOldPriority(oldPriority);
+        delta.setNewPriority(newPriority);
         delta.setOldStatus(oldStatus);
         delta.setNewStatus(newStatus);
         return delta;
