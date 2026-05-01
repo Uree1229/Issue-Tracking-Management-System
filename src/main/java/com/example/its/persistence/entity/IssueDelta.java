@@ -162,4 +162,12 @@ public class IssueDelta {
     public void setNewStatus(IssueStatus newStatus) {
         this.newStatus = newStatus;
     }
+
+    public static IssueDelta create(IssueStatus oldStatus, IssueStatus newStatus) {
+        IssueDelta delta = new IssueDelta();
+        // Setter가 없다면 필드 직접 접근(delta.oldStatus = oldStatus;)으로 변경 가능
+        delta.setOldStatus(oldStatus);
+        delta.setNewStatus(newStatus);
+        return delta;
+    }
 }

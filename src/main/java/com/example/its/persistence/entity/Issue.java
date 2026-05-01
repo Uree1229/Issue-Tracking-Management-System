@@ -209,4 +209,16 @@ public class Issue {
         tags.add(tag);
         tag.getIssues().add(this);
     }
+
+    // BE: static factory method 컨벤션 만족 위해 추가
+    public static Issue create(String title, String description, Priority priority, Project project, Account reporter) {
+        Issue issue = new Issue();
+        issue.title = title;
+        issue.description = description;
+        issue.priority = priority != null ? priority : Priority.MAJOR;
+        issue.project = project;
+        issue.reporter = reporter;
+        issue.status = IssueStatus.NEW; // 초기 상태 강제
+        return issue;
+    }
 }

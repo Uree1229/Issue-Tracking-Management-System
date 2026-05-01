@@ -94,4 +94,13 @@ public class Project {
     public List<Tag> getTags() {
         return tags;
     }
+
+    // BE: static factory method 컨벤션 만족 위해 추가
+    public static Project create(String name, String description, Account createdBy) {
+        Project project = new Project();
+        project.name = name;
+        project.description = description;
+        project.createdBy = createdBy;
+        return project;
+    }
 }
