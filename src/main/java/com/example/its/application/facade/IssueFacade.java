@@ -5,6 +5,9 @@ import com.example.its.shared.dto.issue.*;
 
 import java.util.List;
 
+// Fix: 모든 상태 전이 함수의 파라미터를 신규 추가된 DTO 하나로 통합
+// Fix: 리턴 타입을 void에서 IssueDetailResponse로 변경
+// -> 프론트엔드에서 상태 변경 API를 호출하자마자 변경된 최신 상태의 이슈 정보를 즉시 렌더링 가능
 public class IssueFacade {
 
     private final IssueService issueService;
