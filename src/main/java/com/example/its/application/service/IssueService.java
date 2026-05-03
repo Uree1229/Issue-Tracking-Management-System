@@ -53,7 +53,6 @@ public class IssueService {
         return IssueDetailResponse.from(savedIssue);
     }
 
-
     // ------------------------------------------------------------- 2. 도메인 룰 기반 상태 전이 로직 ------------------------------------------------------------- //
     // [상태 전이: NEW, REOPENED -> ASSIGNED]
     // 수행자: PL / 조건: Assignee가 DEV 역할이어야 함
@@ -79,7 +78,6 @@ public class IssueService {
         recordHistory(issue, pl, oldStatus, IssueStatus.ASSIGNED);
         return IssueDetailResponse.from(issueRepository.save(issue));
     }
-
 
     // [상태 전이: ASSIGNED -> FIXED]
     // 수행자: DEV (본인) / 조건: 필수 코멘트(사유) 작성
@@ -220,18 +218,38 @@ public class IssueService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 계정입니다. ID: " + accountId));
     }
 
-    // Comment 팩토리 메서드 적용
     private void addCommentToIssue(Issue issue, Account author, String content) {
         Comment comment = Comment.create(content, author, issue);
         issue.addComment(comment);
     }
 
-    // History 및 Delta 팩토리 메서드 적용
+    // ------------------------------------ 이력 기록 헬퍼 메서드 (오버로딩 적용) ------------------------------------
+    // 1. 편의성 헬퍼: 기존처럼 상태(Status)만 변경될 때 호출하면 나머지는 알아서 채워주도록 구성
     private void recordHistory(Issue issue, Account actor, IssueStatus oldStatus, IssueStatus newStatus) {
-        IssueDelta delta = IssueDelta.create(oldStatus, newStatus);
+        boolean isNew = (oldStatus == null); // 최초 생성 시에는 이전 값이 모두 null이어야 함
+        
+        // 상태 이외의 값들(제목, 내용, 우선순위)은 변경되지 않았으므로 현재 값을 그대로 세팅하여 마스터 함수 호출
+        recordHistory(
+                issue, actor,
+                isNew ? null : issue.getTitle(), issue.getTitle(),
+                isNew ? null : issue.getDescription(), issue.getDescription(),
+                isNew ? null : issue.getPriority(), issue.getPriority(),
+                oldStatus, newStatus
+        );
+    }
+
+    // 2. 마스터 헬퍼: 5/1 메세지 5번 피드백 반영
+    // 4가지 항목(제목, 내용, 우선순위, 상태)의 모든 변경 사항을 처리하는 진짜 함수
+    private void recordHistory(Issue issue, Account actor, 
+                               String oldTitle, String newTitle, 
+                               String oldContent, String newContent, 
+                               Priority oldPriority, Priority newPriority, 
+                               IssueStatus oldStatus, IssueStatus newStatus) {
+        
+        IssueDelta delta = IssueDelta.create(oldTitle, newTitle, oldContent, newContent, 
+                                             oldPriority, newPriority, oldStatus, newStatus);
         IssueHistory history = IssueHistory.create(actor, delta);
         
-        // 연관관계 맵핑 (Cascade 로 인해 Issue 저장 시 함께 DB에 Insert 됨)
         issue.addIssueHistory(history);
     }
 }
