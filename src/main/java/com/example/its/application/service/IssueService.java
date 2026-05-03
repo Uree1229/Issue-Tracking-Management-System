@@ -4,8 +4,6 @@ import com.example.its.persistence.entity.*;
 import com.example.its.persistence.repository.*;
 import com.example.its.shared.dto.issue.*;
 
-// 사용하지 않으므로 경고 방지를 위해 주석처리
-// import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -59,10 +57,10 @@ public class IssueService {
     // ------------------------------------------------------------- 2. 도메인 룰 기반 상태 전이 로직 ------------------------------------------------------------- //
     // [상태 전이: NEW, REOPENED -> ASSIGNED]
     // 수행자: PL / 조건: Assignee가 DEV 역할이어야 함
-    public void assignAssignee(Long issueId, Long plAccountId, Long assigneeAccountId) {
-        Issue issue = getIssueOrThrow(issueId);
-        Account pl = getAccountOrThrow(plAccountId);
-        Account assignee = getAccountOrThrow(assigneeAccountId);
+    public IssueDetailResponse assignAssignee(IssueAssignRequest request) {
+        Issue issue = getIssueOrThrow(request.getIssueId());
+        Account pl = getAccountOrThrow(request.getPlAccountId());
+        Account assignee = getAccountOrThrow(request.getAssigneeAccountId());
 
         if (pl.getRole() != Role.PL) {
             throw new SecurityException("이슈 할당은 PL(Project Leader)만 가능합니다.");
@@ -79,23 +77,23 @@ public class IssueService {
         issue.setStatus(IssueStatus.ASSIGNED);
 
         recordHistory(issue, pl, oldStatus, IssueStatus.ASSIGNED);
-        issueRepository.save(issue);
+        return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
 
     // [상태 전이: ASSIGNED -> FIXED]
     // 수행자: DEV (본인) / 조건: 필수 코멘트(사유) 작성
-    public void markFixed(Long issueId, Long devAccountId, String commentContent) {
-        Issue issue = getIssueOrThrow(issueId);
-        Account dev = getAccountOrThrow(devAccountId);
+    public IssueDetailResponse markFixed(IssueFixRequest request) {
+        Issue issue = getIssueOrThrow(request.getIssueId());
+        Account dev = getAccountOrThrow(request.getDevAccountId());
 
         if (issue.getStatus() != IssueStatus.ASSIGNED) {
             throw new IllegalStateException("ASSIGNED 상태에서만 FIXED로 변경할 수 있습니다.");
         }
-        if (issue.getAssignee() == null || !issue.getAssignee().getAccountId().equals(devAccountId)) {
+        if (issue.getAssignee() == null || !issue.getAssignee().getAccountId().equals(request.getDevAccountId())) {
             throw new SecurityException("본인에게 할당된 이슈만 완료(FIXED) 처리할 수 있습니다.");
         }
-        if (commentContent == null || commentContent.trim().isEmpty()) {
+        if (request.getComment() == null || request.getComment().trim().isEmpty()) {
             throw new IllegalArgumentException("FIXED 처리 시 코멘트(작업 내용/사유) 작성이 필수입니다.");
         }
 
@@ -103,17 +101,17 @@ public class IssueService {
         issue.setStatus(IssueStatus.FIXED);
         issue.setFixer(dev);
 
-        addCommentToIssue(issue, dev, commentContent);
+        addCommentToIssue(issue, dev, request.getComment());
         recordHistory(issue, dev, oldStatus, IssueStatus.FIXED);
         
-        issueRepository.save(issue);
+        return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
     // [상태 전이: FIXED -> RESOLVED]
     // 수행자: TESTER
-    public void verifyResolved(Long issueId, Long testerAccountId) {
-        Issue issue = getIssueOrThrow(issueId);
-        Account tester = getAccountOrThrow(testerAccountId);
+    public IssueDetailResponse verifyResolved(IssueResolveRequest request) {
+        Issue issue = getIssueOrThrow(request.getIssueId());
+        Account tester = getAccountOrThrow(request.getTesterAccountId());
 
         if (tester.getRole() != Role.TESTER) {
             throw new SecurityException("해결 검증(RESOLVED)은 TESTER만 가능합니다.");
@@ -126,14 +124,14 @@ public class IssueService {
         issue.setStatus(IssueStatus.RESOLVED);
 
         recordHistory(issue, tester, oldStatus, IssueStatus.RESOLVED);
-        issueRepository.save(issue);
+        return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
     // [상태 전이: FIXED -> REOPENED] (검증 실패)
     // 수행자: TESTER / 조건: 필수 코멘트(실패 사유) 작성
-    public void verifyFailed(Long issueId, Long testerAccountId, String failureReason) {
-        Issue issue = getIssueOrThrow(issueId);
-        Account tester = getAccountOrThrow(testerAccountId);
+    public IssueDetailResponse verifyFailed(IssueFailRequest request) {
+        Issue issue = getIssueOrThrow(request.getIssueId());
+        Account tester = getAccountOrThrow(request.getTesterAccountId());
 
         if (tester.getRole() != Role.TESTER) {
             throw new SecurityException("검증 실패(REOPENED) 처리는 TESTER만 가능합니다.");
@@ -141,24 +139,24 @@ public class IssueService {
         if (issue.getStatus() != IssueStatus.FIXED) {
             throw new IllegalStateException("FIXED 상태의 이슈만 검증할 수 있습니다.");
         }
-        if (failureReason == null || failureReason.trim().isEmpty()) {
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
             throw new IllegalArgumentException("검증 실패 시 반려 사유(코멘트) 작성이 필수입니다.");
         }
 
         IssueStatus oldStatus = issue.getStatus();
         issue.setStatus(IssueStatus.REOPENED);
 
-        addCommentToIssue(issue, tester, failureReason);
+        addCommentToIssue(issue, tester, request.getReason());
         recordHistory(issue, tester, oldStatus, IssueStatus.REOPENED);
         
-        issueRepository.save(issue);
+        return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
     // [상태 전이: RESOLVED -> CLOSED]
     // 수행자: PL
-    public void closeIssue(Long issueId, Long plAccountId) {
-        Issue issue = getIssueOrThrow(issueId);
-        Account pl = getAccountOrThrow(plAccountId);
+    public IssueDetailResponse closeIssue(IssueCloseRequest request) {
+        Issue issue = getIssueOrThrow(request.getIssueId());
+        Account pl = getAccountOrThrow(request.getPlAccountId());
 
         if (pl.getRole() != Role.PL) {
             throw new SecurityException("이슈 종료(CLOSED)는 PL만 가능합니다.");
@@ -171,14 +169,14 @@ public class IssueService {
         issue.setStatus(IssueStatus.CLOSED);
 
         recordHistory(issue, pl, oldStatus, IssueStatus.CLOSED);
-        issueRepository.save(issue);
+        return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
     // [상태 전이: CLOSED -> REOPENED]
     // 수행자: PL / TESTER
-    public void reOpenIssue(Long issueId, Long accountId, String reason) {
-        Issue issue = getIssueOrThrow(issueId);
-        Account account = getAccountOrThrow(accountId);
+    public IssueDetailResponse reOpenIssue(IssueReopenRequest request) {
+        Issue issue = getIssueOrThrow(request.getIssueId());
+        Account account = getAccountOrThrow(request.getReopenAccountId());
 
         if (account.getRole() != Role.PL && account.getRole() != Role.TESTER) {
             throw new SecurityException("이슈 재오픈은 PL 또는 TESTER만 가능합니다.");
@@ -190,12 +188,12 @@ public class IssueService {
         IssueStatus oldStatus = issue.getStatus();
         issue.setStatus(IssueStatus.REOPENED);
 
-        if (reason != null && !reason.trim().isEmpty()) {
-            addCommentToIssue(issue, account, reason);
+        if (request.getReason() != null && !request.getReason().trim().isEmpty()) {
+            addCommentToIssue(issue, account, request.getReason());
         }
         recordHistory(issue, account, oldStatus, IssueStatus.REOPENED);
         
-        issueRepository.save(issue);
+        return IssueDetailResponse.from(issueRepository.save(issue));
     }
     // ------------------------------------------------------------- 2. 도메인 룰 기반 상태 전이 로직 끝 ------------------------------------------------------------- //
 

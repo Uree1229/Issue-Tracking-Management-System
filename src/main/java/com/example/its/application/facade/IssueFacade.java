@@ -45,27 +45,28 @@ public class IssueFacade {
     }
 
     // 상태 전이 (Status Transitions)
-    public void assign(Long issueId, Long plId, Long devId) {
-        issueService.assignAssignee(issueId, plId, devId);
+    // Fix: 5/1 피드백 3, 4번 반영
+    public IssueDetailResponse assign(IssueAssignRequest request) {
+        return issueService.assignAssignee(request);
     }
 
-    public void fix(Long issueId, Long devId, String comment) {
-        issueService.markFixed(issueId, devId, comment);
+    public IssueDetailResponse fix(IssueFixRequest request) {
+        return issueService.markFixed(request);
     }
 
-    public void resolve(Long issueId, Long testerId) {
-        issueService.verifyResolved(issueId, testerId);
+    public IssueDetailResponse resolve(IssueResolveRequest request) {
+        return issueService.verifyResolved(request);
     }
 
-    public void fail(Long issueId, Long testerId, String reason) {
-        issueService.verifyFailed(issueId, testerId, reason);
+    public IssueDetailResponse fail(IssueFailRequest request) {
+        return issueService.verifyFailed(request);
     }
 
-    public void close(Long issueId, Long plId) {
-        issueService.closeIssue(issueId, plId);
+    public IssueDetailResponse close(IssueCloseRequest request) {
+        return issueService.closeIssue(request);
     }
 
-    public void reopen(Long issueId, Long accountId, String reason) {
-        issueService.reOpenIssue(issueId, accountId, reason);
+    public IssueDetailResponse reopen(IssueReopenRequest request) {
+        return issueService.reOpenIssue(request);
     }
 }
