@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.its.ui.javafx.controller.HomeController"
+            styleClass="landing-shell">
+    <padding>
+        <Insets top="0" right="0" bottom="0" left="0"/>
+    </padding>
+
+    <top>
+        <HBox spacing="10" styleClass="landing-topbar" alignment="CENTER_LEFT">
+            <padding>
+                <Insets top="10" right="18" bottom="10" left="18"/>
+            </padding>
+            <Label text="Home" styleClass="landing-nav-button active"/>
+            <Separator orientation="VERTICAL"/>
+            <Label text="New" styleClass="landing-nav-button"/>
+            <Separator orientation="VERTICAL"/>
+            <Label text="Browse" styleClass="landing-nav-button"/>
+            <Separator orientation="VERTICAL"/>
+            <Label text="Search" styleClass="landing-nav-button"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="ITS JavaFX Start Page" styleClass="landing-meta"/>
+        </HBox>
+    </top>
+
+    <center>
+        <VBox spacing="28" styleClass="landing-content">
+            <padding>
+                <Insets top="34" right="36" bottom="30" left="36"/>
+            </padding>
+
+            <VBox spacing="8" alignment="CENTER">
+                <Label fx:id="welcomeLabel" text="Welcome to ITS" styleClass="landing-title"/>
+                <Label fx:id="roleHintLabel" text="Browse issues and continue the project workflow." styleClass="landing-copy"/>
+            </VBox>
+
+            <HBox spacing="36" alignment="CENTER" styleClass="feature-row">
+                <Button fx:id="reportIssueButton" mnemonicParsing="false" onAction="#openIssueRegistration" text="" styleClass="feature-tile">
+                    <graphic>
+                        <VBox spacing="12" alignment="CENTER">
+                            <StackPane styleClass="feature-icon-box">
+                                <children>
+                                    <ImageView fitWidth="62" fitHeight="62" preserveRatio="true" smooth="true" styleClass="feature-icon-image">
+                                        <image>
+                                            <Image url="@/images/icon-new.png"/>
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <Label text="Report Issue" styleClass="feature-tile-title"/>
+                            <Label text="Create new bug reports with title, description, and priority." wrapText="true" styleClass="feature-tile-copy"/>
+                        </VBox>
+                    </graphic>
+                </Button>
+
+                <Button mnemonicParsing="false" onAction="#openSearch" text="" styleClass="feature-tile">
+                    <graphic>
+                        <VBox spacing="12" alignment="CENTER">
+                            <StackPane styleClass="feature-icon-box">
+                                <children>
+                                    <ImageView fitWidth="62" fitHeight="62" preserveRatio="true" smooth="true" styleClass="feature-icon-image">
+                                        <image>
+                                            <Image url="@/images/icon-search.png"/>
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <Label text="Search Issues" styleClass="feature-tile-title"/>
+                            <Label text="Browse, filter, and inspect issue details with comments and status." wrapText="true" styleClass="feature-tile-copy"/>
+                        </VBox>
+                    </graphic>
+                </Button>
+
+                <Button fx:id="analyticsButton" mnemonicParsing="false" onAction="#openAnalytics" text="" styleClass="feature-tile">
+                    <graphic>
+                        <VBox spacing="12" alignment="CENTER">
+                            <StackPane styleClass="feature-icon-box">
+                                <children>
+                                    <ImageView fitWidth="62" fitHeight="62" preserveRatio="true" smooth="true" styleClass="feature-icon-image">
+                                        <image>
+                                            <Image url="@/images/icon-chart.png"/>
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <Label text="Analytics" styleClass="feature-tile-title"/>
+                            <Label text="See issue trends, status counts, and other project-level summaries." wrapText="true" styleClass="feature-tile-copy"/>
+                        </VBox>
+                    </graphic>
+                </Button>
+
+                <Button fx:id="adminButton" mnemonicParsing="false" onAction="#openAdmin" text="" styleClass="feature-tile">
+                    <graphic>
+                        <VBox spacing="12" alignment="CENTER">
+                            <StackPane styleClass="feature-icon-box">
+                                <children>
+                                    <ImageView fitWidth="62" fitHeight="62" preserveRatio="true" smooth="true" styleClass="feature-icon-image feature-icon-image-account">
+                                        <image>
+                                            <Image url="@/images/icon-account.png"/>
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <Label text="Admin" styleClass="feature-tile-title"/>
+                            <Label text="Manage accounts and projects for the current ITS workspace." wrapText="true" styleClass="feature-tile-copy"/>
+                        </VBox>
+                    </graphic>
+                </Button>
+            </HBox>
+
+            <HBox spacing="10" alignment="CENTER">
+                <TextField fx:id="quickSearchField" promptText="Enter an issue ID, keyword, assignee, or reporter" styleClass="landing-search-field"/>
+                <Button mnemonicParsing="false" onAction="#quickSearch" text="Quick Search" styleClass="landing-search-button"/>
+            </HBox>
+
+            <HBox spacing="20" alignment="TOP_CENTER">
+                <VBox spacing="12" styleClass="landing-info-panel" HBox.hgrow="ALWAYS">
+                    <padding>
+                        <Insets top="20" right="22" bottom="20" left="22"/>
+                    </padding>
+                    <Label text="Common Queries" styleClass="landing-section-title"/>
+                    <Label text="Jump straight into the project views we expect to demo." styleClass="landing-copy"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#showNewIssues" text="New Issues" styleClass="query-link-button"/>
+                        <Label text="Issues waiting for triage and assignment" styleClass="landing-list-item"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#showAssignedToMe" text="Assigned To Me" styleClass="query-link-button"/>
+                        <Label text="Shortcut into the current user's workload" styleClass="landing-list-item"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#showReportedByMe" text="Reported By Me" styleClass="query-link-button"/>
+                        <Label text="Find bugs reported by the signed-in user" styleClass="landing-list-item"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#showRecentlyFixed" text="Recently Fixed" styleClass="query-link-button"/>
+                        <Label text="Move directly into verification-ready issues" styleClass="landing-list-item"/>
+                    </HBox>
+                </VBox>
+
+                <VBox spacing="12" styleClass="landing-info-panel landing-note-panel">
+                    <padding>
+                        <Insets top="20" right="22" bottom="20" left="22"/>
+                    </padding>
+                    <Label text="Scope On This Home Page" styleClass="landing-section-title"/>
+                    <Label text="This Bugzilla-inspired screen only advertises our project scope." wrapText="true" styleClass="landing-copy"/>
+                    <Label text="Included:" styleClass="landing-list-title"/>
+                    <Label text="• report issues" styleClass="landing-list-item"/>
+                    <Label text="• browse and search issues" styleClass="landing-list-item"/>
+                    <Label text="• analytics" styleClass="landing-list-item"/>
+                    <Label text="• account and project admin" styleClass="landing-list-item"/>
+                    <Label text="Excluded from this home screen:" styleClass="landing-list-title"/>
+                    <Label text="• documentation" styleClass="landing-list-item"/>
+                    <Label text="• public sign-up" styleClass="landing-list-item"/>
+                    <Label text="• external integrations" styleClass="landing-list-item"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </center>
+</BorderPane>

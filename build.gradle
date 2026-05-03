@@ -1,5 +1,7 @@
 plugins {
     id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
 group = 'com.example'
@@ -13,6 +15,17 @@ java {
 
 repositories {
     mavenCentral()
+}
+
+def appMainClass = project.findProperty('appMainClass') ?: 'com.example.its.ItsApplication'
+
+application {
+    mainClass = appMainClass
+}
+
+javafx {
+    version = '21.0.2'
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.swing']
 }
 
 dependencies {
@@ -34,4 +47,27 @@ tasks.withType(Test).configureEach {
 tasks.register('copyDatabase', Copy) {
     from(layout.projectDirectory.dir('database'))
     into(layout.buildDirectory.dir('database'))
+}
+
+tasks.named('run') {
+    dependsOn(tasks.named('copyDatabase'))
+}
+
+tasks.register('runJavafx') {
+    group = 'application'
+    description = 'Runs the JavaFX client.'
+    dependsOn(tasks.named('run'))
+}
+
+tasks.register('renderSnapshots', JavaExec) {
+    group = 'application'
+    description = 'Renders JavaFX prototype screens into PNG snapshots.'
+    mainClass = 'com.example.its.ui.javafx.tools.ViewSnapshotExporter'
+    dependsOn(tasks.named('classes'))
+    doFirst {
+        def runTask = tasks.named('run', JavaExec).get()
+        classpath = runTask.classpath
+        jvmArgs = runTask.jvmArgs
+        systemProperties(runTask.systemProperties)
+    }
 }

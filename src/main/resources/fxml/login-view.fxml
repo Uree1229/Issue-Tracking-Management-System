@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.its.ui.javafx.controller.LoginController"
+      alignment="CENTER" styleClass="login-shell login-layout" spacing="0">
+    <VBox spacing="22" styleClass="login-hero" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets top="44" right="40" bottom="44" left="40"/>
+        </padding>
+
+        <Label text="Issue Tracking System" styleClass="login-hero-title"/>
+        <Label text="All features in this ITS require authentication. Before login, users cannot browse issues, create reports, or access admin screens." wrapText="true" styleClass="login-hero-copy"/>
+
+        <VBox spacing="10">
+            <Label text="Access Policy" styleClass="login-hero-section"/>
+            <Label text="- Anonymous access is not supported" styleClass="login-hero-bullet"/>
+            <Label text="- Role is determined only after successful sign-in" styleClass="login-hero-bullet"/>
+            <Label text="- Home, Issues, Analytics, and Admin open after authentication" styleClass="login-hero-bullet"/>
+        </VBox>
+
+        <VBox spacing="10">
+            <Label text="Demo Accounts" styleClass="login-hero-section"/>
+            <Label text="- admin / admin" styleClass="login-hero-bullet"/>
+            <Label text="- pl1 / pl1" styleClass="login-hero-bullet"/>
+            <Label text="- dev1 / dev1" styleClass="login-hero-bullet"/>
+            <Label text="- tester1 / tester1" styleClass="login-hero-bullet"/>
+        </VBox>
+
+        <Region VBox.vgrow="ALWAYS"/>
+        <Label text="Use quick demo access on the right only as a shortcut for login, not as anonymous navigation." wrapText="true" styleClass="login-hero-note"/>
+    </VBox>
+
+    <VBox styleClass="login-panel-wrap">
+        <padding>
+            <Insets top="0" right="0" bottom="0" left="0"/>
+        </padding>
+
+        <VBox spacing="18" styleClass="login-panel">
+            <Label text="Log In" styleClass="login-title"/>
+            <Label text="Sign in first to open the system. No menus or issue pages are available before authentication." wrapText="true" styleClass="login-subtitle"/>
+
+            <VBox spacing="8">
+                <Label text="Login ID" styleClass="field-label"/>
+                <TextField fx:id="loginIdField" promptText="Enter your login ID"/>
+            </VBox>
+
+            <VBox spacing="8">
+                <Label text="Password" styleClass="field-label"/>
+                <PasswordField fx:id="passwordField" promptText="Enter your password" onAction="#handleLogin"/>
+            </VBox>
+
+            <Label fx:id="errorLabel" styleClass="feedback-label" wrapText="true"/>
+
+            <Button mnemonicParsing="false" onAction="#handleLogin" text="Log In" styleClass="primary-button"/>
+            <Button mnemonicParsing="false" onAction="#openRegister" text="Create Account" styleClass="ghost-button"/>
+
+            <Separator/>
+
+            <VBox spacing="10">
+                <Label text="Quick Demo Login" styleClass="login-section-title"/>
+                <HBox spacing="10">
+                    <Button mnemonicParsing="false" onAction="#loginAsAdmin" text="ADMIN" styleClass="ghost-button compact-button"/>
+                    <Button mnemonicParsing="false" onAction="#loginAsPl" text="PL" styleClass="ghost-button compact-button"/>
+                    <Button mnemonicParsing="false" onAction="#loginAsDev" text="DEV" styleClass="ghost-button compact-button"/>
+                    <Button mnemonicParsing="false" onAction="#loginAsTester" text="TESTER" styleClass="ghost-button compact-button"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </VBox>
+</HBox>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.its.ui.javafx.controller.RegisterController"
+      alignment="CENTER" styleClass="login-shell login-layout" spacing="0">
+    <VBox spacing="22" styleClass="login-hero" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets top="44" right="40" bottom="44" left="40"/>
+        </padding>
+
+        <Label text="Create ITS Account" styleClass="login-hero-title"/>
+        <Label text="Anonymous browsing is still disabled. Registration only creates credentials so the user can return to the login screen and authenticate." wrapText="true" styleClass="login-hero-copy"/>
+
+        <VBox spacing="10">
+            <Label text="Registration Rules" styleClass="login-hero-section"/>
+            <Label text="- ADMIN accounts are not self-registerable" styleClass="login-hero-bullet"/>
+            <Label text="- New accounts can choose PL, DEV, or TESTER for this prototype" styleClass="login-hero-bullet"/>
+            <Label text="- After registration, the user is sent back to the login page" styleClass="login-hero-bullet"/>
+        </VBox>
+
+        <VBox spacing="10">
+            <Label text="Later Backend Contract" styleClass="login-hero-section"/>
+            <Label text="- RegisterRequest DTO" styleClass="login-hero-bullet"/>
+            <Label text="- RegisterResponse DTO" styleClass="login-hero-bullet"/>
+            <Label text="- Duplicate login validation" styleClass="login-hero-bullet"/>
+        </VBox>
+
+        <Region VBox.vgrow="ALWAYS"/>
+        <Label text="For now this page writes into the shared mock account store used by login and admin mock screens." wrapText="true" styleClass="login-hero-note"/>
+    </VBox>
+
+    <VBox styleClass="login-panel-wrap">
+        <VBox spacing="18" styleClass="login-panel">
+            <Label text="Register" styleClass="login-title"/>
+            <Label text="Create credentials first, then log in to access the system." wrapText="true" styleClass="login-subtitle"/>
+
+            <GridPane hgap="12" vgap="12">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="90"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="Login ID" styleClass="field-label"/>
+                <TextField fx:id="loginIdField" promptText="Choose a login ID" GridPane.columnIndex="1"/>
+
+                <Label text="Name" GridPane.rowIndex="1" styleClass="field-label"/>
+                <TextField fx:id="realNameField" promptText="Enter your full name" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Email" GridPane.rowIndex="2" styleClass="field-label"/>
+                <TextField fx:id="emailField" promptText="name@its.local" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                <Label text="Role" GridPane.rowIndex="3" styleClass="field-label"/>
+                <ComboBox fx:id="roleCombo" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                <Label text="Password" GridPane.rowIndex="4" styleClass="field-label"/>
+                <PasswordField fx:id="passwordField" promptText="Create a password" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+                <Label text="Confirm" GridPane.rowIndex="5" styleClass="field-label"/>
+                <PasswordField fx:id="confirmPasswordField" promptText="Re-enter the password" GridPane.columnIndex="1" GridPane.rowIndex="5" onAction="#handleRegister"/>
+            </GridPane>
+
+            <Label fx:id="feedbackLabel" styleClass="feedback-label" wrapText="true"/>
+
+            <Button mnemonicParsing="false" onAction="#handleRegister" text="Create Account" styleClass="primary-button"/>
+            <Button mnemonicParsing="false" onAction="#goBackToLogin" text="Back to Login" styleClass="ghost-button"/>
+        </VBox>
+    </VBox>
+</HBox>

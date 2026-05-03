@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.its.ui.javafx.controller.SearchController"
+      spacing="18" styleClass="content-container search-shell">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <VBox spacing="6">
+        <Label text="Search" styleClass="page-title"/>
+        <Label text="Use quick filters first, then expand Detail Search for narrower issue queries." styleClass="landing-copy"/>
+    </VBox>
+
+    <VBox spacing="14" styleClass="panel-card">
+        <HBox spacing="12" alignment="CENTER_LEFT">
+            <TextField fx:id="keywordField" promptText="Keyword" HBox.hgrow="ALWAYS"/>
+            <ComboBox fx:id="statusCombo" prefWidth="145"/>
+            <ComboBox fx:id="reporterCombo" prefWidth="145"/>
+            <ComboBox fx:id="priorityCombo" prefWidth="145"/>
+            <Button mnemonicParsing="false" onAction="#handleSearch" text="Search" styleClass="primary-button"/>
+            <Button mnemonicParsing="false" onAction="#handleReset" text="Reset" styleClass="ghost-button"/>
+        </HBox>
+
+        <TitledPane text="Detail Search" expanded="false" animated="false">
+            <content>
+                <VBox spacing="14">
+                    <padding>
+                        <Insets top="14" right="12" bottom="10" left="12"/>
+                    </padding>
+                    <GridPane hgap="14" vgap="14">
+                        <columnConstraints>
+                            <ColumnConstraints minWidth="120"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                            <ColumnConstraints minWidth="120"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <Label text="Issue ID" styleClass="field-label"/>
+                        <TextField fx:id="issueIdField" promptText="e.g. 101" GridPane.columnIndex="1"/>
+                        <Label text="Assignee" GridPane.columnIndex="2" styleClass="field-label"/>
+                        <ComboBox fx:id="assigneeCombo" prefWidth="180" GridPane.columnIndex="3"/>
+
+                        <Label text="Project" GridPane.rowIndex="1" styleClass="field-label"/>
+                        <ComboBox fx:id="projectCombo" prefWidth="180" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                        <Label text="Search options" GridPane.columnIndex="2" GridPane.rowIndex="1" styleClass="field-label"/>
+                        <HBox spacing="12" alignment="CENTER_LEFT" GridPane.columnIndex="3" GridPane.rowIndex="1">
+                            <CheckBox fx:id="activeOnlyCheckBox" mnemonicParsing="false" text="Only active issues"/>
+                            <CheckBox fx:id="descriptionCheckBox" mnemonicParsing="false" text="Include description text"/>
+                        </HBox>
+                    </GridPane>
+                </VBox>
+            </content>
+        </TitledPane>
+    </VBox>
+
+    <SplitPane dividerPositions="0.58" VBox.vgrow="ALWAYS" styleClass="browser-split">
+        <items>
+            <VBox spacing="10" styleClass="panel-card">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="Search Results" styleClass="section-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="resultSummaryLabel" text="0 issues matched the current search." styleClass="landing-copy"/>
+                </HBox>
+                <TableView fx:id="resultTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="idColumn" prefWidth="70" text="ID"/>
+                        <TableColumn fx:id="titleColumn" prefWidth="250" text="Title"/>
+                        <TableColumn fx:id="statusColumn" prefWidth="100" text="Status"/>
+                        <TableColumn fx:id="priorityColumn" prefWidth="100" text="Priority"/>
+                        <TableColumn fx:id="reporterColumn" prefWidth="100" text="Reporter"/>
+                        <TableColumn fx:id="assigneeColumn" prefWidth="110" text="Assignee"/>
+                        <TableColumn fx:id="reportedAtColumn" prefWidth="130" text="Reported"/>
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <VBox spacing="14" styleClass="panel-card detail-pane">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label fx:id="previewIssueIdLabel" text="-" styleClass="subtle-label"/>
+                        <Label fx:id="previewTitleLabel" text="No issue selected" styleClass="detail-title"/>
+                    </VBox>
+                    <Label fx:id="previewStatusLabel" text="-" styleClass="badge status-badge"/>
+                    <Label fx:id="previewPriorityLabel" text="-" styleClass="badge priority-badge"/>
+                </HBox>
+
+                <GridPane hgap="12" vgap="10">
+                    <Label text="Reporter" styleClass="field-label"/>
+                    <Label fx:id="previewReporterLabel" text="-" GridPane.columnIndex="1" styleClass="field-value"/>
+                    <Label text="Assignee" GridPane.rowIndex="1" styleClass="field-label"/>
+                    <Label fx:id="previewAssigneeLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="field-value"/>
+                    <Label text="Project" GridPane.rowIndex="2" styleClass="field-label"/>
+                    <Label fx:id="previewProjectLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="field-value"/>
+                    <Label text="Reported At" GridPane.rowIndex="3" styleClass="field-label"/>
+                    <Label fx:id="previewReportedAtLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="field-value"/>
+                </GridPane>
+
+                <VBox spacing="8" VBox.vgrow="ALWAYS">
+                    <Label text="Description" styleClass="section-title"/>
+                    <TextArea fx:id="previewDescriptionArea" editable="false" wrapText="true" prefRowCount="7" VBox.vgrow="ALWAYS"/>
+                </VBox>
+
+                <VBox spacing="8" VBox.vgrow="ALWAYS">
+                    <Label text="Comment History" styleClass="section-title"/>
+                    <ListView fx:id="previewCommentListView" prefHeight="180" VBox.vgrow="ALWAYS"/>
+                </VBox>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button mnemonicParsing="false" onAction="#openSelectedInInquiry" text="Open Inquiry" styleClass="ghost-button"/>
+                    <Button mnemonicParsing="false" onAction="#openSelectedInBrowser" text="Open Browser" styleClass="ghost-button"/>
+                </HBox>
+            </VBox>
+        </items>
+    </SplitPane>
+</VBox>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.its.ui.javafx.controller.IssueBrowserController"
+            styleClass="content-container">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <top>
+        <VBox spacing="16">
+            <Label text="Issue Browser" styleClass="page-title"/>
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <TextField fx:id="keywordField" promptText="Search by title, description, assignee, reporter..." HBox.hgrow="ALWAYS"/>
+                <ComboBox fx:id="statusFilterCombo" prefWidth="140"/>
+                <ComboBox fx:id="priorityFilterCombo" prefWidth="140"/>
+                <ComboBox fx:id="reporterFilterCombo" prefWidth="140"/>
+                <ComboBox fx:id="assigneeFilterCombo" prefWidth="160"/>
+                <Button mnemonicParsing="false" onAction="#resetFilters" text="Reset" styleClass="ghost-button"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <SplitPane dividerPositions="0.58" styleClass="browser-split">
+            <items>
+                <VBox spacing="10" styleClass="panel-card">
+                    <Label text="Issue List" styleClass="section-title"/>
+                    <TableView fx:id="issueTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="idColumn" prefWidth="70" text="ID"/>
+                            <TableColumn fx:id="titleColumn" prefWidth="280" text="Title"/>
+                            <TableColumn fx:id="statusColumn" prefWidth="110" text="Status"/>
+                            <TableColumn fx:id="priorityColumn" prefWidth="110" text="Priority"/>
+                            <TableColumn fx:id="reporterColumn" prefWidth="110" text="Reporter"/>
+                            <TableColumn fx:id="assigneeColumn" prefWidth="110" text="Assignee"/>
+                            <TableColumn fx:id="reportedAtColumn" prefWidth="140" text="Reported"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+
+                <VBox spacing="14" styleClass="panel-card detail-pane">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label fx:id="issueIdLabel" text="#" styleClass="subtle-label"/>
+                            <Label fx:id="issueTitleLabel" text="Select an issue" styleClass="detail-title"/>
+                        </VBox>
+                        <Label fx:id="statusBadgeLabel" text="-" styleClass="badge status-badge"/>
+                        <Label fx:id="priorityBadgeLabel" text="-" styleClass="badge priority-badge"/>
+                    </HBox>
+
+                    <GridPane hgap="12" vgap="10">
+                        <Label text="Reporter" styleClass="field-label"/>
+                        <Label fx:id="reporterValueLabel" text="-" GridPane.columnIndex="1" styleClass="field-value"/>
+                        <Label text="Assignee" GridPane.rowIndex="1" styleClass="field-label"/>
+                        <Label fx:id="assigneeValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="field-value"/>
+                        <Label text="Fixer" GridPane.rowIndex="2" styleClass="field-label"/>
+                        <Label fx:id="fixerValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="field-value"/>
+                        <Label text="Project" GridPane.rowIndex="3" styleClass="field-label"/>
+                        <Label fx:id="projectValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="field-value"/>
+                        <Label text="Reported At" GridPane.rowIndex="4" styleClass="field-label"/>
+                        <Label fx:id="reportedAtValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="field-value"/>
+                    </GridPane>
+
+                    <VBox spacing="8" VBox.vgrow="ALWAYS">
+                        <Label text="Description" styleClass="section-title"/>
+                        <TextArea fx:id="descriptionArea" editable="false" wrapText="true" prefRowCount="6" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+
+                    <VBox spacing="8" VBox.vgrow="ALWAYS">
+                        <Label text="Comment History" styleClass="section-title"/>
+                        <ListView fx:id="commentListView" prefHeight="180" VBox.vgrow="ALWAYS"/>
+                    </VBox>
+
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#handlePlaceholderAction" text="Assign" styleClass="ghost-button"/>
+                        <Button mnemonicParsing="false" onAction="#handlePlaceholderAction" text="Mark Fixed" styleClass="ghost-button"/>
+                        <Button mnemonicParsing="false" onAction="#handlePlaceholderAction" text="Resolve" styleClass="ghost-button"/>
+                        <Button mnemonicParsing="false" onAction="#handlePlaceholderAction" text="Close" styleClass="ghost-button"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                </VBox>
+            </items>
+        </SplitPane>
+    </center>
+</BorderPane>
