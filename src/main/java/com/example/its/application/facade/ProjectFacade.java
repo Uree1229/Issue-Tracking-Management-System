@@ -1,19 +1,25 @@
 package com.example.its.application.facade;
 
 import com.example.its.application.service.ProjectService;
+import com.example.its.application.mapper.ProjectMapper;
+import com.example.its.persistence.repository.ProjectRepository;
+import com.example.its.persistence.repository.AccountRepository;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
 import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.shared.dto.project.ProjectUpdateRequest;
 
 import java.util.List;
 
-// Fix: Mapper를 없애버리고, Service가 준 DTO를 그대로 리턴하도록 수정
 public class ProjectFacade {
 
     private final ProjectService projectService;
 
-    public ProjectFacade(ProjectService projectService) {
-        this.projectService = projectService;
+    // Fix: 파라미터 없는 기본 생성자로 변경 (5/4 피드백 반영)
+    public ProjectFacade() {
+        ProjectRepository projectRepository = new ProjectRepository();
+        AccountRepository accountRepository = new AccountRepository();
+        ProjectMapper projectMapper = new ProjectMapper();
+        this.projectService = new ProjectService(projectRepository, accountRepository, projectMapper);
     }
 
     public ProjectResponse createProject(ProjectCreateRequest request) {
