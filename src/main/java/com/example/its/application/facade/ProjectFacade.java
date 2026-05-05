@@ -1,0 +1,40 @@
+package com.example.its.application.facade;
+
+import com.example.its.application.service.ProjectService;
+import com.example.its.application.mapper.ProjectMapper;
+import com.example.its.persistence.repository.ProjectRepository;
+import com.example.its.persistence.repository.AccountRepository;
+import com.example.its.shared.dto.project.ProjectCreateRequest;
+import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.shared.dto.project.ProjectUpdateRequest;
+
+import java.util.List;
+
+public class ProjectFacade {
+
+    private final ProjectService projectService;
+
+    // Fix: 파라미터 없는 기본 생성자로 변경 (5/4 피드백 반영)
+    public ProjectFacade() {
+        ProjectRepository projectRepository = new ProjectRepository();
+        AccountRepository accountRepository = new AccountRepository();
+        ProjectMapper projectMapper = new ProjectMapper();
+        this.projectService = new ProjectService(projectRepository, accountRepository, projectMapper);
+    }
+
+    public ProjectResponse createProject(ProjectCreateRequest request) {
+        return projectService.createProject(request);
+    }
+
+    public ProjectResponse updateProject(Long id, ProjectUpdateRequest request) {
+        return projectService.updateProject(id, request);
+    }
+
+    public ProjectResponse getProject(Long id) {
+        return projectService.getProject(id);
+    }
+
+    public List<ProjectResponse> getAllProjects() {
+        return projectService.getAllProjects();
+    }
+}
