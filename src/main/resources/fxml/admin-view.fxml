@@ -2,28 +2,21 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.Separator?>
-<?import javafx.scene.control.Tab?>
-<?import javafx.scene.control.TabPane?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.example.its.ui.javafx.controller.AdminController"
-            styleClass="admin-shell">
+            fx:controller="com.example.its.ui.javafx.controller.HomeController"
+            styleClass="landing-shell">
     <padding>
         <Insets top="0" right="0" bottom="0" left="0"/>
     </padding>
@@ -33,173 +26,150 @@
             <padding>
                 <Insets top="10" right="18" bottom="10" left="18"/>
             </padding>
-            <Label text="Home" styleClass="landing-nav-button"/>
+            <Label text="Home" styleClass="landing-nav-button active"/>
             <Separator orientation="VERTICAL"/>
             <Label text="New" styleClass="landing-nav-button"/>
             <Separator orientation="VERTICAL"/>
             <Label text="Browse" styleClass="landing-nav-button"/>
             <Separator orientation="VERTICAL"/>
             <Label text="Search" styleClass="landing-nav-button"/>
-            <Separator orientation="VERTICAL"/>
-            <Label text="Administration" styleClass="landing-nav-button active"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label text="ITS User Administration" styleClass="landing-meta"/>
+            <Label text="ITS JavaFX Start Page" styleClass="landing-meta"/>
         </HBox>
     </top>
 
     <center>
-        <VBox spacing="18" styleClass="admin-content">
+        <VBox spacing="28" styleClass="landing-content">
             <padding>
-                <Insets top="22" right="26" bottom="24" left="26"/>
+                <Insets top="34" right="36" bottom="30" left="36"/>
             </padding>
 
-            <VBox spacing="6">
-                <Label fx:id="adminPageTitleLabel" text="Bugzilla-inspired Add User" styleClass="page-title"/>
-                <Label fx:id="adminSubtitleLabel" text="Create ITS accounts for admin, PL, dev, and tester roles." styleClass="landing-copy"/>
-                <Label fx:id="permissionNoticeLabel" text="" wrapText="true" styleClass="admin-warning-label"/>
+            <VBox spacing="8" alignment="CENTER">
+                <Label fx:id="welcomeLabel" text="Welcome to ITS" styleClass="landing-title"/>
+                <Label fx:id="roleHintLabel" text="Browse issues and continue the project workflow." styleClass="landing-copy"/>
             </VBox>
 
-            <TabPane fx:id="adminTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
-                <tabs>
-                    <Tab text="Add User">
-                        <content>
-                            <HBox spacing="20" alignment="TOP_LEFT">
-                                <VBox spacing="16" styleClass="admin-form-card" HBox.hgrow="ALWAYS">
-                                    <padding>
-                                        <Insets top="20" right="24" bottom="20" left="24"/>
-                                    </padding>
+            <HBox spacing="36" alignment="CENTER" styleClass="feature-row">
+                <Button fx:id="reportIssueButton" mnemonicParsing="false" onAction="#openIssueRegistration" text="" styleClass="feature-tile">
+                    <graphic>
+                        <VBox spacing="12" alignment="CENTER">
+                            <StackPane styleClass="feature-icon-box">
+                                <children>
+                                    <ImageView fitWidth="62" fitHeight="62" preserveRatio="true" smooth="true" styleClass="feature-icon-image">
+                                        <image>
+                                            <Image url="@/images/icon-new.png"/>
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <Label text="Report Issue" styleClass="feature-tile-title"/>
+                            <Label text="Create new bug reports with title, description, and priority." wrapText="true" styleClass="feature-tile-copy"/>
+                        </VBox>
+                    </graphic>
+                </Button>
 
-                                    <GridPane hgap="14" vgap="14">
-                                        <columnConstraints>
-                                            <ColumnConstraints minWidth="130" prefWidth="150"/>
-                                            <ColumnConstraints hgrow="ALWAYS"/>
-                                        </columnConstraints>
+                <Button mnemonicParsing="false" onAction="#openSearch" text="" styleClass="feature-tile">
+                    <graphic>
+                        <VBox spacing="12" alignment="CENTER">
+                            <StackPane styleClass="feature-icon-box">
+                                <children>
+                                    <ImageView fitWidth="62" fitHeight="62" preserveRatio="true" smooth="true" styleClass="feature-icon-image">
+                                        <image>
+                                            <Image url="@/images/icon-search.png"/>
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <Label text="Search Issues" styleClass="feature-tile-title"/>
+                            <Label text="Browse, filter, and inspect issue details with comments and status." wrapText="true" styleClass="feature-tile-copy"/>
+                        </VBox>
+                    </graphic>
+                </Button>
 
-                                        <Label text="Login name:" styleClass="admin-form-label"/>
-                                        <TextField fx:id="loginIdField" promptText="Enter login ID" GridPane.columnIndex="1" styleClass="admin-input emphasized-input"/>
+                <Button fx:id="analyticsButton" mnemonicParsing="false" onAction="#openAnalytics" text="" styleClass="feature-tile">
+                    <graphic>
+                        <VBox spacing="12" alignment="CENTER">
+                            <StackPane styleClass="feature-icon-box">
+                                <children>
+                                    <ImageView fitWidth="62" fitHeight="62" preserveRatio="true" smooth="true" styleClass="feature-icon-image">
+                                        <image>
+                                            <Image url="@/images/icon-chart.png"/>
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <Label text="Analytics" styleClass="feature-tile-title"/>
+                            <Label text="See issue trends, status counts, and other project-level summaries." wrapText="true" styleClass="feature-tile-copy"/>
+                        </VBox>
+                    </graphic>
+                </Button>
 
-                                        <Label text="Real name:" GridPane.rowIndex="1" styleClass="admin-form-label"/>
-                                        <TextField fx:id="realNameField" promptText="Enter user's full name" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="admin-input"/>
+                <Button fx:id="adminButton" mnemonicParsing="false" onAction="#openAdmin" text="" styleClass="feature-tile">
+                    <graphic>
+                        <VBox spacing="12" alignment="CENTER">
+                            <StackPane styleClass="feature-icon-box">
+                                <children>
+                                    <ImageView fitWidth="62" fitHeight="62" preserveRatio="true" smooth="true" styleClass="feature-icon-image feature-icon-image-account">
+                                        <image>
+                                            <Image url="@/images/icon-account.png"/>
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <Label text="Admin" styleClass="feature-tile-title"/>
+                            <Label text="Manage accounts and projects for the current ITS workspace." wrapText="true" styleClass="feature-tile-copy"/>
+                        </VBox>
+                    </graphic>
+                </Button>
+            </HBox>
 
-                                        <Label text="Email:" GridPane.rowIndex="2" styleClass="admin-form-label"/>
-                                        <TextField fx:id="emailField" promptText="user@its.local" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="admin-input"/>
+            <HBox spacing="10" alignment="CENTER">
+                <TextField fx:id="quickSearchField" promptText="Enter an issue ID, keyword, assignee, or reporter" styleClass="landing-search-field"/>
+                <Button mnemonicParsing="false" onAction="#quickSearch" text="Quick Search" styleClass="landing-search-button"/>
+            </HBox>
 
-                                        <Label text="Password:" GridPane.rowIndex="3" styleClass="admin-form-label"/>
-                                        <PasswordField fx:id="passwordField" promptText="Set initial password" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="admin-input"/>
+            <HBox spacing="20" alignment="TOP_CENTER">
+                <VBox spacing="12" styleClass="landing-info-panel" HBox.hgrow="ALWAYS">
+                    <padding>
+                        <Insets top="20" right="22" bottom="20" left="22"/>
+                    </padding>
+                    <Label text="Common Queries" styleClass="landing-section-title"/>
+                    <Label text="Jump straight into the project views we expect to demo." styleClass="landing-copy"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#showNewIssues" text="New Issues" styleClass="query-link-button"/>
+                        <Label text="Issues waiting for triage and assignment" styleClass="landing-list-item"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#showAssignedToMe" text="Assigned To Me" styleClass="query-link-button"/>
+                        <Label text="Shortcut into the current user's workload" styleClass="landing-list-item"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#showReportedByMe" text="Reported By Me" styleClass="query-link-button"/>
+                        <Label text="Find bugs reported by the signed-in user" styleClass="landing-list-item"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#showRecentlyFixed" text="Recently Fixed" styleClass="query-link-button"/>
+                        <Label text="Move directly into verification-ready issues" styleClass="landing-list-item"/>
+                    </HBox>
+                </VBox>
 
-                                        <Label text="Role:" GridPane.rowIndex="4" styleClass="admin-form-label"/>
-                                        <ComboBox fx:id="roleCombo" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="admin-input"/>
-
-                                        <Label text="Active account:" GridPane.rowIndex="5" styleClass="admin-form-label"/>
-                                        <CheckBox fx:id="activeCheckBox" mnemonicParsing="false" onAction="#handleActiveToggle" text="Allow this user to log in immediately" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="admin-check"/>
-
-                                        <Label text="Disable text:" GridPane.rowIndex="6" styleClass="admin-form-label"/>
-                                        <TextArea fx:id="disableReasonArea" wrapText="true" prefRowCount="3" promptText="If disabled, explain why this account should stay inactive." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>
-                                    </GridPane>
-
-                                    <Label text="Only fields relevant to our project are included here. Email notification and Bugmail options are intentionally omitted." wrapText="true" styleClass="landing-copy"/>
-                                    <Label fx:id="formFeedbackLabel" text="" wrapText="true" styleClass="form-feedback"/>
-
-                                    <HBox spacing="10" alignment="CENTER_LEFT">
-                                        <Button mnemonicParsing="false" onAction="#handleAddUser" text="Add User" styleClass="primary-button"/>
-                                        <Button mnemonicParsing="false" onAction="#clearForm" text="Reset" styleClass="ghost-button"/>
-                                    </HBox>
-                                </VBox>
-
-                                <VBox spacing="14" styleClass="admin-side-card">
-                                    <padding>
-                                        <Insets top="20" right="20" bottom="20" left="20"/>
-                                    </padding>
-                                    <Label text="Existing Users" styleClass="section-title"/>
-                                    <Label text="This list is loaded from active accounts in the backend facade." wrapText="true" styleClass="landing-copy"/>
-                                    <TableView fx:id="userTable" prefWidth="520" VBox.vgrow="ALWAYS">
-                                        <columns>
-                                            <TableColumn fx:id="idColumn" text="ID" prefWidth="55"/>
-                                            <TableColumn fx:id="loginIdColumn" text="Login" prefWidth="90"/>
-                                            <TableColumn fx:id="realNameColumn" text="Real Name" prefWidth="120"/>
-                                            <TableColumn fx:id="emailColumn" text="Email" prefWidth="145"/>
-                                            <TableColumn fx:id="roleColumn" text="Role" prefWidth="65"/>
-                                            <TableColumn fx:id="activeColumn" text="Status" prefWidth="90"/>
-                                        </columns>
-                                    </TableView>
-                                </VBox>
-                            </HBox>
-                        </content>
-                    </Tab>
-
-                    <Tab text="Add Project">
-                        <content>
-                            <HBox spacing="20" alignment="TOP_LEFT">
-                                <VBox spacing="16" styleClass="admin-form-card" HBox.hgrow="ALWAYS">
-                                    <padding>
-                                        <Insets top="20" right="24" bottom="20" left="24"/>
-                                    </padding>
-
-                                    <GridPane hgap="14" vgap="14">
-                                        <columnConstraints>
-                                            <ColumnConstraints minWidth="150" prefWidth="170"/>
-                                            <ColumnConstraints hgrow="ALWAYS"/>
-                                        </columnConstraints>
-
-                                        <Label text="Project:" styleClass="admin-form-label"/>
-                                        <TextField fx:id="projectNameField" promptText="Enter project name" GridPane.columnIndex="1" styleClass="admin-input emphasized-input"/>
-
-                                        <Label text="Description:" GridPane.rowIndex="1" styleClass="admin-form-label"/>
-                                        <TextArea fx:id="projectDescriptionArea" wrapText="true" prefRowCount="3" promptText="Describe the project's purpose and scope." GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="admin-text-area"/>
-
-                                        <Label text="Open for issue entry:" GridPane.rowIndex="2" styleClass="admin-form-label"/>
-                                        <CheckBox fx:id="openForIssueEntryCheckBox" mnemonicParsing="false" text="Allow new issues to be reported immediately" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="admin-check"/>
-
-                                        <Label text="Create chart datasets:" GridPane.rowIndex="3" styleClass="admin-form-label"/>
-                                        <CheckBox fx:id="analyticsDatasetCheckBox" mnemonicParsing="false" text="Prepare this project for statistics and trend charts" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="admin-check"/>
-
-                                        <Label text="Version:" GridPane.rowIndex="4" styleClass="admin-form-label"/>
-                                        <TextField fx:id="versionField" promptText="1.0.0" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="admin-input short-input"/>
-
-                                        <Label text="Default tag:" GridPane.rowIndex="5" styleClass="admin-form-label"/>
-                                        <TextField fx:id="defaultTagField" promptText="e.g. auth, ui, workflow" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="admin-input"/>
-
-                                        <Label text="Tag description:" GridPane.rowIndex="6" styleClass="admin-form-label"/>
-                                        <TextArea fx:id="tagDescriptionArea" wrapText="true" prefRowCount="3" promptText="Explain the initial tag or component this project starts with." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>
-
-                                        <Label text="Default assignee:" GridPane.rowIndex="7" styleClass="admin-form-label"/>
-                                        <TextField fx:id="defaultAssigneeField" promptText="Optional default dev login ID" GridPane.columnIndex="1" GridPane.rowIndex="7" styleClass="admin-input"/>
-
-                                        <Label text="Default CC list:" GridPane.rowIndex="8" styleClass="admin-form-label"/>
-                                        <TextField fx:id="defaultCcField" promptText="Optional comma-separated watcher list" GridPane.columnIndex="1" GridPane.rowIndex="8" styleClass="admin-input"/>
-                                    </GridPane>
-
-                                    <Label text="Bugzilla's product creation flow is adapted here into project creation. We keep only the fields that fit our term project." wrapText="true" styleClass="landing-copy"/>
-                                    <Label fx:id="projectFormFeedbackLabel" text="" wrapText="true" styleClass="form-feedback"/>
-
-                                    <HBox spacing="10" alignment="CENTER_LEFT">
-                                        <Button mnemonicParsing="false" onAction="#handleAddProject" text="Add Project" styleClass="primary-button"/>
-                                        <Button mnemonicParsing="false" onAction="#clearProjectForm" text="Reset" styleClass="ghost-button"/>
-                                    </HBox>
-                                </VBox>
-
-                                <VBox spacing="14" styleClass="admin-side-card">
-                                    <padding>
-                                        <Insets top="20" right="20" bottom="20" left="20"/>
-                                    </padding>
-                                    <Label text="Existing Projects" styleClass="section-title"/>
-                                    <Label text="This list is loaded from backend projects. Version, default tag, and default assignee remain UI-only helpers for now." wrapText="true" styleClass="landing-copy"/>
-                                    <TableView fx:id="projectTable" prefWidth="520" VBox.vgrow="ALWAYS">
-                                        <columns>
-                                            <TableColumn fx:id="projectIdColumn" text="ID" prefWidth="55"/>
-                                            <TableColumn fx:id="projectNameColumn" text="Project" prefWidth="120"/>
-                                            <TableColumn fx:id="versionColumn" text="Version" prefWidth="75"/>
-                                            <TableColumn fx:id="entryColumn" text="Entry" prefWidth="75"/>
-                                            <TableColumn fx:id="tagColumn" text="Default Tag" prefWidth="90"/>
-                                            <TableColumn fx:id="assigneeColumn" text="Default Assignee" prefWidth="105"/>
-                                        </columns>
-                                    </TableView>
-                                </VBox>
-                            </HBox>
-                        </content>
-                    </Tab>
-                </tabs>
-            </TabPane>
+                <VBox spacing="12" styleClass="landing-info-panel landing-note-panel">
+                    <padding>
+                        <Insets top="20" right="22" bottom="20" left="22"/>
+                    </padding>
+                    <Label text="Scope On This Home Page" styleClass="landing-section-title"/>
+                    <Label text="This Bugzilla-inspired screen only advertises our project scope." wrapText="true" styleClass="landing-copy"/>
+                    <Label text="Included:" styleClass="landing-list-title"/>
+                    <Label text="- report issues" styleClass="landing-list-item"/>
+                    <Label text="- browse and search issues" styleClass="landing-list-item"/>
+                    <Label text="- analytics" styleClass="landing-list-item"/>
+                    <Label text="- account and project admin" styleClass="landing-list-item"/>
+                    <Label text="Excluded from this home screen:" styleClass="landing-list-title"/>
+                    <Label text="- documentation" styleClass="landing-list-item"/>
+                    <Label text="- external integrations" styleClass="landing-list-item"/>
+                    <Label text="- advanced mail and workflow plugins" styleClass="landing-list-item"/>
+                </VBox>
+            </HBox>
         </VBox>
     </center>
 </BorderPane>
