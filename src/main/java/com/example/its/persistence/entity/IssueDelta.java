@@ -19,7 +19,7 @@ public class IssueDelta {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "delta_id")
-    private Long deltaId;
+    private Integer deltaId;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "history_id", nullable = false, unique = true)
@@ -57,7 +57,7 @@ public class IssueDelta {
     }
 
     public Long getDeltaId() {
-        return deltaId;
+        return deltaId != null ? deltaId.longValue() : null;
     }
 
     public IssueHistory getIssueHistory() {
