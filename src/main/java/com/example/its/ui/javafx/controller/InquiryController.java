@@ -1,10 +1,13 @@
 package com.example.its.ui.javafx.controller;
 
-import com.example.its.ui.javafx.model.CommentItemModel;
+import com.example.its.shared.dto.issue.IssueDetailResponse;
+import com.example.its.shared.dto.issue.IssueSearchCondition;
+import com.example.its.shared.dto.issue.IssueSummaryResponse;
+import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.IssueRowModel;
-import com.example.its.ui.javafx.model.MockIssueDataProvider;
-import com.example.its.ui.javafx.service.MockIssueQueryService;
-import com.example.its.ui.javafx.support.IntegrationPointHelper;
+import com.example.its.ui.javafx.service.JavaFxBackendBridge;
+import com.example.its.ui.javafx.support.UiAlertHelper;
+import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -19,13 +22,17 @@ import javafx.scene.control.TextField;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class InquiryController {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final ObservableList<IssueRowModel> inquiryResults = FXCollections.observableArrayList();
+    private final Map<Long, String> projectNameById = new HashMap<>();
+    private final Map<Long, IssueDetailResponse> issueDetailCache = new HashMap<>();
 
     private MainLayoutController mainLayoutController;
 
@@ -92,7 +99,8 @@ public class InquiryController {
         inquiryTable.setItems(inquiryResults);
         inquiryTable.getSelectionModel()
             .selectedItemProperty()
-            .addListener((observable, oldValue, newValue) -> showDetails(newValue));
+            .addListener((observable, oldValue, newValue) -> loadDetails(newValue));
+        refreshProjectNames();
         refreshData();
     }
 
@@ -101,42 +109,60 @@ public class InquiryController {
     }
 
     public void refreshData() {
-        inquiryResults.setAll(MockIssueDataProvider.createIssues());
-        inquirySummaryLabel.setText("Showing preview issue data for inquiry layout review.");
-        if (!inquiryResults.isEmpty()) {
-            inquiryTable.getSelectionModel().selectFirst();
-        } else {
-            showDetails(null);
-        }
+        issueIdField.clear();
+        keywordField.clear();
+        loadRecentIssues();
     }
 
     public void showIssue(Long issueId) {
         issueIdField.setText(issueId == null ? "" : String.valueOf(issueId));
         keywordField.clear();
-        refreshData();
-        if (issueId == null) {
-            return;
-        }
-        inquiryResults.stream()
-            .filter(issue -> issue.getIssueId().equals(issueId))
-            .findFirst()
-            .ifPresent(issue -> inquiryTable.getSelectionModel().select(issue));
+        handleInquire();
     }
 
     @FXML
     private void handleInquire() {
-        IntegrationPointHelper.showPending(
-            "Issue inquiry backend pending",
-            "Connect InquiryController.handleInquire() to IssueFacade.getIssueDetail(...) or a dedicated inquiry use case. "
-                + "Current table and detail pane are static preview content."
-        );
+        try {
+            refreshProjectNames();
+            issueDetailCache.clear();
+
+            Long issueId = parseIssueId();
+            if (issueId != null) {
+                IssueDetailResponse detail = backendBridge().getIssue(issueId);
+                issueDetailCache.put(detail.getIssueId(), detail);
+                inquiryResults.setAll(List.of(UiModelMapper.toIssueRowModel(detail)));
+                inquirySummaryLabel.setText("Showing 1 issue by exact ID lookup.");
+            } else {
+                String keyword = trimmed(keywordField.getText());
+                IssueSearchCondition condition = new IssueSearchCondition();
+                condition.setKeyword(keyword.isBlank() ? null : keyword);
+                List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
+                inquiryResults.setAll(
+                    summaries.stream()
+                        .map(summary -> UiModelMapper.toIssueRowModel(summary, projectNameById))
+                        .toList()
+                );
+                inquirySummaryLabel.setText(inquiryResults.size() + " issue(s) matched the inquiry.");
+            }
+
+            if (inquiryResults.isEmpty()) {
+                showDetails(null);
+                return;
+            }
+            inquiryTable.getSelectionModel().selectFirst();
+        } catch (Exception exception) {
+            inquiryResults.clear();
+            showDetails(null);
+            inquirySummaryLabel.setText("Inquiry failed.");
+            UiAlertHelper.showError("Inquiry Failed", "Could not complete the issue inquiry.", exception);
+        }
     }
 
     @FXML
     private void showRecentIssues() {
         issueIdField.clear();
         keywordField.clear();
-        refreshData();
+        loadRecentIssues();
     }
 
     @FXML
@@ -155,6 +181,33 @@ public class InquiryController {
         }
     }
 
+    private void loadRecentIssues() {
+        try {
+            refreshProjectNames();
+            issueDetailCache.clear();
+            IssueSearchCondition condition = new IssueSearchCondition();
+            List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
+            inquiryResults.setAll(
+                summaries.stream()
+                    .limit(10)
+                    .map(summary -> UiModelMapper.toIssueRowModel(summary, projectNameById))
+                    .toList()
+            );
+            inquirySummaryLabel.setText("Showing the " + inquiryResults.size() + " most recent issues.");
+
+            if (inquiryResults.isEmpty()) {
+                showDetails(null);
+                return;
+            }
+            inquiryTable.getSelectionModel().selectFirst();
+        } catch (Exception exception) {
+            inquiryResults.clear();
+            showDetails(null);
+            inquirySummaryLabel.setText("Could not load recent issues.");
+            UiAlertHelper.showError("Inquiry Failed", "Could not load recent issues.", exception);
+        }
+    }
+
     private void configureTable() {
         idColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getIssueId()));
         titleColumn.setCellValueFactory(cellData -> new ReadOnlyStringWrapper(cellData.getValue().getTitle()));
@@ -163,7 +216,22 @@ public class InquiryController {
         inquiryTable.setPlaceholder(new Label("No issues to display."));
     }
 
-    private void showDetails(IssueRowModel issue) {
+    private void loadDetails(IssueRowModel issue) {
+        if (issue == null) {
+            showDetails(null);
+            return;
+        }
+
+        try {
+            IssueDetailResponse detail = issueDetailCache.computeIfAbsent(issue.getIssueId(), id -> backendBridge().getIssue(id));
+            showDetails(detail);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("Inquiry Detail Failed", "Could not load the selected issue.", exception);
+            showDetails(null);
+        }
+    }
+
+    private void showDetails(IssueDetailResponse issue) {
         if (issue == null) {
             detailIssueIdLabel.setText("-");
             detailTitleLabel.setText("No issue selected");
@@ -181,22 +249,45 @@ public class InquiryController {
 
         detailIssueIdLabel.setText("#" + issue.getIssueId());
         detailTitleLabel.setText(issue.getTitle());
-        detailStatusLabel.setText(issue.getStatusDisplayName());
-        detailPriorityLabel.setText(issue.getPriorityDisplayName());
+        detailStatusLabel.setText(UiModelMapper.toUiIssueStatus(issue.getStatus()).displayName());
+        detailPriorityLabel.setText(UiModelMapper.toUiPriority(issue.getPriority()).displayName());
         detailReporterLabel.setText(issue.getReporterName());
-        detailAssigneeLabel.setText(issue.getAssigneeDisplayName());
-        detailFixerLabel.setText(issue.getFixerDisplayName());
+        detailAssigneeLabel.setText(issue.getAssigneeName() == null || issue.getAssigneeName().isBlank() ? "Unassigned" : issue.getAssigneeName());
+        detailFixerLabel.setText(issue.getFixerName() == null || issue.getFixerName().isBlank() ? "-" : issue.getFixerName());
         detailProjectLabel.setText(issue.getProjectName());
         detailReportedAtLabel.setText(formatDateTime(issue.getReportedAt()));
         detailDescriptionArea.setText(issue.getDescription());
-        commentHistoryListView.setItems(FXCollections.observableArrayList(
-            issue.getComments().stream()
-                .map(CommentItemModel::toTimelineText)
-                .collect(Collectors.toList())
-        ));
+        commentHistoryListView.setItems(FXCollections.observableArrayList(UiModelMapper.toActivityTimeline(issue)));
+    }
+
+    private void refreshProjectNames() {
+        projectNameById.clear();
+        for (ProjectResponse project : backendBridge().getProjects()) {
+            projectNameById.put(project.getProjectId(), project.getName());
+        }
+    }
+
+    private Long parseIssueId() {
+        String value = trimmed(issueIdField.getText());
+        if (value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Issue ID must be numeric.");
+        }
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
-        return dateTime.format(DATE_TIME_FORMATTER);
+        return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMATTER);
+    }
+
+    private String trimmed(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private JavaFxBackendBridge backendBridge() {
+        return JavaFxBackendBridge.getInstance();
     }
 }
