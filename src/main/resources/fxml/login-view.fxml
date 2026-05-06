@@ -31,14 +31,12 @@
 
         <VBox spacing="10">
             <Label text="Demo Accounts" styleClass="login-hero-section"/>
-            <Label text="- admin / admin" styleClass="login-hero-bullet"/>
-            <Label text="- pl1 / pl1" styleClass="login-hero-bullet"/>
-            <Label text="- dev1 / dev1" styleClass="login-hero-bullet"/>
-            <Label text="- tester1 / tester1" styleClass="login-hero-bullet"/>
+            <Label text="- admin / admin (seeded by default)" styleClass="login-hero-bullet"/>
+            <Label text="- PL / DEV / TESTER accounts can be created from Register or Admin" wrapText="true" styleClass="login-hero-bullet"/>
         </VBox>
 
         <Region VBox.vgrow="ALWAYS"/>
-        <Label text="Use quick demo access on the right only as a shortcut for login, not as anonymous navigation." wrapText="true" styleClass="login-hero-note"/>
+        <Label text="Quick role buttons now attempt real login with those credentials. If the account has not been created yet, register it first." wrapText="true" styleClass="login-hero-note"/>
     </VBox>
 
     <VBox styleClass="login-panel-wrap">
