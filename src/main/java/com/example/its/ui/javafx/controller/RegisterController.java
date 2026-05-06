@@ -1,9 +1,12 @@
 package com.example.its.ui.javafx.controller;
 
 import com.example.its.ItsApplication;
+import com.example.its.shared.dto.account.AccountCreateRequest;
 import com.example.its.ui.javafx.model.UiRole;
+import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.AuthNavigationState;
-import com.example.its.ui.javafx.support.IntegrationPointHelper;
+import com.example.its.ui.javafx.support.UiAlertHelper;
+import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
@@ -60,13 +63,20 @@ public class RegisterController {
             return;
         }
 
-        IntegrationPointHelper.showPending(
-            "Register backend pending",
-            "Connect RegisterController.handleRegister() to AccountFacade.createAccount(AccountCreateRequest). "
-                + "This page currently validates input only and returns to the login screen."
-        );
-        AuthNavigationState.prepareLoginPrefill(loginId, "Preview flow only. Connect account creation on the backend later.");
-        ItsApplication.showLoginView();
+        try {
+            AccountCreateRequest request = new AccountCreateRequest();
+            request.setLoginId(loginId);
+            request.setName(realName);
+            request.setEmail(email);
+            request.setPassword(password);
+            request.setRole(UiModelMapper.toBackendRole(role));
+
+            backendBridge().register(request);
+            AuthNavigationState.prepareLoginPrefill(loginId, "Account created. Please sign in.");
+            ItsApplication.showLoginView();
+        } catch (Exception exception) {
+            showErrorFeedback(UiAlertHelper.extractMessage(exception, "Account registration failed."));
+        }
     }
 
     @FXML
@@ -87,5 +97,9 @@ public class RegisterController {
 
     private String trimmed(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private JavaFxBackendBridge backendBridge() {
+        return JavaFxBackendBridge.getInstance();
     }
 }
