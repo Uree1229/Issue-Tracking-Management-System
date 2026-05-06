@@ -67,9 +67,7 @@ public class MainLayoutController {
     @FXML
     private void initialize() {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
-        currentProjectLabel.setText("project1");
-        currentUserLabel.setText(currentUser == null ? "Guest" : currentUser.displayName());
-        currentRoleLabel.setText(currentUser == null ? "UNAUTHENTICATED" : currentUser.role().name());
+        refreshCurrentContext();
         boolean isAdmin = currentUser != null && currentUser.role() == UiRole.ADMIN;
         boolean canCreateIssue = currentUser != null && currentUser.role().canCreateIssue();
         boolean canViewAnalytics = currentUser != null && currentUser.role().canViewAnalytics();
@@ -82,6 +80,14 @@ public class MainLayoutController {
         analyticsNavButton.setManaged(canViewAnalytics);
         loadHomeView();
         showHome(null);
+    }
+
+    public void refreshCurrentContext() {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        String projectName = UserSession.getCurrentProjectName();
+        currentProjectLabel.setText(projectName == null || projectName.isBlank() ? "No Project" : projectName);
+        currentUserLabel.setText(currentUser == null ? "Guest" : currentUser.displayName());
+        currentRoleLabel.setText(currentUser == null ? "UNAUTHENTICATED" : currentUser.role().name());
     }
 
     @FXML
@@ -199,7 +205,7 @@ public class MainLayoutController {
         }
 
         showIssueBrowser();
-        issueBrowserController.showAssignedTo(currentUser.loginId());
+        issueBrowserController.showAssignedTo(currentUser.name());
     }
 
     public void showReportedByCurrentUser() {
@@ -210,7 +216,7 @@ public class MainLayoutController {
         }
 
         showIssueBrowser();
-        issueBrowserController.showReportedBy(currentUser.loginId());
+        issueBrowserController.showReportedBy(currentUser.name());
     }
 
     public void showFixedIssues() {
@@ -312,6 +318,7 @@ public class MainLayoutController {
             FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/admin-view.fxml"));
             adminView = loader.load();
             adminController = loader.getController();
+            adminController.setMainLayoutController(this);
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to load admin view.", exception);
         }
