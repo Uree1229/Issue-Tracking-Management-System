@@ -1,11 +1,16 @@
 package com.example.its.ui.javafx.controller;
 
-import com.example.its.ui.javafx.model.CommentItemModel;
+import com.example.its.shared.dto.account.AccountResponse;
+import com.example.its.shared.dto.issue.IssueDetailResponse;
+import com.example.its.shared.dto.issue.IssueSearchCondition;
+import com.example.its.shared.dto.issue.IssueSummaryResponse;
+import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.IssueRowModel;
-import com.example.its.ui.javafx.model.MockIssueDataProvider;
 import com.example.its.ui.javafx.model.UiIssueStatus;
 import com.example.its.ui.javafx.model.UiPriority;
-import com.example.its.ui.javafx.support.IntegrationPointHelper;
+import com.example.its.ui.javafx.service.JavaFxBackendBridge;
+import com.example.its.ui.javafx.support.UiAlertHelper;
+import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -22,8 +27,10 @@ import javafx.scene.control.TextField;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SearchController {
 
@@ -31,6 +38,11 @@ public class SearchController {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final ObservableList<IssueRowModel> searchResults = FXCollections.observableArrayList();
+    private final Map<Long, String> projectNameById = new HashMap<>();
+    private final Map<String, Long> reporterIdByOption = new HashMap<>();
+    private final Map<String, Long> assigneeIdByOption = new HashMap<>();
+    private final Map<String, Long> projectIdByOption = new HashMap<>();
+    private final Map<Long, IssueDetailResponse> issueDetailCache = new HashMap<>();
 
     private MainLayoutController mainLayoutController;
 
@@ -121,12 +133,13 @@ public class SearchController {
     @FXML
     private void initialize() {
         configureTable();
-        populateFilterOptions();
+        populateStaticOptions();
+        populateDynamicOptions();
         resultTable.setItems(searchResults);
         resultTable.getSelectionModel()
             .selectedItemProperty()
-            .addListener((observable, oldValue, newValue) -> showPreview(newValue));
-        loadPreviewResults();
+            .addListener((observable, oldValue, newValue) -> loadPreview(newValue));
+        refreshData();
     }
 
     public void setMainLayoutController(MainLayoutController mainLayoutController) {
@@ -134,23 +147,19 @@ public class SearchController {
     }
 
     public void refreshData() {
-        populateFilterOptions();
-        loadPreviewResults();
+        populateDynamicOptions();
+        performSearch();
     }
 
     public void applyKeywordSearch(String keyword) {
         keywordField.setText(keyword == null ? "" : keyword.trim());
         descriptionCheckBox.setSelected(true);
-        loadPreviewResults();
+        performSearch();
     }
 
     @FXML
     private void handleSearch() {
-        IntegrationPointHelper.showPending(
-            "Issue search backend pending",
-            "Connect SearchController.handleSearch() to IssueFacade.searchIssues(IssueSearchCondition). "
-                + "The table below is currently static preview data only."
-        );
+        performSearch();
     }
 
     @FXML
@@ -164,7 +173,8 @@ public class SearchController {
         projectCombo.setValue(ALL_OPTION);
         activeOnlyCheckBox.setSelected(false);
         descriptionCheckBox.setSelected(true);
-        loadPreviewResults();
+        issueDetailCache.clear();
+        performSearch();
     }
 
     @FXML
@@ -183,16 +193,129 @@ public class SearchController {
         }
     }
 
-    private void loadPreviewResults() {
-        searchResults.setAll(MockIssueDataProvider.createIssues());
-        resultSummaryLabel.setText(searchResults.size() + " preview issues are shown here.");
+    private void performSearch() {
+        try {
+            issueDetailCache.clear();
+            List<IssueRowModel> rows = searchByCriteria();
+            searchResults.setAll(rows);
+            resultSummaryLabel.setText(rows.size() + " issue(s) matched the current search.");
 
-        if (searchResults.isEmpty()) {
+            if (rows.isEmpty()) {
+                showPreview(null);
+                return;
+            }
+            resultTable.getSelectionModel().selectFirst();
+        } catch (Exception exception) {
+            searchResults.clear();
             showPreview(null);
-            return;
+            resultSummaryLabel.setText("Search failed.");
+            UiAlertHelper.showError("Search Failed", "Could not complete the issue search.", exception);
+        }
+    }
+
+    private List<IssueRowModel> searchByCriteria() {
+        Long issueId = parseIssueId();
+        String keyword = trimmed(keywordField.getText());
+
+        if (issueId != null) {
+            IssueDetailResponse detail = backendBridge().getIssue(issueId);
+            if (!matchesClientSideFilters(detail, keyword)) {
+                return List.of();
+            }
+            issueDetailCache.put(detail.getIssueId(), detail);
+            return List.of(UiModelMapper.toIssueRowModel(detail));
         }
 
-        resultTable.getSelectionModel().selectFirst();
+        IssueSearchCondition condition = new IssueSearchCondition();
+        condition.setProjectId(projectIdByOption.get(projectCombo.getValue()));
+        condition.setStatus(UiModelMapper.toBackendStatus(UiIssueStatus.fromDisplayName(statusCombo.getValue())));
+        condition.setPriority(UiModelMapper.toBackendPriority(UiPriority.fromDisplayName(priorityCombo.getValue())));
+        condition.setReporterAccountId(reporterIdByOption.get(reporterCombo.getValue()));
+        condition.setAssigneeAccountId(assigneeIdByOption.get(assigneeCombo.getValue()));
+        condition.setKeyword(keyword.isBlank() ? null : keyword);
+
+        List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
+        List<IssueRowModel> rows = new ArrayList<>();
+        for (IssueSummaryResponse summary : summaries) {
+            if (!matchesClientSideFilters(summary, keyword)) {
+                continue;
+            }
+            rows.add(UiModelMapper.toIssueRowModel(summary, projectNameById));
+        }
+        return rows;
+    }
+
+    private boolean matchesClientSideFilters(IssueSummaryResponse summary, String keyword) {
+        if (activeOnlyCheckBox.isSelected()) {
+            UiIssueStatus status = UiModelMapper.toUiIssueStatus(summary.getStatus());
+            if (!status.isActiveWorkflowStatus()) {
+                return false;
+            }
+        }
+
+        if (!descriptionCheckBox.isSelected() && !keyword.isBlank()) {
+            String title = summary.getTitle() == null ? "" : summary.getTitle();
+            return title.toLowerCase().contains(keyword.toLowerCase());
+        }
+        return true;
+    }
+
+    private boolean matchesClientSideFilters(IssueDetailResponse detail, String keyword) {
+        if (!matchesOptionStatus(detail.getStatus())) {
+            return false;
+        }
+        if (!matchesOptionPriority(detail.getPriority())) {
+            return false;
+        }
+        if (!matchesOptionProject(detail.getProjectId())) {
+            return false;
+        }
+        if (!matchesOptionReporter(detail.getReporterAccountId())) {
+            return false;
+        }
+        if (!matchesOptionAssignee(detail.getAssigneeAccountId())) {
+            return false;
+        }
+        if (activeOnlyCheckBox.isSelected() && !UiModelMapper.toUiIssueStatus(detail.getStatus()).isActiveWorkflowStatus()) {
+            return false;
+        }
+        if (keyword.isBlank()) {
+            return true;
+        }
+
+        String title = detail.getTitle() == null ? "" : detail.getTitle().toLowerCase();
+        if (!descriptionCheckBox.isSelected()) {
+            return title.contains(keyword.toLowerCase());
+        }
+
+        String description = detail.getDescription() == null ? "" : detail.getDescription().toLowerCase();
+        String loweredKeyword = keyword.toLowerCase();
+        return title.contains(loweredKeyword) || description.contains(loweredKeyword);
+    }
+
+    private boolean matchesOptionStatus(com.example.its.persistence.entity.IssueStatus status) {
+        UiIssueStatus selected = UiIssueStatus.fromDisplayName(statusCombo.getValue());
+        return selected == null || status == null || selected.name().equals(status.name());
+    }
+
+    private boolean matchesOptionPriority(com.example.its.persistence.entity.Priority priority) {
+        UiPriority selected = UiPriority.fromDisplayName(priorityCombo.getValue());
+        return selected == null || priority == null || selected.name().equals(priority.name());
+    }
+
+    private boolean matchesOptionProject(Long projectId) {
+        Long selectedProjectId = projectIdByOption.get(projectCombo.getValue());
+        return selectedProjectId == null || selectedProjectId.equals(projectId);
+    }
+
+    private boolean matchesOptionReporter(Long reporterAccountId) {
+        Long selectedReporterId = reporterIdByOption.get(reporterCombo.getValue());
+        return selectedReporterId == null || selectedReporterId.equals(reporterAccountId);
+    }
+
+    private boolean matchesOptionAssignee(Long assigneeAccountId) {
+        Long selectedAssigneeId = assigneeIdByOption.get(assigneeCombo.getValue());
+        return selectedAssigneeId == null || selectedAssigneeId.equals(assigneeAccountId);
     }
 
     private void configureTable() {
@@ -206,7 +329,7 @@ public class SearchController {
         resultTable.setPlaceholder(new Label("Run a search to populate results."));
     }
 
-    private void populateFilterOptions() {
+    private void populateStaticOptions() {
         statusCombo.setItems(FXCollections.observableArrayList(
             ALL_OPTION,
             UiIssueStatus.NEW.displayName(),
@@ -224,58 +347,80 @@ public class SearchController {
             UiPriority.MINOR.displayName(),
             UiPriority.TRIVIAL.displayName()
         ));
+        statusCombo.setValue(ALL_OPTION);
+        priorityCombo.setValue(ALL_OPTION);
+        descriptionCheckBox.setSelected(true);
+    }
 
-        reporterCombo.setItems(FXCollections.observableArrayList());
-        reporterCombo.getItems().add(ALL_OPTION);
-        reporterCombo.getItems().addAll(
-            MockIssueDataProvider.createIssues().stream()
-                .map(IssueRowModel::getReporterName)
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .collect(Collectors.toList())
-        );
+    private void populateDynamicOptions() {
+        populateProjectOptions();
+        populateAccountOptions();
+    }
 
-        assigneeCombo.setItems(FXCollections.observableArrayList());
-        assigneeCombo.getItems().add(ALL_OPTION);
-        assigneeCombo.getItems().addAll(
-            MockIssueDataProvider.createIssues().stream()
-                .map(IssueRowModel::getAssigneeDisplayName)
-                .distinct()
-                .sorted(Comparator.comparing(String::toLowerCase))
-                .collect(Collectors.toList())
-        );
+    private void populateProjectOptions() {
+        List<ProjectResponse> projects = backendBridge().getProjects();
+        projectNameById.clear();
+        projectIdByOption.clear();
 
-        projectCombo.setItems(FXCollections.observableArrayList());
-        projectCombo.getItems().add(ALL_OPTION);
-        projectCombo.getItems().addAll(
-            MockIssueDataProvider.createIssues().stream()
-                .map(IssueRowModel::getProjectName)
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .collect(Collectors.toList())
-        );
-
-        if (statusCombo.getValue() == null) {
-            statusCombo.setValue(ALL_OPTION);
+        ObservableList<String> options = FXCollections.observableArrayList();
+        options.add(ALL_OPTION);
+        for (ProjectResponse project : projects) {
+            projectNameById.put(project.getProjectId(), project.getName());
+            options.add(project.getName());
+            projectIdByOption.put(project.getName(), project.getProjectId());
         }
-        if (priorityCombo.getValue() == null) {
-            priorityCombo.setValue(ALL_OPTION);
-        }
-        if (reporterCombo.getValue() == null) {
-            reporterCombo.setValue(ALL_OPTION);
-        }
-        if (assigneeCombo.getValue() == null) {
-            assigneeCombo.setValue(ALL_OPTION);
-        }
-        if (projectCombo.getValue() == null) {
+        projectCombo.setItems(options);
+        if (projectCombo.getValue() == null || !options.contains(projectCombo.getValue())) {
             projectCombo.setValue(ALL_OPTION);
-        }
-        if (!descriptionCheckBox.isSelected()) {
-            descriptionCheckBox.setSelected(true);
         }
     }
 
-    private void showPreview(IssueRowModel issue) {
+    private void populateAccountOptions() {
+        List<AccountResponse> accounts = backendBridge().getActiveAccounts();
+        reporterIdByOption.clear();
+        assigneeIdByOption.clear();
+
+        ObservableList<String> reporterOptions = FXCollections.observableArrayList();
+        ObservableList<String> assigneeOptions = FXCollections.observableArrayList();
+        reporterOptions.add(ALL_OPTION);
+        assigneeOptions.add(ALL_OPTION);
+
+        for (AccountResponse account : accounts) {
+            String option = buildAccountOption(account);
+            reporterOptions.add(option);
+            reporterIdByOption.put(option, account.getAccountId());
+            if (account.getRole() == com.example.its.persistence.entity.Role.DEV) {
+                assigneeOptions.add(option);
+                assigneeIdByOption.put(option, account.getAccountId());
+            }
+        }
+
+        reporterCombo.setItems(reporterOptions);
+        assigneeCombo.setItems(assigneeOptions);
+        if (reporterCombo.getValue() == null || !reporterOptions.contains(reporterCombo.getValue())) {
+            reporterCombo.setValue(ALL_OPTION);
+        }
+        if (assigneeCombo.getValue() == null || !assigneeOptions.contains(assigneeCombo.getValue())) {
+            assigneeCombo.setValue(ALL_OPTION);
+        }
+    }
+
+    private void loadPreview(IssueRowModel issue) {
+        if (issue == null) {
+            showPreview(null);
+            return;
+        }
+
+        try {
+            IssueDetailResponse detail = issueDetailCache.computeIfAbsent(issue.getIssueId(), id -> backendBridge().getIssue(id));
+            showPreview(detail);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("Issue Preview Failed", "Could not load the selected issue.", exception);
+            showPreview(null);
+        }
+    }
+
+    private void showPreview(IssueDetailResponse issue) {
         if (issue == null) {
             previewIssueIdLabel.setText("-");
             previewTitleLabel.setText("No issue selected");
@@ -292,21 +437,41 @@ public class SearchController {
 
         previewIssueIdLabel.setText("#" + issue.getIssueId());
         previewTitleLabel.setText(issue.getTitle());
-        previewStatusLabel.setText(issue.getStatusDisplayName());
-        previewPriorityLabel.setText(issue.getPriorityDisplayName());
+        previewStatusLabel.setText(UiModelMapper.toUiIssueStatus(issue.getStatus()).displayName());
+        previewPriorityLabel.setText(UiModelMapper.toUiPriority(issue.getPriority()).displayName());
         previewReporterLabel.setText(issue.getReporterName());
-        previewAssigneeLabel.setText(issue.getAssigneeDisplayName());
+        previewAssigneeLabel.setText(issue.getAssigneeName() == null || issue.getAssigneeName().isBlank() ? "Unassigned" : issue.getAssigneeName());
         previewProjectLabel.setText(issue.getProjectName());
         previewReportedAtLabel.setText(formatDateTime(issue.getReportedAt()));
         previewDescriptionArea.setText(issue.getDescription());
-        previewCommentListView.setItems(FXCollections.observableArrayList(
-            issue.getComments().stream()
-                .map(CommentItemModel::toTimelineText)
-                .collect(Collectors.toList())
-        ));
+        previewCommentListView.setItems(FXCollections.observableArrayList(UiModelMapper.toActivityTimeline(issue)));
+    }
+
+    private Long parseIssueId() {
+        String value = trimmed(issueIdField.getText());
+        if (value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Issue ID must be numeric.");
+        }
+    }
+
+    private String buildAccountOption(AccountResponse account) {
+        return account.getName() + " (" + account.getLoginId() + ")";
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
-        return dateTime.format(DATE_TIME_FORMATTER);
+        return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMATTER);
+    }
+
+    private String trimmed(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private JavaFxBackendBridge backendBridge() {
+        return JavaFxBackendBridge.getInstance();
     }
 }
