@@ -27,7 +27,7 @@ public class Tag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "tag_id")
-    private Long tagId;
+    private Integer tagId;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -46,7 +46,7 @@ public class Tag {
     }
 
     public Long getTagId() {
-        return tagId;
+        return tagId != null ? tagId.longValue() : null;
     }
 
     public String getName() {
