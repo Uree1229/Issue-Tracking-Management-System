@@ -96,7 +96,7 @@
             <Separator/>
 
             <Label text="Frontend Contract Hint" styleClass="section-title"/>
-            <Label text="Later this form should send an IssueCreateRequest DTO to the backend facade. For now it writes into the shared mock issue list used by the browser and analytics screens." wrapText="true" styleClass="landing-copy"/>
+            <Label text="This form now sends an IssueCreateRequest to the backend facade. The optional initial note is folded into the description because the current contract does not expose comment creation yet." wrapText="true" styleClass="landing-copy"/>
         </VBox>
     </HBox>
 </VBox>
