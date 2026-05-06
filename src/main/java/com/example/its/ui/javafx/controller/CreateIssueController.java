@@ -1,9 +1,13 @@
 package com.example.its.ui.javafx.controller;
 
+import com.example.its.shared.dto.issue.IssueCreateRequest;
+import com.example.its.shared.dto.issue.IssueDetailResponse;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.UiPriority;
+import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
-import com.example.its.ui.javafx.support.IntegrationPointHelper;
+import com.example.its.ui.javafx.support.UiAlertHelper;
+import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
@@ -70,9 +74,11 @@ public class CreateIssueController {
 
     public void refreshContext() {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
-        reporterValueLabel.setText(currentUser == null ? "-" : currentUser.loginId());
-        previewReporterLabel.setText(currentUser == null ? "-" : currentUser.loginId());
-        projectValueLabel.setText("project1");
+        String reporterDisplay = currentUser == null ? "-" : currentUser.displayName();
+        reporterValueLabel.setText(reporterDisplay);
+        previewReporterLabel.setText(reporterDisplay);
+        String projectName = UserSession.getCurrentProjectName();
+        projectValueLabel.setText(projectName == null || projectName.isBlank() ? "No Project Selected" : projectName);
         statusValueLabel.setText("NEW");
         updatePreview();
     }
@@ -97,17 +103,33 @@ public class CreateIssueController {
             formFeedbackLabel.setText("Title and description are required.");
             return;
         }
+        Long projectId = UserSession.getCurrentProjectId();
+        if (projectId == null) {
+            formFeedbackLabel.getStyleClass().add("form-feedback-error");
+            formFeedbackLabel.setText("Create a project first. The current backend requires a project before issue registration.");
+            return;
+        }
 
-        IntegrationPointHelper.showPending(
-            "Issue creation backend pending",
-            "Connect CreateIssueController.handleCreateIssue() to IssueFacade.createIssue(IssueCreateRequest). "
-                + "Current form values stay in the UI preview only.\n\n"
-                + "Title: " + title + "\n"
-                + "Priority: " + (priorityCombo.getValue() == null ? UiPriority.MAJOR.name() : priorityCombo.getValue().name()) + "\n"
-                + "Reporter note: " + (note.isBlank() ? "-" : note)
-        );
-        formFeedbackLabel.getStyleClass().add("form-feedback-success");
-        formFeedbackLabel.setText("Preview only. Hook this button to IssueFacade.createIssue(...) later.");
+        try {
+            IssueCreateRequest request = new IssueCreateRequest();
+            request.setTitle(title);
+            request.setDescription(buildEffectiveDescription(description, note));
+            request.setPriority(UiModelMapper.toBackendPriority(priorityCombo.getValue()));
+            request.setReporterAccountId(currentUser.accountId());
+            request.setProjectId(projectId);
+
+            IssueDetailResponse createdIssue = backendBridge().createIssue(request);
+            formFeedbackLabel.getStyleClass().add("form-feedback-success");
+            formFeedbackLabel.setText("Issue #" + createdIssue.getIssueId() + " was created successfully.");
+            resetForm();
+
+            if (mainLayoutController != null) {
+                mainLayoutController.showIssue(createdIssue.getIssueId());
+            }
+        } catch (Exception exception) {
+            formFeedbackLabel.getStyleClass().add("form-feedback-error");
+            formFeedbackLabel.setText(UiAlertHelper.extractMessage(exception, "Issue creation failed."));
+        }
     }
 
     @FXML
@@ -138,5 +160,16 @@ public class CreateIssueController {
 
     private String trimmed(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String buildEffectiveDescription(String description, String note) {
+        if (note.isBlank()) {
+            return description;
+        }
+        return description + System.lineSeparator() + System.lineSeparator() + "[Initial Note]" + System.lineSeparator() + note;
+    }
+
+    private JavaFxBackendBridge backendBridge() {
+        return JavaFxBackendBridge.getInstance();
     }
 }
