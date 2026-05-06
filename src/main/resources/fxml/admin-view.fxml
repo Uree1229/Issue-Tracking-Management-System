@@ -111,7 +111,7 @@
                                         <Insets top="20" right="20" bottom="20" left="20"/>
                                     </padding>
                                     <Label text="Existing Users" styleClass="section-title"/>
-                                    <Label text="This list is mock data for the JavaFX admin page. Replace it with AccountResponse rows later." wrapText="true" styleClass="landing-copy"/>
+                                    <Label text="This list is loaded from active accounts in the backend facade." wrapText="true" styleClass="landing-copy"/>
                                     <TableView fx:id="userTable" prefWidth="520" VBox.vgrow="ALWAYS">
                                         <columns>
                                             <TableColumn fx:id="idColumn" text="ID" prefWidth="55"/>
@@ -183,7 +183,7 @@
                                         <Insets top="20" right="20" bottom="20" left="20"/>
                                     </padding>
                                     <Label text="Existing Projects" styleClass="section-title"/>
-                                    <Label text="This list is mock data for the JavaFX admin page. Replace it with ProjectResponse rows later." wrapText="true" styleClass="landing-copy"/>
+                                    <Label text="This list is loaded from backend projects. Version, default tag, and default assignee remain UI-only helpers for now." wrapText="true" styleClass="landing-copy"/>
                                     <TableView fx:id="projectTable" prefWidth="520" VBox.vgrow="ALWAYS">
                                         <columns>
                                             <TableColumn fx:id="projectIdColumn" text="ID" prefWidth="55"/>
