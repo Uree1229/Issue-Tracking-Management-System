@@ -9,10 +9,6 @@ import java.util.Optional;
 
 public class AccountRepository extends JpaRepositorySupport<Account> {
 
-    public AccountRepository() {
-        super(Account.class);
-    }
-
     public AccountRepository(EntityManager entityManager) {
         super(Account.class, entityManager);
     }

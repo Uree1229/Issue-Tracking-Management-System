@@ -8,10 +8,6 @@ import java.util.List;
 
 public class StatisticsQueryRepository extends JpaRepositorySupport<Issue> {
 
-    public StatisticsQueryRepository() {
-        super(Issue.class);
-    }
-
     public StatisticsQueryRepository(EntityManager entityManager) {
         super(Issue.class, entityManager);
     }

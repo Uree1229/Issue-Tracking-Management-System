@@ -8,10 +8,6 @@ import java.util.Optional;
 
 public class ProjectRepository extends JpaRepositorySupport<Project> {
 
-    public ProjectRepository() {
-        super(Project.class);
-    }
-
     public ProjectRepository(EntityManager entityManager) {
         super(Project.class, entityManager);
     }
