@@ -1,6 +1,5 @@
 package com.example.its.persistence.transaction;
 
-import com.example.its.persistence.repository.PersistenceContextProvider;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
