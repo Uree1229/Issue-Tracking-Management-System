@@ -1,13 +1,13 @@
 package com.example.its.application.facade;
 
 import com.example.its.application.service.*;
+import com.example.its.persistence.repository.*;
+import com.example.its.persistence.query.*; // 쿼리 리포지토리 import 추가
 import com.example.its.shared.dto.issue.*;
 
 import java.util.List;
 
-// Fix: 모든 상태 전이 함수의 파라미터를 신규 추가된 DTO 하나로 통합
-// Fix: 리턴 타입을 void에서 IssueDetailResponse로 변경
-// -> 프론트엔드에서 상태 변경 API를 호출하자마자 변경된 최신 상태의 이슈 정보를 즉시 렌더링 가능
+// Fix: 5/4 피드백 반영
 public class IssueFacade {
 
     private final IssueService issueService;
@@ -15,16 +15,28 @@ public class IssueFacade {
     private final IssueStatisticsService issueStatisticsService;
     private final AssigneeRecommendationService recommendationService;
 
-    public IssueFacade(IssueService issueService, IssueSearchService issueSearchService,
-                       IssueStatisticsService issueStatisticsService,
-                       AssigneeRecommendationService recommendationService) {
-        this.issueService = issueService;
-        this.issueSearchService = issueSearchService;
-        this.issueStatisticsService = issueStatisticsService;
-        this.recommendationService = recommendationService;
+    public IssueFacade() {
+        // 1. 필요한 Repository 및 QueryRepository 부품들 일괄 생성
+        IssueRepository issueRepository = new IssueRepository();
+        AccountRepository accountRepository = new AccountRepository();
+        ProjectRepository projectRepository = new ProjectRepository();
+        TagRepository tagRepository = new TagRepository();
+        
+        // 새로 추가된 전용 쿼리 리포지토리들 생성
+        IssueQueryRepository issueQueryRepository = new IssueQueryRepository();
+        StatisticsQueryRepository statisticsQueryRepository = new StatisticsQueryRepository();
+
+        // 2. Service 조립
+        this.issueService = new IssueService(issueRepository, accountRepository, projectRepository, tagRepository);
+        
+        // 에러가 났던 3개의 서비스에 알맞은 쿼리 객체 주입
+        this.issueSearchService = new IssueSearchService(issueQueryRepository);
+        this.issueStatisticsService = new IssueStatisticsService(statisticsQueryRepository);
+        
+        // Fix: 파라미터 순서 변경: Account -> Issue 순서
+        this.recommendationService = new AssigneeRecommendationService(accountRepository, issueRepository);
     }
 
-    // 이슈 상세 조회 및 등록
     public IssueDetailResponse getIssue(Long id) {
         return issueService.getIssueDetail(id);
     }
@@ -33,7 +45,6 @@ public class IssueFacade {
         return issueService.registerIssue(request);
     }
 
-    // 이슈 검색 및 통계
     public List<IssueSummaryResponse> searchIssues(IssueSearchCondition condition) {
         return issueSearchService.searchIssues(condition);
     }
@@ -42,13 +53,10 @@ public class IssueFacade {
         return issueStatisticsService.getProjectStatistics(projectId);
     }
 
-    // 담당자 추천 알고리즘 호출
     public List<RecommendationResponse> recommendAssignees(Long projectId, List<Long> tagIds) {
         return recommendationService.recommendAssignees(projectId, tagIds);
     }
 
-    // 상태 전이 (Status Transitions)
-    // Fix: 5/1 피드백 3, 4번 반영
     public IssueDetailResponse assign(IssueAssignRequest request) {
         return issueService.assignAssignee(request);
     }
@@ -73,3 +81,4 @@ public class IssueFacade {
         return issueService.reOpenIssue(request);
     }
 }
+

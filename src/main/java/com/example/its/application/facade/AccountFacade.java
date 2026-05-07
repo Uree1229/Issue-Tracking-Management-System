@@ -1,19 +1,23 @@
 package com.example.its.application.facade;
 
 import com.example.its.application.service.AccountService;
+import com.example.its.application.mapper.AccountMapper;
+import com.example.its.persistence.repository.AccountRepository;
 import com.example.its.shared.dto.account.AccountCreateRequest;
 import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.shared.dto.account.AccountUpdateRequest;
 
 import java.util.List;
 
-// Fix: Mapper를 없애버리고, Service가 준 DTO를 그대로 리턴하도록 수정
 public class AccountFacade {
 
     private final AccountService accountService;
 
-    public AccountFacade(AccountService accountService) {
-        this.accountService = accountService;
+    // Fix: 파라미터 없는 기본 생성자로 변경 (5/4 피드백 반영)
+    public AccountFacade() {
+        AccountRepository accountRepository = new AccountRepository();
+        AccountMapper accountMapper = new AccountMapper();
+        this.accountService = new AccountService(accountRepository, accountMapper);
     }
 
     public AccountResponse login(String loginId, String password) {

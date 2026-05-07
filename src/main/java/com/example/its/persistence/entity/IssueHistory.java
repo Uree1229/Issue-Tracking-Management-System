@@ -22,7 +22,7 @@ public class IssueHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "history_id")
-    private Long historyId;
+    private Integer historyId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "issue_id", nullable = false)
@@ -33,7 +33,7 @@ public class IssueHistory {
     private Account changedBy;
 
     @Column(name = "changed_at", nullable = false)
-    private LocalDateTime changedAt;
+    private String changedAt;
 
     @OneToOne(mappedBy = "issueHistory", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, optional = false)
     private IssueDelta issueDelta;
@@ -44,12 +44,12 @@ public class IssueHistory {
     @PrePersist
     protected void onCreate() {
         if (changedAt == null) {
-            changedAt = LocalDateTime.now();
+            changedAt = LocalDateTime.now().toString();
         }
     }
 
     public Long getHistoryId() {
-        return historyId;
+        return historyId != null ? historyId.longValue() : null;
     }
 
     public Issue getIssue() {
@@ -69,7 +69,7 @@ public class IssueHistory {
     }
 
     public LocalDateTime getChangedAt() {
-        return changedAt;
+        return parseDateTime(changedAt);
     }
 
     public IssueDelta getIssueDelta() {
@@ -91,8 +91,12 @@ public class IssueHistory {
         IssueHistory history = new IssueHistory();
         history.setChangedBy(changedBy);
         // Setter 대신 private 필드에 직접 접근하여 값 할당
-        history.changedAt = LocalDateTime.now(); 
+        history.changedAt = LocalDateTime.now().toString();
         history.setIssueDelta(issueDelta);
         return history;
+    }
+
+    private static LocalDateTime parseDateTime(String value) {
+        return value != null ? LocalDateTime.parse(value.replace(' ', 'T')) : null;
     }
 }

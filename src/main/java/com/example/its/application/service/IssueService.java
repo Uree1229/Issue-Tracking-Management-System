@@ -46,8 +46,8 @@ public class IssueService {
             }
         }
 
-        // 초기 생성 이력 기록 (NULL -> NEW)
-        recordHistory(issue, reporter, null, IssueStatus.NEW);
+        // 생성 시점에는 이전 상태(oldState)가 없으므로 null 전달
+        recordHistory(reporter, null, issue);
 
         Issue savedIssue = issueRepository.save(issue);
         return IssueDetailResponse.from(savedIssue);
@@ -71,11 +71,15 @@ public class IssueService {
             throw new IllegalArgumentException("담당자는 DEV(Developer) 역할이어야 합니다.");
         }
 
-        IssueStatus oldStatus = issue.getStatus();
+        // 1. 상태 변경 전 스냅샷 캡처
+        IssueSnapshot oldState = new IssueSnapshot(issue);
+
+        // 2. 상태 변경
         issue.setAssignee(assignee);
         issue.setStatus(IssueStatus.ASSIGNED);
 
-        recordHistory(issue, pl, oldStatus, IssueStatus.ASSIGNED);
+        // 3. 이력 기록 (oldState vs 현재 issue)
+        recordHistory(pl, oldState, issue);
         return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
@@ -92,16 +96,16 @@ public class IssueService {
             throw new SecurityException("본인에게 할당된 이슈만 완료(FIXED) 처리할 수 있습니다.");
         }
         if (request.getComment() == null || request.getComment().trim().isEmpty()) {
-            throw new IllegalArgumentException("FIXED 처리 시 코멘트(작업 내용/사유) 작성이 필수입니다.");
+            throw new IllegalArgumentException("FIXED 처리 시 코멘트 작성이 필수입니다.");
         }
 
-        IssueStatus oldStatus = issue.getStatus();
+        IssueSnapshot oldState = new IssueSnapshot(issue);
+
         issue.setStatus(IssueStatus.FIXED);
         issue.setFixer(dev);
-
         addCommentToIssue(issue, dev, request.getComment());
-        recordHistory(issue, dev, oldStatus, IssueStatus.FIXED);
-        
+
+        recordHistory(dev, oldState, issue);
         return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
@@ -118,10 +122,11 @@ public class IssueService {
             throw new IllegalStateException("FIXED 상태의 이슈만 검증할 수 있습니다.");
         }
 
-        IssueStatus oldStatus = issue.getStatus();
+        IssueSnapshot oldState = new IssueSnapshot(issue);
+
         issue.setStatus(IssueStatus.RESOLVED);
 
-        recordHistory(issue, tester, oldStatus, IssueStatus.RESOLVED);
+        recordHistory(tester, oldState, issue);
         return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
@@ -138,15 +143,15 @@ public class IssueService {
             throw new IllegalStateException("FIXED 상태의 이슈만 검증할 수 있습니다.");
         }
         if (request.getReason() == null || request.getReason().trim().isEmpty()) {
-            throw new IllegalArgumentException("검증 실패 시 반려 사유(코멘트) 작성이 필수입니다.");
+            throw new IllegalArgumentException("검증 실패 시 반려 사유 작성이 필수입니다.");
         }
 
-        IssueStatus oldStatus = issue.getStatus();
-        issue.setStatus(IssueStatus.REOPENED);
+        IssueSnapshot oldState = new IssueSnapshot(issue);
 
+        issue.setStatus(IssueStatus.REOPENED);
         addCommentToIssue(issue, tester, request.getReason());
-        recordHistory(issue, tester, oldStatus, IssueStatus.REOPENED);
-        
+
+        recordHistory(tester, oldState, issue);
         return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
@@ -163,10 +168,11 @@ public class IssueService {
             throw new IllegalStateException("RESOLVED 상태의 이슈만 종료할 수 있습니다.");
         }
 
-        IssueStatus oldStatus = issue.getStatus();
+        IssueSnapshot oldState = new IssueSnapshot(issue);
+
         issue.setStatus(IssueStatus.CLOSED);
 
-        recordHistory(issue, pl, oldStatus, IssueStatus.CLOSED);
+        recordHistory(pl, oldState, issue);
         return IssueDetailResponse.from(issueRepository.save(issue));
     }
 
@@ -183,22 +189,20 @@ public class IssueService {
             throw new IllegalStateException("CLOSED 상태의 이슈만 재오픈할 수 있습니다.");
         }
 
-        IssueStatus oldStatus = issue.getStatus();
-        issue.setStatus(IssueStatus.REOPENED);
+        IssueSnapshot oldState = new IssueSnapshot(issue);
 
+        issue.setStatus(IssueStatus.REOPENED);
         if (request.getReason() != null && !request.getReason().trim().isEmpty()) {
             addCommentToIssue(issue, account, request.getReason());
         }
-        recordHistory(issue, account, oldStatus, IssueStatus.REOPENED);
-        
+
+        recordHistory(account, oldState, issue);
         return IssueDetailResponse.from(issueRepository.save(issue));
     }
-    // ------------------------------------------------------------- 2. 도메인 룰 기반 상태 전이 로직 끝 ------------------------------------------------------------- //
 
-    // 3. 조회 및 유틸리티 (Fetchers & Helpers)
+    // 3. 조회 및 유틸리티
     public IssueDetailResponse getIssueDetail(Long issueId) {
-        Issue issue = getIssueOrThrow(issueId);
-        return IssueDetailResponse.from(issue);
+        return IssueDetailResponse.from(getIssueOrThrow(issueId));
     }
 
     public List<IssueSummaryResponse> getAllIssuesByProject(Long projectId) {
@@ -207,7 +211,6 @@ public class IssueService {
                 .collect(Collectors.toList());
     }
 
-    // 내부 헬퍼 메서드
     private Issue getIssueOrThrow(Long issueId) {
         return issueRepository.findById(issueId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이슈입니다. ID: " + issueId));
@@ -223,33 +226,34 @@ public class IssueService {
         issue.addComment(comment);
     }
 
-    // ------------------------------------ 이력 기록 헬퍼 메서드 (오버로딩 적용) ------------------------------------
-    // 1. 편의성 헬퍼: 기존처럼 상태(Status)만 변경될 때 호출하면 나머지는 알아서 채워주도록 구성
-    private void recordHistory(Issue issue, Account actor, IssueStatus oldStatus, IssueStatus newStatus) {
-        boolean isNew = (oldStatus == null); // 최초 생성 시에는 이전 값이 모두 null이어야 함
-        
-        // 상태 이외의 값들(제목, 내용, 우선순위)은 변경되지 않았으므로 현재 값을 그대로 세팅하여 마스터 함수 호출
-        recordHistory(
-                issue, actor,
-                isNew ? null : issue.getTitle(), issue.getTitle(),
-                isNew ? null : issue.getDescription(), issue.getDescription(),
-                isNew ? null : issue.getPriority(), issue.getPriority(),
-                oldStatus, newStatus
-        );
+
+    // --------------- 이력 기록 로직 (Snapshot 기반 변경 내역 추적) ---------------
+    // 상태가 변경되기 전의 값을 임시 보관하는 DTO 클래스
+    private static class IssueSnapshot {
+        final String title;
+        final String description;
+        final Priority priority;
+        final IssueStatus status;
+
+        IssueSnapshot(Issue issue) {
+            this.title = issue.getTitle();
+            this.description = issue.getDescription();
+            this.priority = issue.getPriority();
+            this.status = issue.getStatus();
+        }
     }
 
-    // 2. 마스터 헬퍼: 5/1 메세지 5번 피드백 반영
-    // 4가지 항목(제목, 내용, 우선순위, 상태)의 모든 변경 사항을 처리하는 진짜 함수
-    private void recordHistory(Issue issue, Account actor, 
-                               String oldTitle, String newTitle, 
-                               String oldContent, String newContent, 
-                               Priority oldPriority, Priority newPriority, 
-                               IssueStatus oldStatus, IssueStatus newStatus) {
-        
-        IssueDelta delta = IssueDelta.create(oldTitle, newTitle, oldContent, newContent, 
-                                             oldPriority, newPriority, oldStatus, newStatus);
+    // 과거 스냅샷과 현재 이슈를 비교하여 Delta를 생성하는 팩토리 메서드
+    private void recordHistory(Account actor, IssueSnapshot oldState, Issue newState) {
+        boolean isNew = (oldState == null);
+
+        IssueDelta delta = IssueDelta.create(
+                isNew ? null : oldState.title, newState.getTitle(),
+                isNew ? null : oldState.description, newState.getDescription(),
+                isNew ? null : oldState.priority, newState.getPriority(),
+                isNew ? null : oldState.status, newState.getStatus()
+        );
         IssueHistory history = IssueHistory.create(actor, delta);
-        
-        issue.addIssueHistory(history);
+        newState.addIssueHistory(history);
     }
 }
