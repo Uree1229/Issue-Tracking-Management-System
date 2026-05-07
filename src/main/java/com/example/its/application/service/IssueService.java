@@ -235,6 +235,28 @@ public class IssueService {
         });
     }
 
+    // Feat: 단순 코멘트 추가 기능 구현
+    public IssueDetailResponse addComment(CommentCreateRequest request) {
+        return TransactionManager.execute(entityManager -> {
+            IssueRepository issueRepository = new IssueRepository(entityManager);
+            AccountRepository accountRepository = new AccountRepository(entityManager);
+
+            Issue issue = getIssueOrThrow(issueRepository, request.getIssueId());
+            Account author = getAccountOrThrow(accountRepository, request.getAuthorAccountId());
+
+            if (request.getContent() == null || request.getContent().trim().isEmpty()) {
+                throw new IllegalArgumentException("코멘트 내용이 비어있습니다.");
+            }
+
+            // 기존 헬퍼 메서드 재활용
+            addCommentToIssue(issue, author, request.getContent());
+
+            // 상태 변경은 없으므로 recordHistory()는 생략함.
+            // DB에 저장하고 최신 상태의 이슈 DTO를 반환
+            return issueMapper.toDetailResponse(issueRepository.save(issue));
+        });
+    }
+
     // 3. 조회 및 유틸리티
     public IssueDetailResponse getIssueDetail(Long issueId) {
         return TransactionManager.execute(entityManager -> {

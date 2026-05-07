@@ -65,4 +65,9 @@ public class IssueFacade {
     public IssueDetailResponse reopen(IssueReopenRequest request) {
         return issueService.reOpenIssue(request);
     }
+
+    // Feat: 단순 코멘트 기능 추가
+    public IssueDetailResponse addComment(CommentCreateRequest request) {
+        return issueService.addComment(request);
+    }
 }
