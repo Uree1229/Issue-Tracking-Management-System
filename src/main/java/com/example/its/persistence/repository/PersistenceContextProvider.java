@@ -8,11 +8,15 @@ final class PersistenceContextProvider {
 
     private static final EntityManagerFactory ENTITY_MANAGER_FACTORY =
         Persistence.createEntityManagerFactory("its-persistence-unit");
+    private static EntityManager sharedEntityManager;
 
     private PersistenceContextProvider() {
     }
 
-    static EntityManager createEntityManager() {
-        return ENTITY_MANAGER_FACTORY.createEntityManager();
+    static synchronized EntityManager createEntityManager() {
+        if (sharedEntityManager == null || !sharedEntityManager.isOpen()) {
+            sharedEntityManager = ENTITY_MANAGER_FACTORY.createEntityManager();
+        }
+        return sharedEntityManager;
     }
 }

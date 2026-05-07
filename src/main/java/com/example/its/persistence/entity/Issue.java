@@ -31,7 +31,7 @@ public class Issue {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "issue_id")
-    private Long issueId;
+    private Integer issueId;
 
     @Column(nullable = false, length = 200)
     private String title;
@@ -60,10 +60,10 @@ public class Issue {
     private Account fixer;
 
     @Column(name = "reported_at", nullable = false)
-    private LocalDateTime reportedAt;
+    private String reportedAt;
 
     @Column(name = "last_modified_at", nullable = false)
-    private LocalDateTime lastModifiedAt;
+    private String lastModifiedAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "project_id", nullable = false)
@@ -95,7 +95,7 @@ public class Issue {
             priority = Priority.MAJOR;
         }
         if (reportedAt == null) {
-            reportedAt = LocalDateTime.now();
+            reportedAt = LocalDateTime.now().toString();
         }
         if (lastModifiedAt == null) {
             lastModifiedAt = reportedAt;
@@ -104,11 +104,11 @@ public class Issue {
 
     @PreUpdate
     protected void onUpdate() {
-        lastModifiedAt = LocalDateTime.now();
+        lastModifiedAt = LocalDateTime.now().toString();
     }
 
     public Long getIssueId() {
-        return issueId;
+        return issueId != null ? issueId.longValue() : null;
     }
 
     public String getTitle() {
@@ -168,11 +168,11 @@ public class Issue {
     }
 
     public LocalDateTime getReportedAt() {
-        return reportedAt;
+        return parseDateTime(reportedAt);
     }
 
     public LocalDateTime getLastModifiedAt() {
-        return lastModifiedAt;
+        return parseDateTime(lastModifiedAt);
     }
 
     public Project getProject() {
@@ -210,7 +210,6 @@ public class Issue {
         tag.getIssues().add(this);
     }
 
-    // BE: static factory method 컨벤션 만족 위해 추가
     public static Issue create(String title, String description, Priority priority, Project project, Account reporter) {
         Issue issue = new Issue();
         issue.title = title;
@@ -218,7 +217,11 @@ public class Issue {
         issue.priority = priority != null ? priority : Priority.MAJOR;
         issue.project = project;
         issue.reporter = reporter;
-        issue.status = IssueStatus.NEW; // 초기 상태 강제
+        issue.status = IssueStatus.NEW;
         return issue;
+    }
+
+    private static LocalDateTime parseDateTime(String value) {
+        return value != null ? LocalDateTime.parse(value.replace(' ', 'T')) : null;
     }
 }

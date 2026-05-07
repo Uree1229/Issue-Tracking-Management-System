@@ -2,18 +2,22 @@ package com.example.its.ui.javafx.controller;
 
 import com.example.its.ItsApplication;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
+import com.example.its.ui.javafx.model.InquiryQueryPayload;
+import com.example.its.ui.javafx.model.SearchQueryPayload;
 import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.session.UserSession;
+import com.example.its.ui.javafx.support.UiAlertHelper;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
-
-import java.io.IOException;
+import javafx.stage.Stage;
 
 public class MainLayoutController {
 
@@ -63,13 +67,13 @@ public class MainLayoutController {
     private CreateIssueController createIssueController;
     private AnalyticsController analyticsController;
     private AdminController adminController;
+    private Stage searchResultsStage;
+    private Stage inquiryResultsStage;
 
     @FXML
     private void initialize() {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
-        currentProjectLabel.setText("project1");
-        currentUserLabel.setText(currentUser == null ? "Guest" : currentUser.displayName());
-        currentRoleLabel.setText(currentUser == null ? "UNAUTHENTICATED" : currentUser.role().name());
+        refreshCurrentContext();
         boolean isAdmin = currentUser != null && currentUser.role() == UiRole.ADMIN;
         boolean canCreateIssue = currentUser != null && currentUser.role().canCreateIssue();
         boolean canViewAnalytics = currentUser != null && currentUser.role().canViewAnalytics();
@@ -84,10 +88,22 @@ public class MainLayoutController {
         showHome(null);
     }
 
+    public void refreshCurrentContext() {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        String projectName = UserSession.getCurrentProjectName();
+        currentProjectLabel.setText(projectName == null || projectName.isBlank() ? "No Project" : projectName);
+        currentUserLabel.setText(currentUser == null ? "Guest" : currentUser.displayName());
+        currentRoleLabel.setText(currentUser == null ? "UNAUTHENTICATED" : currentUser.role().name());
+    }
+
     @FXML
     private void showHome(ActionEvent event) {
         activateNav(homeNavButton);
         contentContainer.getChildren().setAll(homeView);
+    }
+
+    public void navigateHome() {
+        showHome(null);
     }
 
     @FXML
@@ -101,10 +117,17 @@ public class MainLayoutController {
         if (searchView == null) {
             loadSearchView();
         }
+        if (searchView == null) {
+            return;
+        }
         contentContainer.getChildren().setAll(searchView);
         if (searchController != null) {
             searchController.refreshData();
         }
+    }
+
+    public void showSearchResults(SearchQueryPayload payload) {
+        showSearchResultsWindow(payload);
     }
 
     @FXML
@@ -112,6 +135,9 @@ public class MainLayoutController {
         activateNav(inquiryNavButton);
         if (inquiryView == null) {
             loadInquiryView();
+        }
+        if (inquiryView == null) {
+            return;
         }
         contentContainer.getChildren().setAll(inquiryView);
         if (inquiryController != null) {
@@ -125,6 +151,9 @@ public class MainLayoutController {
         if (createIssueView == null) {
             loadCreateIssueView();
         }
+        if (createIssueView == null) {
+            return;
+        }
         contentContainer.getChildren().setAll(createIssueView);
         if (createIssueController != null) {
             createIssueController.refreshContext();
@@ -136,6 +165,9 @@ public class MainLayoutController {
         activateNav(analyticsNavButton);
         if (analyticsView == null) {
             loadAnalyticsView();
+        }
+        if (analyticsView == null) {
+            return;
         }
         contentContainer.getChildren().setAll(analyticsView);
         if (analyticsController != null) {
@@ -149,6 +181,9 @@ public class MainLayoutController {
         if (adminView == null) {
             loadAdminView();
         }
+        if (adminView == null) {
+            return;
+        }
         contentContainer.getChildren().setAll(adminView);
         if (adminController != null) {
             adminController.selectUserTab();
@@ -159,6 +194,9 @@ public class MainLayoutController {
         activateNav(adminNavButton);
         if (adminView == null) {
             loadAdminView();
+        }
+        if (adminView == null) {
+            return;
         }
         contentContainer.getChildren().setAll(adminView);
         if (adminController != null) {
@@ -178,12 +216,7 @@ public class MainLayoutController {
     }
 
     public void showSearchWithKeyword(String keyword) {
-        activateNav(searchNavButton);
-        if (searchView == null) {
-            loadSearchView();
-        }
-        contentContainer.getChildren().setAll(searchView);
-        searchController.applyKeywordSearch(keyword);
+        showSearchResultsWindow(SearchQueryPayload.keywordOnly(keyword));
     }
 
     public void showNewIssues() {
@@ -199,7 +232,7 @@ public class MainLayoutController {
         }
 
         showIssueBrowser();
-        issueBrowserController.showAssignedTo(currentUser.loginId());
+        issueBrowserController.showAssignedTo(currentUser.name());
     }
 
     public void showReportedByCurrentUser() {
@@ -210,7 +243,7 @@ public class MainLayoutController {
         }
 
         showIssueBrowser();
-        issueBrowserController.showReportedBy(currentUser.loginId());
+        issueBrowserController.showReportedBy(currentUser.name());
     }
 
     public void showFixedIssues() {
@@ -224,18 +257,16 @@ public class MainLayoutController {
     }
 
     public void showInquiry(Long issueId) {
-        activateNav(inquiryNavButton);
-        if (inquiryView == null) {
-            loadInquiryView();
-        }
-        contentContainer.getChildren().setAll(inquiryView);
-        inquiryController.showIssue(issueId);
+        showInquiryResultsWindow(new InquiryQueryPayload(issueId, "", false));
     }
 
     private void showIssueBrowser() {
         activateNav(issuesNavButton);
         if (issueBrowserView == null) {
             loadIssueBrowserView();
+        }
+        if (issueBrowserView == null) {
+            return;
         }
         contentContainer.getChildren().setAll(issueBrowserView);
         issueBrowserController.refreshData();
@@ -248,8 +279,8 @@ public class MainLayoutController {
             HomeController controller = loader.getController();
             controller.setMainLayoutController(this);
             homeView = view;
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to load home view.", exception);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Home view could not be opened.", exception);
         }
     }
 
@@ -259,8 +290,8 @@ public class MainLayoutController {
             Node view = loader.load();
             issueBrowserController = loader.getController();
             issueBrowserView = view;
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to load issue browser view.", exception);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Issues view could not be opened.", exception);
         }
     }
 
@@ -270,8 +301,81 @@ public class MainLayoutController {
             searchView = loader.load();
             searchController = loader.getController();
             searchController.setMainLayoutController(this);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to load search view.", exception);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Search view could not be opened.", exception);
+        }
+    }
+
+    public void showSearchResultsWindow(SearchQueryPayload payload) {
+        try {
+            if (searchResultsStage != null) {
+                searchResultsStage.close();
+            }
+
+            FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/search-results-view.fxml"));
+            Parent root = loader.load();
+            SearchResultsController controller = loader.getController();
+            controller.setMainLayoutController(this);
+
+            Scene scene = new Scene(root, 1120, 720);
+            scene.getStylesheets().add(ItsApplication.class.getResource("/styles/app.css").toExternalForm());
+
+            Stage stage = new Stage();
+            stage.setTitle("Search Results");
+            stage.setMinWidth(980);
+            stage.setMinHeight(620);
+            if (ItsApplication.getPrimaryStage() != null) {
+                stage.initOwner(ItsApplication.getPrimaryStage());
+            }
+            stage.setScene(scene);
+            controller.setWindowStage(stage);
+            controller.applySearch(payload);
+            stage.show();
+            stage.toFront();
+            searchResultsStage = stage;
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Search results window could not be opened.", exception);
+        }
+    }
+
+    public void showInquiryResultsWindow(InquiryQueryPayload payload) {
+        try {
+            if (inquiryResultsStage != null) {
+                inquiryResultsStage.close();
+            }
+
+            FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/inquiry-results-view.fxml"));
+            Parent root = loader.load();
+            InquiryResultsController controller = loader.getController();
+            controller.setMainLayoutController(this);
+
+            Scene scene = new Scene(root, 1180, 760);
+            scene.getStylesheets().add(ItsApplication.class.getResource("/styles/app.css").toExternalForm());
+
+            Stage stage = new Stage();
+            stage.setTitle("Inquiry Results");
+            stage.setMinWidth(1040);
+            stage.setMinHeight(660);
+            if (ItsApplication.getPrimaryStage() != null) {
+                stage.initOwner(ItsApplication.getPrimaryStage());
+            }
+            stage.setScene(scene);
+            controller.setWindowStage(stage);
+            controller.applyQuery(payload);
+            stage.show();
+            stage.toFront();
+            inquiryResultsStage = stage;
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Inquiry results window could not be opened.", exception);
+        }
+    }
+
+    private void loadSearchResultsView() {
+        try {
+            FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/search-results-view.fxml"));
+            loader.load();
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Search results view could not be opened.", exception);
         }
     }
 
@@ -281,8 +385,8 @@ public class MainLayoutController {
             inquiryView = loader.load();
             inquiryController = loader.getController();
             inquiryController.setMainLayoutController(this);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to load inquiry view.", exception);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Inquiry view could not be opened.", exception);
         }
     }
 
@@ -292,8 +396,8 @@ public class MainLayoutController {
             createIssueView = loader.load();
             createIssueController = loader.getController();
             createIssueController.setMainLayoutController(this);
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to load create issue view.", exception);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Create Issue view could not be opened.", exception);
         }
     }
 
@@ -302,8 +406,8 @@ public class MainLayoutController {
             FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/analytics-view.fxml"));
             analyticsView = loader.load();
             analyticsController = loader.getController();
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to load analytics view.", exception);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Analytics view could not be opened.", exception);
         }
     }
 
@@ -312,8 +416,9 @@ public class MainLayoutController {
             FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/admin-view.fxml"));
             adminView = loader.load();
             adminController = loader.getController();
-        } catch (IOException exception) {
-            throw new IllegalStateException("Failed to load admin view.", exception);
+            adminController.setMainLayoutController(this);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("View Load Failed", "Admin view could not be opened.", exception);
         }
     }
 

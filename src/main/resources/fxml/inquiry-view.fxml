@@ -3,92 +3,31 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.SplitPane?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Priority?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.its.ui.javafx.controller.InquiryController"
       spacing="18" styleClass="content-container inquiry-shell">
     <padding>
-        <Insets top="20" right="20" bottom="20" left="20"/>
+        <Insets top="16" right="18" bottom="18" left="18"/>
     </padding>
 
     <VBox spacing="6">
         <Label text="Inquiry" styleClass="page-title"/>
-        <Label text="Look up a specific issue by ID or keyword, then inspect its full detail and handoff history." styleClass="landing-copy"/>
+        <Label text="Look up a specific issue by ID or keyword, then open a dedicated Inquiry Results window." styleClass="landing-copy"/>
     </VBox>
 
-    <VBox spacing="14" styleClass="panel-card">
-        <HBox spacing="12" alignment="CENTER_LEFT">
-            <TextField fx:id="issueIdField" promptText="Issue ID" prefWidth="140"/>
-            <TextField fx:id="keywordField" promptText="Title or keyword" HBox.hgrow="ALWAYS"/>
-            <Button mnemonicParsing="false" onAction="#handleInquire" text="Inquire" styleClass="primary-button"/>
-            <Button mnemonicParsing="false" onAction="#showRecentIssues" text="Recent Issues" styleClass="ghost-button"/>
+    <VBox spacing="14" styleClass="panel-card inquiry-toolbar-card" maxWidth="920">
+        <Label text="Inquiry Builder" styleClass="section-title"/>
+        <HBox spacing="12" alignment="CENTER_LEFT" styleClass="inquiry-search-shell">
+            <TextField fx:id="issueIdField" promptText="Issue ID" prefWidth="150" styleClass="inquiry-search-field"/>
+            <TextField fx:id="keywordField" promptText="Title or keyword" HBox.hgrow="ALWAYS" styleClass="inquiry-search-field"/>
+            <Button mnemonicParsing="false" onAction="#handleInquire" text="Open Results" styleClass="primary-button inquiry-toolbar-button"/>
+            <Button mnemonicParsing="false" onAction="#showRecentIssues" text="Recent Issues" styleClass="ghost-button inquiry-toolbar-button"/>
         </HBox>
-        <Label fx:id="inquirySummaryLabel" text="Showing the 10 most recent issues for quick inquiry." styleClass="landing-copy"/>
+        <Label fx:id="inquirySummaryLabel" text="Use an exact ID or keyword, then open a dedicated Inquiry Results window." styleClass="landing-copy"/>
     </VBox>
-
-    <SplitPane dividerPositions="0.42" VBox.vgrow="ALWAYS" styleClass="browser-split">
-        <items>
-            <VBox spacing="10" styleClass="panel-card">
-                <Label text="Inquiry Results" styleClass="section-title"/>
-                <TableView fx:id="inquiryTable" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="idColumn" prefWidth="70" text="ID"/>
-                        <TableColumn fx:id="titleColumn" prefWidth="260" text="Title"/>
-                        <TableColumn fx:id="statusColumn" prefWidth="110" text="Status"/>
-                        <TableColumn fx:id="reporterColumn" prefWidth="110" text="Reporter"/>
-                    </columns>
-                </TableView>
-            </VBox>
-
-            <VBox spacing="14" styleClass="panel-card detail-pane">
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <VBox spacing="6" HBox.hgrow="ALWAYS">
-                        <Label fx:id="detailIssueIdLabel" text="-" styleClass="subtle-label"/>
-                        <Label fx:id="detailTitleLabel" text="No issue selected" styleClass="detail-title"/>
-                    </VBox>
-                    <Label fx:id="detailStatusLabel" text="-" styleClass="badge status-badge"/>
-                    <Label fx:id="detailPriorityLabel" text="-" styleClass="badge priority-badge"/>
-                </HBox>
-
-                <GridPane hgap="12" vgap="10">
-                    <Label text="Reporter" styleClass="field-label"/>
-                    <Label fx:id="detailReporterLabel" text="-" GridPane.columnIndex="1" styleClass="field-value"/>
-                    <Label text="Assignee" GridPane.rowIndex="1" styleClass="field-label"/>
-                    <Label fx:id="detailAssigneeLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="field-value"/>
-                    <Label text="Fixer" GridPane.rowIndex="2" styleClass="field-label"/>
-                    <Label fx:id="detailFixerLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="field-value"/>
-                    <Label text="Project" GridPane.rowIndex="3" styleClass="field-label"/>
-                    <Label fx:id="detailProjectLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="field-value"/>
-                    <Label text="Reported At" GridPane.rowIndex="4" styleClass="field-label"/>
-                    <Label fx:id="detailReportedAtLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="field-value"/>
-                </GridPane>
-
-                <VBox spacing="8" VBox.vgrow="ALWAYS">
-                    <Label text="Description" styleClass="section-title"/>
-                    <TextArea fx:id="detailDescriptionArea" editable="false" wrapText="true" prefRowCount="7" VBox.vgrow="ALWAYS"/>
-                </VBox>
-
-                <VBox spacing="8" VBox.vgrow="ALWAYS">
-                    <Label text="Comment History" styleClass="section-title"/>
-                    <ListView fx:id="commentHistoryListView" prefHeight="180" VBox.vgrow="ALWAYS"/>
-                </VBox>
-
-                <HBox spacing="10" alignment="CENTER_LEFT">
-                    <Button mnemonicParsing="false" onAction="#openCurrentIssueInSearch" text="Open Search" styleClass="ghost-button"/>
-                    <Button mnemonicParsing="false" onAction="#openCurrentIssueInBrowser" text="Open Browser" styleClass="ghost-button"/>
-                </HBox>
-            </VBox>
-        </items>
-    </SplitPane>
 </VBox>

@@ -1,11 +1,15 @@
 package com.example.its.ui.javafx.controller;
 
 import com.example.its.ItsApplication;
+import com.example.its.shared.dto.account.AccountResponse;
+import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.UiRole;
+import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.AuthNavigationState;
 import com.example.its.ui.javafx.session.UserSession;
-import com.example.its.ui.javafx.support.IntegrationPointHelper;
+import com.example.its.ui.javafx.support.UiAlertHelper;
+import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -39,20 +43,18 @@ public class LoginController {
     @FXML
     private void handleLogin() {
         String loginId = loginIdField.getText() == null ? "" : loginIdField.getText().trim();
+        String password = passwordField.getText() == null ? "" : passwordField.getText();
 
         if (loginId.isBlank()) {
-            showErrorFeedback("Preview mode needs a login ID so we can label the current user.");
+            showErrorFeedback("Login ID is required.");
+            return;
+        }
+        if (password.isBlank()) {
+            showErrorFeedback("Password is required.");
             return;
         }
 
-        IntegrationPointHelper.showPending(
-            "Login backend pending",
-            "Connect LoginController.handleLogin() to AccountFacade.authenticate(LoginRequest). "
-                + "For now, this button only opens the JavaFX preview shell as a TESTER role."
-        );
-        UserSession.setCurrentUser(createPreviewUser(loginId, UiRole.TESTER));
-        showNeutralFeedback("");
-        ItsApplication.showMainView();
+        performLogin(loginId, password);
     }
 
     @FXML
@@ -63,39 +65,52 @@ public class LoginController {
 
     @FXML
     private void loginAsAdmin() {
-        openPreviewAs("admin", UiRole.ADMIN);
+        loginWithSeededCredentials("admin", "admin");
     }
 
     @FXML
     private void loginAsPl() {
-        openPreviewAs("pl1", UiRole.PL);
+        loginWithSeededCredentials("pl1", "pl1");
     }
 
     @FXML
     private void loginAsDev() {
-        openPreviewAs("dev1", UiRole.DEV);
+        loginWithSeededCredentials("dev1", "dev1");
     }
 
     @FXML
     private void loginAsTester() {
-        openPreviewAs("tester1", UiRole.TESTER);
+        loginWithSeededCredentials("tester1", "tester1");
     }
 
-    private void openPreviewAs(String loginId, UiRole role) {
+    private void loginWithSeededCredentials(String loginId, String password) {
         loginIdField.setText(loginId);
-        passwordField.clear();
-        IntegrationPointHelper.showPending(
-            "Role preview only",
-            "This quick button is for JavaFX page review. Replace it with real authentication through "
-                + "AccountFacade.authenticate(LoginRequest) when the backend integration starts."
-        );
-        UserSession.setCurrentUser(createPreviewUser(loginId, role));
-        showNeutralFeedback("");
-        ItsApplication.showMainView();
+        passwordField.setText(password);
+        performLogin(loginId, password);
     }
 
-    private AuthenticatedUser createPreviewUser(String loginId, UiRole role) {
-        return new AuthenticatedUser(0L, loginId, "Preview " + role.name(), role);
+    private void performLogin(String loginId, String password) {
+        try {
+            AccountResponse response = backendBridge().login(loginId, password);
+            UserSession.setCurrentUser(UiModelMapper.toAuthenticatedUser(response));
+            initializeProjectContext();
+            showNeutralFeedback("");
+            ItsApplication.showMainView();
+        } catch (Exception exception) {
+            showErrorFeedback(UiAlertHelper.extractMessage(
+                exception,
+                "Login failed. If this account does not exist yet, create it first."
+            ));
+        }
+    }
+
+    private void initializeProjectContext() {
+        ProjectResponse preferredProject = backendBridge().findPreferredProject().orElse(null);
+        if (preferredProject == null) {
+            UserSession.setCurrentProject(null, null);
+            return;
+        }
+        UserSession.setCurrentProject(preferredProject.getProjectId(), preferredProject.getName());
     }
 
     private void showNeutralFeedback(String message) {
@@ -111,5 +126,9 @@ public class LoginController {
     private void showSuccessFeedback(String message) {
         errorLabel.getStyleClass().setAll("feedback-label", "feedback-label-success");
         errorLabel.setText(message);
+    }
+
+    private JavaFxBackendBridge backendBridge() {
+        return JavaFxBackendBridge.getInstance();
     }
 }

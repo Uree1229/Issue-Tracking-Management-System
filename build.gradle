@@ -21,6 +21,9 @@ def appMainClass = project.findProperty('appMainClass') ?: 'com.example.its.ItsA
 
 application {
     mainClass = appMainClass
+    applicationDefaultJvmArgs = [
+        '-Dorg.jboss.logging.provider=slf4j'
+    ]
 }
 
 javafx {
@@ -34,6 +37,7 @@ dependencies {
     implementation 'org.hibernate.orm:hibernate-community-dialects:6.4.4.Final'
 
     runtimeOnly 'org.xerial:sqlite-jdbc:3.45.3.0'
+    runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
 
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -51,6 +55,7 @@ tasks.register('copyDatabase', Copy) {
 
 tasks.named('run') {
     dependsOn(tasks.named('copyDatabase'))
+    jvmArgs += ['-Dorg.jboss.logging.provider=slf4j']
 }
 
 tasks.register('runJavafx') {

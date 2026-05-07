@@ -24,7 +24,7 @@ public class Project {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "project_id")
-    private Long projectId;
+    private Integer projectId;
 
     @Column(nullable = false, length = 150)
     private String name;
@@ -33,7 +33,7 @@ public class Project {
     private String description;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private String createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_account_id", nullable = false)
@@ -51,12 +51,12 @@ public class Project {
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now().toString();
         }
     }
 
     public Long getProjectId() {
-        return projectId;
+        return projectId != null ? projectId.longValue() : null;
     }
 
     public String getName() {
@@ -76,7 +76,7 @@ public class Project {
     }
 
     public LocalDateTime getCreatedAt() {
-        return createdAt;
+        return parseDateTime(createdAt);
     }
 
     public Account getCreatedBy() {
@@ -95,12 +95,15 @@ public class Project {
         return tags;
     }
 
-    // BE: static factory method 컨벤션 만족 위해 추가
     public static Project create(String name, String description, Account createdBy) {
         Project project = new Project();
         project.name = name;
         project.description = description;
         project.createdBy = createdBy;
         return project;
+    }
+
+    private static LocalDateTime parseDateTime(String value) {
+        return value != null ? LocalDateTime.parse(value.replace(' ', 'T')) : null;
     }
 }

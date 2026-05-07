@@ -1,12 +1,17 @@
 package com.example.its.ui.javafx.controller;
 
+import com.example.its.shared.dto.account.AccountCreateRequest;
+import com.example.its.shared.dto.account.AccountResponse;
+import com.example.its.shared.dto.project.ProjectCreateRequest;
+import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.AdminProjectRowModel;
 import com.example.its.ui.javafx.model.AdminUserRowModel;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.UiRole;
-import com.example.its.ui.javafx.service.MockAccountStore;
+import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
-import com.example.its.ui.javafx.support.IntegrationPointHelper;
+import com.example.its.ui.javafx.support.UiAlertHelper;
+import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -23,12 +28,10 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 public class AdminController {
-
     private final ObservableList<AdminUserRowModel> users = FXCollections.observableArrayList();
-    private final ObservableList<AdminProjectRowModel> projects = FXCollections.observableArrayList(
-        new AdminProjectRowModel(1L, "Simple Login", "Lightweight authentication and issue tracking demo project.", "1.0.0", true, "auth", "dev1"),
-        new AdminProjectRowModel(2L, "Project1", "Primary seeded project used in the software engineering term demo.", "1.2.0", true, "workflow", "dev2")
-    );
+    private final ObservableList<AdminProjectRowModel> projects = FXCollections.observableArrayList();
+
+    private MainLayoutController mainLayoutController;
 
     @FXML
     private Label adminPageTitleLabel;
@@ -152,7 +155,6 @@ public class AdminController {
         versionField.setText("1.0.0");
         configureUserTable();
         configureProjectTable();
-        refreshUsersFromStore();
         userTable.setItems(users);
         projectTable.setItems(projects);
         updateDisableReasonState();
@@ -167,11 +169,41 @@ public class AdminController {
         } else {
             permissionNoticeLabel.setText("");
         }
+
+        loadAdminData();
     }
 
     @FXML
     private void handleActiveToggle() {
         updateDisableReasonState();
+    }
+
+    @FXML
+    private void openHome() {
+        if (mainLayoutController != null) {
+            mainLayoutController.navigateHome();
+        }
+    }
+
+    @FXML
+    private void openNewIssue() {
+        if (mainLayoutController != null) {
+            mainLayoutController.showCreateIssue(null);
+        }
+    }
+
+    @FXML
+    private void openBrowse() {
+        if (mainLayoutController != null) {
+            mainLayoutController.showIssues(null);
+        }
+    }
+
+    @FXML
+    private void openSearch() {
+        if (mainLayoutController != null) {
+            mainLayoutController.showSearch(null);
+        }
     }
 
     @FXML
@@ -197,14 +229,30 @@ public class AdminController {
             formFeedbackLabel.setText("If the account starts disabled, add a short reason.");
             return;
         }
+        if (!isActive) {
+            formFeedbackLabel.getStyleClass().add("form-feedback-error");
+            formFeedbackLabel.setText("The current backend contract only supports active account creation.");
+            return;
+        }
 
-        IntegrationPointHelper.showPending(
-            "Account creation backend pending",
-            "Connect AdminController.handleAddUser() to AccountFacade.createAccount(AccountCreateRequest). "
-                + "This page stays as a JavaFX form preview for now."
-        );
-        formFeedbackLabel.getStyleClass().add("form-feedback-success");
-        formFeedbackLabel.setText("Preview only. Connect this form to AccountFacade.createAccount(...) later.");
+        try {
+            AccountCreateRequest request = new AccountCreateRequest();
+            request.setLoginId(loginId);
+            request.setName(realName);
+            request.setEmail(email);
+            request.setPassword(password);
+            request.setRole(UiModelMapper.toBackendRole(role));
+
+            AccountResponse createdAccount = backendBridge().register(request);
+            users.add(UiModelMapper.toAdminUserRowModel(createdAccount));
+            users.sort(java.util.Comparator.comparing(AdminUserRowModel::getRealName, String.CASE_INSENSITIVE_ORDER));
+            clearForm();
+            formFeedbackLabel.getStyleClass().add("form-feedback-success");
+            formFeedbackLabel.setText("Account '" + createdAccount.getLoginId() + "' was created successfully.");
+        } catch (Exception exception) {
+            formFeedbackLabel.getStyleClass().add("form-feedback-error");
+            formFeedbackLabel.setText(UiAlertHelper.extractMessage(exception, "Account creation failed."));
+        }
     }
 
     @FXML
@@ -224,13 +272,60 @@ public class AdminController {
             return;
         }
 
-        IntegrationPointHelper.showPending(
-            "Project creation backend pending",
-            "Connect AdminController.handleAddProject() to ProjectFacade.createProject(ProjectCreateRequest). "
-                + "Default assignee, tag, and version inputs are kept here as UI placeholders."
-        );
-        projectFormFeedbackLabel.getStyleClass().add("form-feedback-success");
-        projectFormFeedbackLabel.setText("Preview only. Connect this form to ProjectFacade.createProject(...) later.");
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        if (currentUser == null) {
+            projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
+            projectFormFeedbackLabel.setText("You need to be signed in as ADMIN before creating a project.");
+            return;
+        }
+
+        try {
+            ProjectCreateRequest request = new ProjectCreateRequest();
+            request.setName(projectName);
+            request.setDescription(description);
+            request.setCreatedByAccountId(currentUser.accountId());
+
+            ProjectResponse createdProject = backendBridge().createProject(request);
+            upsertProjectRow(new AdminProjectRowModel(
+                createdProject.getProjectId(),
+                createdProject.getName(),
+                createdProject.getDescription(),
+                version,
+                openForIssueEntryCheckBox.isSelected(),
+                defaultTag,
+                defaultAssignee.isBlank() ? "-" : defaultAssignee
+            ));
+            try {
+                refreshProjectsFromBackend();
+            } catch (Exception ignored) {
+                projectTable.refresh();
+            }
+            projectTable.refresh();
+            adminTabPane.getSelectionModel().select(1);
+
+            if (UserSession.getCurrentProjectId() == null) {
+                UserSession.setCurrentProject(createdProject.getProjectId(), createdProject.getName());
+                if (mainLayoutController != null) {
+                    mainLayoutController.refreshCurrentContext();
+                }
+            }
+
+            clearProjectForm();
+            projectFormFeedbackLabel.getStyleClass().add("form-feedback-success");
+            projectFormFeedbackLabel.setText(
+                "Project '" + createdProject.getName() + "' was created. Version/tag/default assignee stay UI-only for now."
+            );
+            UiAlertHelper.showInfo(
+                "Project Created",
+                "Project registration completed.",
+                "Project '" + createdProject.getName() + "' was created successfully."
+            );
+        } catch (Exception exception) {
+            String detailedMessage = UiAlertHelper.extractRootCauseMessage(exception, "Project creation failed.");
+            projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
+            projectFormFeedbackLabel.setText(detailedMessage);
+            UiAlertHelper.showError("Project Creation Failed", "Could not create the project.", detailedMessage);
+        }
     }
 
     @FXML
@@ -307,8 +402,60 @@ public class AdminController {
         return value == null ? "" : value.trim();
     }
 
-    private void refreshUsersFromStore() {
-        users.setAll(MockAccountStore.getAdminRows());
+    private void refreshUsersFromBackend() {
+        users.setAll(
+            backendBridge().getActiveAccounts().stream()
+                .map(UiModelMapper::toAdminUserRowModel)
+                .toList()
+        );
+    }
+
+    private void refreshProjectsFromBackend() {
+        projects.setAll(
+            backendBridge().getProjects().stream()
+                .map(UiModelMapper::toAdminProjectRowModel)
+                .toList()
+        );
+    }
+
+    private void loadAdminData() {
+        StringBuilder warning = new StringBuilder();
+
+        try {
+            refreshUsersFromBackend();
+        } catch (Exception exception) {
+            warning.append("User list could not be loaded yet. ")
+                .append(UiAlertHelper.extractMessage(exception, "Backend response could not be read."))
+                .append('\n');
+        }
+
+        try {
+            refreshProjectsFromBackend();
+        } catch (Exception exception) {
+            warning.append("Project list could not be loaded yet. ")
+                .append(UiAlertHelper.extractMessage(exception, "Backend response could not be read."));
+        }
+
+        if (warning.length() > 0) {
+            permissionNoticeLabel.setVisible(true);
+            permissionNoticeLabel.setManaged(true);
+            permissionNoticeLabel.setText(warning.toString().trim());
+            return;
+        }
+
+        if (permissionNoticeLabel.getText() != null && permissionNoticeLabel.getText().contains("Only ADMIN")) {
+            return;
+        }
+
+        permissionNoticeLabel.setVisible(false);
+        permissionNoticeLabel.setManaged(false);
+        permissionNoticeLabel.setText("");
+    }
+
+    private void upsertProjectRow(AdminProjectRowModel row) {
+        projects.removeIf(existing -> java.util.Objects.equals(existing.getProjectId(), row.getProjectId()));
+        projects.add(row);
+        projects.sort(java.util.Comparator.comparing(AdminProjectRowModel::getName, String.CASE_INSENSITIVE_ORDER));
     }
 
     public void selectUserTab() {
@@ -317,5 +464,13 @@ public class AdminController {
 
     public void selectProjectTab() {
         adminTabPane.getSelectionModel().select(1);
+    }
+
+    public void setMainLayoutController(MainLayoutController mainLayoutController) {
+        this.mainLayoutController = mainLayoutController;
+    }
+
+    private JavaFxBackendBridge backendBridge() {
+        return JavaFxBackendBridge.getInstance();
     }
 }

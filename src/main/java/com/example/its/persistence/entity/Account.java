@@ -30,7 +30,7 @@ public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "account_id")
-    private Long accountId;
+    private Integer accountId;
 
     @Column(name = "login_id", nullable = false, length = 100)
     private String loginId;
@@ -49,10 +49,10 @@ public class Account {
     private Role role;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private String createdAt;
 
     @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
+    private Integer isActive = 1;
 
     @OneToMany(mappedBy = "createdBy", fetch = FetchType.LAZY)
     private List<Project> createdProjects = new ArrayList<>();
@@ -78,12 +78,12 @@ public class Account {
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now().toString();
         }
     }
 
     public Long getAccountId() {
-        return accountId;
+        return accountId != null ? accountId.longValue() : null;
     }
 
     public String getLoginId() {
@@ -127,15 +127,15 @@ public class Account {
     }
 
     public LocalDateTime getCreatedAt() {
-        return createdAt;
+        return parseDateTime(createdAt);
     }
 
     public boolean isActive() {
-        return isActive;
+        return isActive != null && isActive == 1;
     }
 
     public void setActive(boolean active) {
-        isActive = active;
+        isActive = active ? 1 : 0;
     }
 
     public List<Project> getCreatedProjects() {
@@ -162,7 +162,6 @@ public class Account {
         return issueHistories;
     }
 
-    // BE: static factory method 컨벤션 만족 위해 추가
     public static Account create(String loginId, String password, String name, String email, Role role) {
         Account account = new Account();
         account.loginId = loginId;
@@ -170,7 +169,11 @@ public class Account {
         account.name = name;
         account.email = email;
         account.role = role;
-        account.isActive = true; // 기본 활성 상태
+        account.isActive = 1;
         return account;
+    }
+
+    private static LocalDateTime parseDateTime(String value) {
+        return value != null ? LocalDateTime.parse(value.replace(' ', 'T')) : null;
     }
 }

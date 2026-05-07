@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.its.ui.javafx.controller.InquiryResultsController"
+      spacing="18" styleClass="content-container inquiry-shell">
+    <padding>
+        <Insets top="16" right="18" bottom="18" left="18"/>
+    </padding>
+
+    <HBox spacing="14" alignment="CENTER_LEFT" styleClass="panel-card">
+        <VBox spacing="6" HBox.hgrow="ALWAYS">
+            <Label text="Inquiry Results" styleClass="page-title"/>
+            <Label fx:id="resultHeaderLabel" text="Inquiry Results" wrapText="true" styleClass="landing-copy"/>
+        </VBox>
+        <Button mnemonicParsing="false" onAction="#backToInquiry" text="Back to Inquiry" styleClass="ghost-button"/>
+    </HBox>
+
+    <Label fx:id="inquirySummaryLabel" text="Showing the most recent issues." styleClass="landing-copy"/>
+
+    <SplitPane dividerPositions="0.44" VBox.vgrow="ALWAYS" styleClass="browser-split">
+        <items>
+            <VBox spacing="12" styleClass="panel-card inquiry-results-card">
+                <Label text="Matched Issues" styleClass="section-title"/>
+                <TableView fx:id="inquiryTable" VBox.vgrow="ALWAYS" fixedCellSize="40" styleClass="inquiry-table">
+                    <columns>
+                        <TableColumn fx:id="idColumn" prefWidth="70" text="ID"/>
+                        <TableColumn fx:id="titleColumn" prefWidth="260" text="Title"/>
+                        <TableColumn fx:id="statusColumn" prefWidth="110" text="Status"/>
+                        <TableColumn fx:id="reporterColumn" prefWidth="110" text="Reporter"/>
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <VBox spacing="18" styleClass="panel-card detail-pane inquiry-detail-pane inquiry-preview-shell">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <VBox spacing="6" HBox.hgrow="ALWAYS">
+                        <Label fx:id="detailIssueIdLabel" text="-" styleClass="subtle-label"/>
+                        <Label fx:id="detailTitleLabel" text="No issue selected" styleClass="detail-title"/>
+                    </VBox>
+                    <Button mnemonicParsing="false" onAction="#openCurrentIssueInSearch" text="Open Search" styleClass="ghost-button inquiry-inline-button"/>
+                    <Button mnemonicParsing="false" onAction="#openCurrentIssueInBrowser" text="Open Browser" styleClass="ghost-button inquiry-inline-button"/>
+                    <Label fx:id="detailStatusLabel" text="-" styleClass="badge status-badge"/>
+                    <Label fx:id="detailPriorityLabel" text="-" styleClass="badge priority-badge"/>
+                </HBox>
+
+                <GridPane hgap="16" vgap="12" styleClass="detail-meta-grid">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="86"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                        <ColumnConstraints minWidth="86"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="Reporter" styleClass="field-label"/>
+                    <Label fx:id="detailReporterLabel" text="-" GridPane.columnIndex="1" styleClass="field-value"/>
+                    <Label text="Project" GridPane.columnIndex="2" styleClass="field-label"/>
+                    <Label fx:id="detailProjectLabel" text="-" GridPane.columnIndex="3" styleClass="field-value"/>
+
+                    <Label text="Assignee" GridPane.rowIndex="1" styleClass="field-label"/>
+                    <Label fx:id="detailAssigneeLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="field-value"/>
+                    <Label text="Reported At" GridPane.columnIndex="2" GridPane.rowIndex="1" styleClass="field-label"/>
+                    <Label fx:id="detailReportedAtLabel" text="-" GridPane.columnIndex="3" GridPane.rowIndex="1" styleClass="field-value"/>
+
+                    <Label text="Fixer" GridPane.rowIndex="2" styleClass="field-label"/>
+                    <Label fx:id="detailFixerLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="field-value"/>
+                </GridPane>
+
+                <VBox spacing="10" styleClass="detail-section-card inquiry-section-card">
+                    <Label text="Description" styleClass="section-title"/>
+                    <TextArea fx:id="detailDescriptionArea" editable="false" wrapText="true" prefRowCount="5" prefHeight="140"/>
+                </VBox>
+
+                <VBox spacing="10" VBox.vgrow="ALWAYS" styleClass="detail-section-card inquiry-section-card">
+                    <Label text="Comment History" styleClass="section-title"/>
+                    <ListView fx:id="commentHistoryListView" prefHeight="180" VBox.vgrow="ALWAYS" styleClass="timeline-list"/>
+                </VBox>
+            </VBox>
+        </items>
+    </SplitPane>
+</VBox>

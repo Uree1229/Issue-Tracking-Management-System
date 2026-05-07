@@ -32,14 +32,14 @@
         </VBox>
 
         <VBox spacing="10">
-            <Label text="Later Backend Contract" styleClass="login-hero-section"/>
-            <Label text="- RegisterRequest DTO" styleClass="login-hero-bullet"/>
-            <Label text="- RegisterResponse DTO" styleClass="login-hero-bullet"/>
-            <Label text="- Duplicate login validation" styleClass="login-hero-bullet"/>
+            <Label text="Current Backend Contract" styleClass="login-hero-section"/>
+            <Label text="- AccountCreateRequest -> AccountResponse" styleClass="login-hero-bullet"/>
+            <Label text="- Duplicate login and email validation are enforced" wrapText="true" styleClass="login-hero-bullet"/>
+            <Label text="- New account becomes available on the login page immediately" wrapText="true" styleClass="login-hero-bullet"/>
         </VBox>
 
         <Region VBox.vgrow="ALWAYS"/>
-        <Label text="For now this page writes into the shared mock account store used by login and admin mock screens." wrapText="true" styleClass="login-hero-note"/>
+        <Label text="This page now calls the shared account facade directly. ADMIN remains restricted to admin-side account creation." wrapText="true" styleClass="login-hero-note"/>
     </VBox>
 
     <VBox styleClass="login-panel-wrap">

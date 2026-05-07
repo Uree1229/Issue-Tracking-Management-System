@@ -1,5 +1,6 @@
 package com.example.its;
 
+import com.example.its.ui.javafx.support.UiDatabaseBootstrap;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -17,6 +18,7 @@ public class ItsApplication extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+        UiDatabaseBootstrap.ensureInitialized();
         primaryStage = stage;
         primaryStage.setTitle("Issue Tracking System");
         primaryStage.setMinWidth(1050);
@@ -38,6 +40,10 @@ public class ItsApplication extends Application {
 
     public static void showMainView() {
         showView("/fxml/main-layout.fxml", MAIN_WIDTH, MAIN_HEIGHT);
+    }
+
+    public static Stage getPrimaryStage() {
+        return primaryStage;
     }
 
     private static void showView(String resourcePath, double width, double height) {

@@ -61,6 +61,30 @@ public class HomeController {
     }
 
     @FXML
+    private void openHome() {
+        if (mainLayoutController != null) {
+            mainLayoutController.navigateHome();
+        }
+    }
+
+    @FXML
+    private void openTopNew() {
+        openIssueRegistration();
+    }
+
+    @FXML
+    private void openBrowse() {
+        if (mainLayoutController != null) {
+            mainLayoutController.showIssues(null);
+        }
+    }
+
+    @FXML
+    private void openTopSearch() {
+        openSearch();
+    }
+
+    @FXML
     private void openIssueRegistration() {
         if (mainLayoutController != null) {
             mainLayoutController.showCreateIssue(null);
@@ -91,7 +115,12 @@ public class HomeController {
     @FXML
     private void quickSearch() {
         if (mainLayoutController != null) {
-            mainLayoutController.showSearchWithKeyword(quickSearchField.getText());
+            String keyword = quickSearchField.getText() == null ? "" : quickSearchField.getText().trim();
+            if (keyword.isBlank()) {
+                mainLayoutController.showSearch(null);
+                return;
+            }
+            mainLayoutController.showSearchWithKeyword(keyword);
         }
     }
 

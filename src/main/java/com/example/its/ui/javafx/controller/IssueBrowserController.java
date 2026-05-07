@@ -1,10 +1,21 @@
 package com.example.its.ui.javafx.controller;
 
-import com.example.its.ui.javafx.model.CommentItemModel;
+import com.example.its.shared.dto.account.AccountResponse;
+import com.example.its.shared.dto.issue.IssueAssignRequest;
+import com.example.its.shared.dto.issue.IssueCloseRequest;
+import com.example.its.shared.dto.issue.IssueDetailResponse;
+import com.example.its.shared.dto.issue.IssueFixRequest;
+import com.example.its.shared.dto.issue.IssueResolveRequest;
+import com.example.its.shared.dto.issue.IssueSearchCondition;
+import com.example.its.shared.dto.issue.IssueSummaryResponse;
+import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.IssueRowModel;
-import com.example.its.ui.javafx.model.MockIssueDataProvider;
 import com.example.its.ui.javafx.model.UiIssueStatus;
 import com.example.its.ui.javafx.model.UiPriority;
+import com.example.its.ui.javafx.service.JavaFxBackendBridge;
+import com.example.its.ui.javafx.session.UserSession;
+import com.example.its.ui.javafx.support.UiAlertHelper;
+import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -13,8 +24,8 @@ import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -22,11 +33,16 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class IssueBrowserController {
@@ -35,8 +51,10 @@ public class IssueBrowserController {
     private static final String UNASSIGNED_OPTION = "Unassigned";
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    private final ObservableList<IssueRowModel> issues = MockIssueDataProvider.createIssues();
+    private final ObservableList<IssueRowModel> issues = FXCollections.observableArrayList();
     private final FilteredList<IssueRowModel> filteredIssues = new FilteredList<>(issues);
+    private final Map<Long, String> projectNameById = new HashMap<>();
+    private final Map<Long, IssueDetailResponse> issueDetailCache = new HashMap<>();
 
     @FXML
     private TextField keywordField;
@@ -114,17 +132,14 @@ public class IssueBrowserController {
     private void initialize() {
         configureTable();
         configureFilters();
-        refreshFilterOptions();
         bindTableData();
         showIssueDetails(null);
 
         issueTable.getSelectionModel()
             .selectedItemProperty()
-            .addListener((observable, oldValue, newValue) -> showIssueDetails(newValue));
+            .addListener((observable, oldValue, newValue) -> loadDetails(newValue));
 
-        if (!issues.isEmpty()) {
-            issueTable.getSelectionModel().selectFirst();
-        }
+        refreshData();
     }
 
     @FXML
@@ -135,18 +150,84 @@ public class IssueBrowserController {
     @FXML
     private void handlePlaceholderAction(ActionEvent event) {
         IssueRowModel selectedIssue = issueTable.getSelectionModel().getSelectedItem();
-        Button source = (Button) event.getSource();
+        if (selectedIssue == null) {
+            UiAlertHelper.showInfo("No Issue Selected", "Choose an issue first.", "Select an issue from the list before running a workflow action.");
+            return;
+        }
 
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Action Placeholder");
-        alert.setHeaderText(source.getText() + " is not connected yet.");
-        alert.setContentText(
-            selectedIssue == null
-                ? "Select an issue first. Then wire this action to the issue facade or workflow service."
-                : "Connect '" + source.getText() + "' for issue #" + selectedIssue.getIssueId()
-                + " to the backend workflow once the facade contracts are ready."
-        );
-        alert.showAndWait();
+        String action = ((Button) event.getSource()).getText();
+        try {
+            IssueDetailResponse updatedIssue = switch (action) {
+                case "Assign" -> handleAssign(selectedIssue);
+                case "Mark Fixed" -> handleMarkFixed(selectedIssue);
+                case "Resolve" -> handleResolve(selectedIssue);
+                case "Close" -> handleClose(selectedIssue);
+                default -> throw new IllegalArgumentException("Unsupported action: " + action);
+            };
+
+            issueDetailCache.put(updatedIssue.getIssueId(), updatedIssue);
+            refreshData();
+            showIssueById(updatedIssue.getIssueId());
+        } catch (Exception exception) {
+            UiAlertHelper.showError("Workflow Action Failed", action + " could not be completed.", exception);
+        }
+    }
+
+    private IssueDetailResponse handleAssign(IssueRowModel selectedIssue) {
+        List<AccountChoice> developerChoices = backendBridge().getDeveloperAccounts().stream()
+            .map(account -> new AccountChoice(account.getAccountId(), account.getName() + " (" + account.getLoginId() + ")"))
+            .toList();
+
+        if (developerChoices.isEmpty()) {
+            throw new IllegalStateException("No active developer accounts are available for assignment.");
+        }
+
+        ChoiceDialog<AccountChoice> dialog = new ChoiceDialog<>(developerChoices.get(0), developerChoices);
+        dialog.setTitle("Assign Issue");
+        dialog.setHeaderText("Select a developer for issue #" + selectedIssue.getIssueId());
+        dialog.setContentText("Assignee:");
+
+        Optional<AccountChoice> choice = dialog.showAndWait();
+        if (choice.isEmpty()) {
+            throw new IllegalStateException("Assignment was cancelled.");
+        }
+
+        IssueAssignRequest request = new IssueAssignRequest();
+        request.setIssueId(selectedIssue.getIssueId());
+        request.setPlAccountId(UserSession.getCurrentUser().accountId());
+        request.setAssigneeAccountId(choice.get().accountId());
+        return backendBridge().assign(request);
+    }
+
+    private IssueDetailResponse handleMarkFixed(IssueRowModel selectedIssue) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Mark Fixed");
+        dialog.setHeaderText("Add a required fix note for issue #" + selectedIssue.getIssueId());
+        dialog.setContentText("Fix note:");
+        Optional<String> note = dialog.showAndWait();
+        if (note.isEmpty() || note.get().trim().isBlank()) {
+            throw new IllegalArgumentException("A fix note is required before marking the issue as fixed.");
+        }
+
+        IssueFixRequest request = new IssueFixRequest();
+        request.setIssueId(selectedIssue.getIssueId());
+        request.setDevAccountId(UserSession.getCurrentUser().accountId());
+        request.setComment(note.get().trim());
+        return backendBridge().fix(request);
+    }
+
+    private IssueDetailResponse handleResolve(IssueRowModel selectedIssue) {
+        IssueResolveRequest request = new IssueResolveRequest();
+        request.setIssueId(selectedIssue.getIssueId());
+        request.setTesterAccountId(UserSession.getCurrentUser().accountId());
+        return backendBridge().resolve(request);
+    }
+
+    private IssueDetailResponse handleClose(IssueRowModel selectedIssue) {
+        IssueCloseRequest request = new IssueCloseRequest();
+        request.setIssueId(selectedIssue.getIssueId());
+        request.setPlAccountId(UserSession.getCurrentUser().accountId());
+        return backendBridge().close(request);
     }
 
     private void configureTable() {
@@ -164,15 +245,17 @@ public class IssueBrowserController {
     }
 
     private void configureFilters() {
-        // Intentionally left without live filtering.
-        // Backend-connected filtering will be added by the integration owner later.
+        keywordField.textProperty().addListener((observable, oldValue, newValue) -> applyFilters());
+        statusFilterCombo.valueProperty().addListener((observable, oldValue, newValue) -> applyFilters());
+        priorityFilterCombo.valueProperty().addListener((observable, oldValue, newValue) -> applyFilters());
+        reporterFilterCombo.valueProperty().addListener((observable, oldValue, newValue) -> applyFilters());
+        assigneeFilterCombo.valueProperty().addListener((observable, oldValue, newValue) -> applyFilters());
     }
 
     private void bindTableData() {
         SortedList<IssueRowModel> sortedIssues = new SortedList<>(filteredIssues);
         sortedIssues.comparatorProperty().bind(issueTable.comparatorProperty());
         issueTable.setItems(sortedIssues);
-        applyFilters();
     }
 
     public void applyKeywordSearch(String keyword) {
@@ -208,18 +291,31 @@ public class IssueBrowserController {
     }
 
     public void refreshData() {
-        String selectedStatus = statusFilterCombo.getValue();
-        String selectedPriority = priorityFilterCombo.getValue();
-        String selectedReporter = reporterFilterCombo.getValue();
-        String selectedAssignee = assigneeFilterCombo.getValue();
+        try {
+            refreshProjectNames();
+            issueDetailCache.clear();
 
-        refreshFilterOptions();
+            IssueSearchCondition condition = new IssueSearchCondition();
+            condition.setProjectId(UserSession.getCurrentProjectId());
+            List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
+            issues.setAll(
+                summaries.stream()
+                    .map(summary -> UiModelMapper.toIssueRowModel(summary, projectNameById))
+                    .toList()
+            );
+            refreshFilterOptions();
+            applyFilters();
 
-        restoreSelection(statusFilterCombo, selectedStatus);
-        restoreSelection(priorityFilterCombo, selectedPriority);
-        restoreSelection(reporterFilterCombo, selectedReporter);
-        restoreSelection(assigneeFilterCombo, selectedAssignee);
-        applyFilters();
+            if (!filteredIssues.isEmpty()) {
+                issueTable.getSelectionModel().selectFirst();
+            } else {
+                showIssueDetails(null);
+            }
+        } catch (Exception exception) {
+            issues.clear();
+            showIssueDetails(null);
+            UiAlertHelper.showError("Issue Browser Failed", "Could not load the issue list.", exception);
+        }
     }
 
     public void showIssueById(Long issueId) {
@@ -228,18 +324,85 @@ public class IssueBrowserController {
         }
 
         refreshData();
-        resetFiltersInternal();
         issues.stream()
             .filter(issue -> issue.getIssueId().equals(issueId))
             .findFirst()
-            .ifPresent(issue -> {
+            .ifPresentOrElse(issue -> {
                 issueTable.getSelectionModel().select(issue);
                 issueTable.scrollTo(issue);
-            });
+            }, () -> loadIssueAcrossProjects(issueId));
+    }
+
+    private void loadIssueAcrossProjects(Long issueId) {
+        try {
+            IssueSearchCondition condition = new IssueSearchCondition();
+            List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
+            issues.setAll(
+                summaries.stream()
+                    .map(summary -> UiModelMapper.toIssueRowModel(summary, projectNameById))
+                    .toList()
+            );
+            refreshFilterOptions();
+            applyFilters();
+            issues.stream()
+                .filter(issue -> issue.getIssueId().equals(issueId))
+                .findFirst()
+                .ifPresent(issue -> {
+                    issueTable.getSelectionModel().select(issue);
+                    issueTable.scrollTo(issue);
+                });
+        } catch (Exception exception) {
+            UiAlertHelper.showError("Issue Browser Failed", "Could not load issues across projects.", exception);
+        }
     }
 
     private void applyFilters() {
-        filteredIssues.setPredicate(issue -> true);
+        String keyword = keywordField.getText() == null ? "" : keywordField.getText().trim().toLowerCase(Locale.ROOT);
+        String selectedStatus = statusFilterCombo.getValue();
+        String selectedPriority = priorityFilterCombo.getValue();
+        String selectedReporter = reporterFilterCombo.getValue();
+        String selectedAssignee = assigneeFilterCombo.getValue();
+
+        filteredIssues.setPredicate(issue -> matchesFilters(issue, keyword, selectedStatus, selectedPriority, selectedReporter, selectedAssignee));
+
+        if (filteredIssues.isEmpty()) {
+            showIssueDetails(null);
+        } else if (issueTable.getSelectionModel().getSelectedItem() == null || !filteredIssues.contains(issueTable.getSelectionModel().getSelectedItem())) {
+            issueTable.getSelectionModel().selectFirst();
+        }
+    }
+
+    private boolean matchesFilters(IssueRowModel issue, String keyword, String selectedStatus, String selectedPriority, String selectedReporter, String selectedAssignee) {
+        if (selectedStatus != null && !ALL_OPTION.equals(selectedStatus) && !issue.getStatusDisplayName().equalsIgnoreCase(selectedStatus)) {
+            return false;
+        }
+        if (selectedPriority != null && !ALL_OPTION.equals(selectedPriority) && !issue.getPriorityDisplayName().equalsIgnoreCase(selectedPriority)) {
+            return false;
+        }
+        if (selectedReporter != null && !ALL_OPTION.equals(selectedReporter) && !issue.getReporterName().equalsIgnoreCase(selectedReporter)) {
+            return false;
+        }
+        if (selectedAssignee != null && !ALL_OPTION.equals(selectedAssignee) && !issue.getAssigneeDisplayName().equalsIgnoreCase(selectedAssignee)) {
+            return false;
+        }
+        if (keyword.isBlank()) {
+            return true;
+        }
+
+        if (issue.getTitle().toLowerCase(Locale.ROOT).contains(keyword)
+            || issue.getReporterName().toLowerCase(Locale.ROOT).contains(keyword)
+            || issue.getAssigneeDisplayName().toLowerCase(Locale.ROOT).contains(keyword)
+            || issue.getProjectName().toLowerCase(Locale.ROOT).contains(keyword)) {
+            return true;
+        }
+
+        try {
+            IssueDetailResponse detail = issueDetailCache.computeIfAbsent(issue.getIssueId(), id -> backendBridge().getIssue(id));
+            String description = detail.getDescription() == null ? "" : detail.getDescription().toLowerCase(Locale.ROOT);
+            return description.contains(keyword);
+        } catch (Exception exception) {
+            return false;
+        }
     }
 
     private void resetFiltersInternal() {
@@ -315,15 +478,29 @@ public class IssueBrowserController {
         }
     }
 
-    private void restoreSelection(ComboBox<String> comboBox, String previousSelection) {
-        if (previousSelection == null || !comboBox.getItems().contains(previousSelection)) {
-            comboBox.setValue(ALL_OPTION);
-            return;
+    private void refreshProjectNames() {
+        projectNameById.clear();
+        for (ProjectResponse project : backendBridge().getProjects()) {
+            projectNameById.put(project.getProjectId(), project.getName());
         }
-        comboBox.setValue(previousSelection);
     }
 
-    private void showIssueDetails(IssueRowModel issue) {
+    private void loadDetails(IssueRowModel issue) {
+        if (issue == null) {
+            showIssueDetails(null);
+            return;
+        }
+
+        try {
+            IssueDetailResponse detail = issueDetailCache.computeIfAbsent(issue.getIssueId(), id -> backendBridge().getIssue(id));
+            showIssueDetails(detail);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("Issue Detail Failed", "Could not load the selected issue.", exception);
+            showIssueDetails(null);
+        }
+    }
+
+    private void showIssueDetails(IssueDetailResponse issue) {
         if (issue == null) {
             issueIdLabel.setText("-");
             issueTitleLabel.setText("Select an issue");
@@ -341,28 +518,37 @@ public class IssueBrowserController {
             return;
         }
 
+        UiIssueStatus uiStatus = UiModelMapper.toUiIssueStatus(issue.getStatus());
+        UiPriority uiPriority = UiModelMapper.toUiPriority(issue.getPriority());
+
         issueIdLabel.setText("#" + issue.getIssueId());
         issueTitleLabel.setText(issue.getTitle());
-        statusBadgeLabel.setText(issue.getStatusDisplayName());
-        priorityBadgeLabel.setText(issue.getPriorityDisplayName());
+        statusBadgeLabel.setText(uiStatus.displayName());
+        priorityBadgeLabel.setText(uiPriority.displayName());
         reporterValueLabel.setText(issue.getReporterName());
-        assigneeValueLabel.setText(issue.getAssigneeDisplayName());
-        fixerValueLabel.setText(issue.getFixerDisplayName());
+        assigneeValueLabel.setText(issue.getAssigneeName() == null || issue.getAssigneeName().isBlank() ? UNASSIGNED_OPTION : issue.getAssigneeName());
+        fixerValueLabel.setText(issue.getFixerName() == null || issue.getFixerName().isBlank() ? "-" : issue.getFixerName());
         projectValueLabel.setText(issue.getProjectName());
         reportedAtValueLabel.setText(formatDateTime(issue.getReportedAt()));
         descriptionArea.setText(issue.getDescription());
-        commentListView.setItems(FXCollections.observableArrayList(
-            issue.getComments().stream()
-                .map(CommentItemModel::toTimelineText)
-                .collect(Collectors.toList())
-        ));
+        commentListView.setItems(FXCollections.observableArrayList(UiModelMapper.toActivityTimeline(issue)));
 
-        statusBadgeLabel.getStyleClass().setAll("label", "badge", "status-badge", "status-" + issue.getStatus().name().toLowerCase(Locale.ROOT));
-        priorityBadgeLabel.getStyleClass().setAll("label", "badge", "priority-badge", "priority-" + issue.getPriority().name().toLowerCase(Locale.ROOT));
+        statusBadgeLabel.getStyleClass().setAll("label", "badge", "status-badge", "status-" + uiStatus.name().toLowerCase(Locale.ROOT));
+        priorityBadgeLabel.getStyleClass().setAll("label", "badge", "priority-badge", "priority-" + uiPriority.name().toLowerCase(Locale.ROOT));
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
-        return dateTime.format(DATE_TIME_FORMATTER);
+        return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMATTER);
     }
 
+    private JavaFxBackendBridge backendBridge() {
+        return JavaFxBackendBridge.getInstance();
+    }
+
+    private record AccountChoice(Long accountId, String label) {
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
 }
