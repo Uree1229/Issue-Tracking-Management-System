@@ -1,6 +1,5 @@
 package com.example.its.shared.dto.issue;
 
-import com.example.its.persistence.entity.Issue;
 import com.example.its.persistence.entity.IssueStatus;
 import com.example.its.persistence.entity.Priority;
 
@@ -55,29 +54,6 @@ public class IssueDetailResponse {
         this.tagNames = tagNames;
         this.comments = comments;
         this.histories = histories;
-    }
-
-    public static IssueDetailResponse from(Issue issue) {
-        return new IssueDetailResponse(
-            issue.getIssueId(),
-            issue.getTitle(),
-            issue.getDescription(),
-            issue.getStatus(),
-            issue.getPriority(),
-            issue.getReporter() != null ? issue.getReporter().getAccountId() : null,
-            issue.getReporter() != null ? issue.getReporter().getName() : null,
-            issue.getAssignee() != null ? issue.getAssignee().getAccountId() : null,
-            issue.getAssignee() != null ? issue.getAssignee().getName() : null,
-            issue.getFixer() != null ? issue.getFixer().getAccountId() : null,
-            issue.getFixer() != null ? issue.getFixer().getName() : null,
-            issue.getProject() != null ? issue.getProject().getProjectId() : null,
-            issue.getProject() != null ? issue.getProject().getName() : null,
-            issue.getReportedAt(),
-            issue.getLastModifiedAt(),
-            issue.getTags().stream().map(tag -> tag.getName()).toList(),
-            issue.getComments().stream().map(CommentResponse::from).toList(),
-            issue.getIssueHistories().stream().map(IssueHistoryResponse::from).toList()
-        );
     }
 
     public Long getIssueId() {

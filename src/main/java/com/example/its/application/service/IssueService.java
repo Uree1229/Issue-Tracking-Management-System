@@ -1,16 +1,23 @@
 package com.example.its.application.service;
 
+import com.example.its.application.mapper.IssueMapper;
 import com.example.its.persistence.entity.*;
 import com.example.its.persistence.repository.*;
 import com.example.its.persistence.transaction.TransactionManager;
 import com.example.its.shared.dto.issue.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class IssueService {
 
+    private final IssueMapper issueMapper;
+
     public IssueService() {
+        this(new IssueMapper());
+    }
+
+    public IssueService(IssueMapper issueMapper) {
+        this.issueMapper = issueMapper;
     }
 
     // 1. 이슈 생성 (Register)
@@ -47,7 +54,7 @@ public class IssueService {
             recordHistory(reporter, null, issue);
 
             Issue savedIssue = issueRepository.save(issue);
-            return IssueDetailResponse.from(savedIssue);
+            return issueMapper.toDetailResponse(savedIssue);
         });
     }
 
@@ -82,7 +89,7 @@ public class IssueService {
 
             // 3. 이력 기록 (oldState vs 현재 issue)
             recordHistory(pl, oldState, issue);
-            return IssueDetailResponse.from(issueRepository.save(issue));
+            return issueMapper.toDetailResponse(issueRepository.save(issue));
         });
     }
 
@@ -113,7 +120,7 @@ public class IssueService {
             addCommentToIssue(issue, dev, request.getComment());
 
             recordHistory(dev, oldState, issue);
-            return IssueDetailResponse.from(issueRepository.save(issue));
+            return issueMapper.toDetailResponse(issueRepository.save(issue));
         });
     }
 
@@ -139,7 +146,7 @@ public class IssueService {
             issue.setStatus(IssueStatus.RESOLVED);
 
             recordHistory(tester, oldState, issue);
-            return IssueDetailResponse.from(issueRepository.save(issue));
+            return issueMapper.toDetailResponse(issueRepository.save(issue));
         });
     }
 
@@ -169,7 +176,7 @@ public class IssueService {
             addCommentToIssue(issue, tester, request.getReason());
 
             recordHistory(tester, oldState, issue);
-            return IssueDetailResponse.from(issueRepository.save(issue));
+            return issueMapper.toDetailResponse(issueRepository.save(issue));
         });
     }
 
@@ -195,7 +202,7 @@ public class IssueService {
             issue.setStatus(IssueStatus.CLOSED);
 
             recordHistory(pl, oldState, issue);
-            return IssueDetailResponse.from(issueRepository.save(issue));
+            return issueMapper.toDetailResponse(issueRepository.save(issue));
         });
     }
 
@@ -224,7 +231,7 @@ public class IssueService {
             }
 
             recordHistory(account, oldState, issue);
-            return IssueDetailResponse.from(issueRepository.save(issue));
+            return issueMapper.toDetailResponse(issueRepository.save(issue));
         });
     }
 
@@ -232,16 +239,14 @@ public class IssueService {
     public IssueDetailResponse getIssueDetail(Long issueId) {
         return TransactionManager.execute(entityManager -> {
             IssueRepository issueRepository = new IssueRepository(entityManager);
-            return IssueDetailResponse.from(getIssueOrThrow(issueRepository, issueId));
+            return issueMapper.toDetailResponse(getIssueOrThrow(issueRepository, issueId));
         });
     }
 
     public List<IssueSummaryResponse> getAllIssuesByProject(Long projectId) {
         return TransactionManager.execute(entityManager -> {
             IssueRepository issueRepository = new IssueRepository(entityManager);
-            return issueRepository.findByProjectId(projectId).stream()
-                    .map(IssueSummaryResponse::from)
-                    .collect(Collectors.toList());
+            return issueMapper.toSummaryResponseList(issueRepository.findByProjectId(projectId));
         });
     }
 

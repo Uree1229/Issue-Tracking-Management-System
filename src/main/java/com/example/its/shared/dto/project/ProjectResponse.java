@@ -1,7 +1,5 @@
 package com.example.its.shared.dto.project;
 
-import com.example.its.persistence.entity.Project;
-
 import java.time.LocalDateTime;
 
 public class ProjectResponse {
@@ -24,17 +22,6 @@ public class ProjectResponse {
         this.createdAt = createdAt;
         this.createdByAccountId = createdByAccountId;
         this.createdByLoginId = createdByLoginId;
-    }
-
-    public static ProjectResponse from(Project project) {
-        return new ProjectResponse(
-            project.getProjectId(),
-            project.getName(),
-            project.getDescription(),
-            project.getCreatedAt(),
-            project.getCreatedBy() != null ? project.getCreatedBy().getAccountId() : null,
-            project.getCreatedBy() != null ? project.getCreatedBy().getLoginId() : null
-        );
     }
 
     public Long getProjectId() {

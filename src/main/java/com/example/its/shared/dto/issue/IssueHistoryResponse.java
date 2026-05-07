@@ -1,7 +1,5 @@
 package com.example.its.shared.dto.issue;
 
-import com.example.its.persistence.entity.IssueHistory;
-
 import java.time.LocalDateTime;
 
 public class IssueHistoryResponse {
@@ -25,17 +23,6 @@ public class IssueHistoryResponse {
         this.changedByLoginId = changedByLoginId;
         this.changedAt = changedAt;
         this.delta = delta;
-    }
-
-    public static IssueHistoryResponse from(IssueHistory history) {
-        return new IssueHistoryResponse(
-            history.getHistoryId(),
-            history.getIssue() != null ? history.getIssue().getIssueId() : null,
-            history.getChangedBy() != null ? history.getChangedBy().getAccountId() : null,
-            history.getChangedBy() != null ? history.getChangedBy().getLoginId() : null,
-            history.getChangedAt(),
-            history.getIssueDelta() != null ? IssueDeltaResponse.from(history.getIssueDelta()) : null
-        );
     }
 
     public Long getHistoryId() {
