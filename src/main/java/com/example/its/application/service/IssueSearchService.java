@@ -1,5 +1,6 @@
 package com.example.its.application.service;
 
+import com.example.its.application.mapper.IssueMapper;
 import com.example.its.persistence.entity.Issue;
 import com.example.its.persistence.query.IssueQueryRepository;
 import com.example.its.persistence.transaction.TransactionManager;
@@ -7,11 +8,17 @@ import com.example.its.shared.dto.issue.IssueSearchCondition;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class IssueSearchService {
 
+    private final IssueMapper issueMapper;
+
     public IssueSearchService() {
+        this(new IssueMapper());
+    }
+
+    public IssueSearchService(IssueMapper issueMapper) {
+        this.issueMapper = issueMapper;
     }
 
     // 1. 복합 조건 이슈 검색
@@ -27,9 +34,7 @@ public class IssueSearchService {
             List<Issue> searchResults = issueQueryRepository.search(condition);
 
             // FE에서 리스트를 그리기 편하도록 SummaryResponse DTO로 변환하여 리턴
-            return searchResults.stream()
-                    .map(IssueSummaryResponse::from)
-                    .collect(Collectors.toList());
+            return issueMapper.toSummaryResponseList(searchResults);
         });
     }
 }

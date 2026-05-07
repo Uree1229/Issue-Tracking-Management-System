@@ -1,6 +1,5 @@
 package com.example.its.shared.dto.issue;
 
-import com.example.its.persistence.entity.IssueDelta;
 import com.example.its.persistence.entity.IssueStatus;
 import com.example.its.persistence.entity.Priority;
 
@@ -31,20 +30,6 @@ public class IssueDeltaResponse {
         this.newPriority = newPriority;
         this.oldStatus = oldStatus;
         this.newStatus = newStatus;
-    }
-
-    public static IssueDeltaResponse from(IssueDelta delta) {
-        return new IssueDeltaResponse(
-            delta.getDeltaId(),
-            delta.getOldTitle(),
-            delta.getNewTitle(),
-            delta.getOldContent(),
-            delta.getNewContent(),
-            delta.getOldPriority(),
-            delta.getNewPriority(),
-            delta.getOldStatus(),
-            delta.getNewStatus()
-        );
     }
 
     public Long getDeltaId() {

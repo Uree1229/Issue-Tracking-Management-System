@@ -1,7 +1,5 @@
 package com.example.its.shared.dto.issue;
 
-import com.example.its.persistence.entity.Comment;
-
 import java.time.LocalDateTime;
 
 public class CommentResponse {
@@ -24,17 +22,6 @@ public class CommentResponse {
         this.authorName = authorName;
         this.content = content;
         this.createdAt = createdAt;
-    }
-
-    public static CommentResponse from(Comment comment) {
-        return new CommentResponse(
-            comment.getCommentId(),
-            comment.getIssue() != null ? comment.getIssue().getIssueId() : null,
-            comment.getAuthor() != null ? comment.getAuthor().getAccountId() : null,
-            comment.getAuthor() != null ? comment.getAuthor().getName() : null,
-            comment.getContent(),
-            comment.getCreatedAt()
-        );
     }
 
     public Long getCommentId() {

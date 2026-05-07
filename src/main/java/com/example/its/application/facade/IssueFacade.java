@@ -1,5 +1,6 @@
 package com.example.its.application.facade;
 
+import com.example.its.application.mapper.IssueMapper;
 import com.example.its.application.service.*;
 import com.example.its.shared.dto.issue.*;
 
@@ -14,8 +15,9 @@ public class IssueFacade {
     private final AssigneeRecommendationService recommendationService;
 
     public IssueFacade() {
-        this.issueService = new IssueService();
-        this.issueSearchService = new IssueSearchService();
+        IssueMapper issueMapper = new IssueMapper();
+        this.issueService = new IssueService(issueMapper);
+        this.issueSearchService = new IssueSearchService(issueMapper);
         this.issueStatisticsService = new IssueStatisticsService();
         this.recommendationService = new AssigneeRecommendationService();
     }
