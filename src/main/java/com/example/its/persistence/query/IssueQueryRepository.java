@@ -12,10 +12,6 @@ import java.util.Map;
 
 public class IssueQueryRepository extends JpaRepositorySupport<Issue> {
 
-    public IssueQueryRepository() {
-        super(Issue.class);
-    }
-
     public IssueQueryRepository(EntityManager entityManager) {
         super(Issue.class, entityManager);
     }

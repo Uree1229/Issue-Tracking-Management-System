@@ -101,12 +101,15 @@ FE는 `persistence/entity` 와 `persistence/repository`를 사용하지 않는 �
 - `persistence/entity/*`: 도메인 영속 객체
 - `persistence/repository/*`: JPA 기반 DB 접근
 
-현재 Repository는 `EntityManager` 기반 클래스로 구현되어 있어서, BE에서는 `try-with-resources`로 열고 닫는 방식으로 사용할 수 있습니다.
+현재 Repository는 `TransactionManager`가 제공하는 `EntityManager`로 생성해서 사용합니다.
+트랜잭션 시작, 커밋, 롤백, `EntityManager` 종료는 `TransactionManager`가 담당합니다.
 
 ```java
-try (IssueRepository issueRepository = new IssueRepository()) {
+TransactionManager.execute(entityManager -> {
+    IssueRepository issueRepository = new IssueRepository(entityManager);
     var issues = issueRepository.findByProjectId(projectId);
-}
+    return issues;
+});
 ```
 
 ### Repository API

@@ -7,10 +7,6 @@ import java.util.List;
 
 public class IssueHistoryRepository extends JpaRepositorySupport<IssueHistory> {
 
-    public IssueHistoryRepository() {
-        super(IssueHistory.class);
-    }
-
     public IssueHistoryRepository(EntityManager entityManager) {
         super(IssueHistory.class, entityManager);
     }

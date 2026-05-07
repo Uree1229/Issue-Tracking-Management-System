@@ -7,10 +7,6 @@ import java.util.Optional;
 
 public class IssueDeltaRepository extends JpaRepositorySupport<IssueDelta> {
 
-    public IssueDeltaRepository() {
-        super(IssueDelta.class);
-    }
-
     public IssueDeltaRepository(EntityManager entityManager) {
         super(IssueDelta.class, entityManager);
     }
