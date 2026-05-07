@@ -1,8 +1,6 @@
 package com.example.its.application.facade;
 
 import com.example.its.application.service.*;
-import com.example.its.persistence.repository.*;
-import com.example.its.persistence.query.*; // 쿼리 리포지토리 import 추가
 import com.example.its.shared.dto.issue.*;
 
 import java.util.List;
@@ -16,25 +14,10 @@ public class IssueFacade {
     private final AssigneeRecommendationService recommendationService;
 
     public IssueFacade() {
-        // 1. 필요한 Repository 및 QueryRepository 부품들 일괄 생성
-        IssueRepository issueRepository = new IssueRepository();
-        AccountRepository accountRepository = new AccountRepository();
-        ProjectRepository projectRepository = new ProjectRepository();
-        TagRepository tagRepository = new TagRepository();
-        
-        // 새로 추가된 전용 쿼리 리포지토리들 생성
-        IssueQueryRepository issueQueryRepository = new IssueQueryRepository();
-        StatisticsQueryRepository statisticsQueryRepository = new StatisticsQueryRepository();
-
-        // 2. Service 조립
-        this.issueService = new IssueService(issueRepository, accountRepository, projectRepository, tagRepository);
-        
-        // 에러가 났던 3개의 서비스에 알맞은 쿼리 객체 주입
-        this.issueSearchService = new IssueSearchService(issueQueryRepository);
-        this.issueStatisticsService = new IssueStatisticsService(statisticsQueryRepository);
-        
-        // Fix: 파라미터 순서 변경: Account -> Issue 순서
-        this.recommendationService = new AssigneeRecommendationService(accountRepository, issueRepository);
+        this.issueService = new IssueService();
+        this.issueSearchService = new IssueSearchService();
+        this.issueStatisticsService = new IssueStatisticsService();
+        this.recommendationService = new AssigneeRecommendationService();
     }
 
     public IssueDetailResponse getIssue(Long id) {
@@ -81,4 +64,3 @@ public class IssueFacade {
         return issueService.reOpenIssue(request);
     }
 }
-
