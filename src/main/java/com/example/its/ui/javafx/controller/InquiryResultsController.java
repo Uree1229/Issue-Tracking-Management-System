@@ -1,5 +1,6 @@
 package com.example.its.ui.javafx.controller;
 
+import com.example.its.shared.dto.issue.CommentCreateRequest;
 import com.example.its.shared.dto.issue.IssueDetailResponse;
 import com.example.its.shared.dto.issue.IssueSearchCondition;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
@@ -7,6 +8,7 @@ import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.InquiryQueryPayload;
 import com.example.its.ui.javafx.model.IssueRowModel;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
+import com.example.its.ui.javafx.session.UserSession;
 import com.example.its.ui.javafx.support.UiAlertHelper;
 import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -93,12 +95,21 @@ public class InquiryResultsController {
     private ListView<String> commentHistoryListView;
 
     @FXML
+    private TextArea commentInputArea;
+
+    @FXML
+    private Label commentFeedbackLabel;
+
+    @FXML
     private void initialize() {
         configureTable();
         inquiryTable.setItems(inquiryResults);
         inquiryTable.getSelectionModel()
             .selectedItemProperty()
             .addListener((observable, oldValue, newValue) -> loadDetails(newValue));
+        commentHistoryListView.setPlaceholder(new Label("No activity has been recorded for this issue yet."));
+        commentFeedbackLabel.getStyleClass().setAll("form-feedback");
+        commentFeedbackLabel.setText("");
         showDetails(null);
     }
 
@@ -181,6 +192,49 @@ public class InquiryResultsController {
         }
     }
 
+    @FXML
+    private void handleAddComment() {
+        IssueRowModel selectedIssue = inquiryTable.getSelectionModel().getSelectedItem();
+        commentFeedbackLabel.getStyleClass().setAll("form-feedback");
+
+        if (selectedIssue == null) {
+            commentFeedbackLabel.getStyleClass().add("form-feedback-error");
+            commentFeedbackLabel.setText("Choose an issue before adding a comment.");
+            return;
+        }
+
+        if (UserSession.getCurrentUser() == null) {
+            commentFeedbackLabel.getStyleClass().add("form-feedback-error");
+            commentFeedbackLabel.setText("You need to be signed in to add a comment.");
+            return;
+        }
+
+        String content = commentInputArea.getText() == null ? "" : commentInputArea.getText().trim();
+        if (content.isBlank()) {
+            commentFeedbackLabel.getStyleClass().add("form-feedback-error");
+            commentFeedbackLabel.setText("Comment content cannot be empty.");
+            return;
+        }
+
+        try {
+            CommentCreateRequest request = new CommentCreateRequest(
+                selectedIssue.getIssueId(),
+                UserSession.getCurrentUser().accountId(),
+                content
+            );
+            IssueDetailResponse updatedIssue = backendBridge().addComment(request);
+            issueDetailCache.put(updatedIssue.getIssueId(), updatedIssue);
+            refreshRowFromDetail(updatedIssue);
+            showDetails(updatedIssue);
+            commentInputArea.clear();
+            commentFeedbackLabel.getStyleClass().add("form-feedback-success");
+            commentFeedbackLabel.setText("Comment added successfully.");
+        } catch (Exception exception) {
+            commentFeedbackLabel.getStyleClass().add("form-feedback-error");
+            commentFeedbackLabel.setText(UiAlertHelper.extractMessage(exception, "Comment could not be added."));
+        }
+    }
+
     private void loadRecentIssues() {
         IssueSearchCondition condition = new IssueSearchCondition();
         List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
@@ -235,6 +289,9 @@ public class InquiryResultsController {
             detailReportedAtLabel.setText("-");
             detailDescriptionArea.clear();
             commentHistoryListView.setItems(FXCollections.observableArrayList("No inquiry selected."));
+            commentInputArea.clear();
+            commentFeedbackLabel.getStyleClass().setAll("form-feedback");
+            commentFeedbackLabel.setText("");
             return;
         }
 
@@ -249,6 +306,21 @@ public class InquiryResultsController {
         detailReportedAtLabel.setText(formatDateTime(issue.getReportedAt()));
         detailDescriptionArea.setText(issue.getDescription());
         commentHistoryListView.setItems(FXCollections.observableArrayList(UiModelMapper.toActivityTimeline(issue)));
+        commentFeedbackLabel.getStyleClass().setAll("form-feedback");
+        commentFeedbackLabel.setText("");
+    }
+
+    private void refreshRowFromDetail(IssueDetailResponse detail) {
+        if (detail == null) {
+            return;
+        }
+
+        for (int index = 0; index < inquiryResults.size(); index++) {
+            if (detail.getIssueId().equals(inquiryResults.get(index).getIssueId())) {
+                inquiryResults.set(index, UiModelMapper.toIssueRowModel(detail));
+                break;
+            }
+        }
     }
 
     private void refreshProjectNames() {

@@ -89,6 +89,15 @@
                     <Label text="Comment History" styleClass="section-title"/>
                     <ListView fx:id="commentHistoryListView" prefHeight="180" VBox.vgrow="ALWAYS" styleClass="timeline-list"/>
                 </VBox>
+
+                <VBox spacing="10" styleClass="detail-section-card inquiry-section-card">
+                    <Label text="Add Comment" styleClass="section-title"/>
+                    <TextArea fx:id="commentInputArea" wrapText="true" prefRowCount="3" promptText="Write a follow-up, verification result, or coordination note..."/>
+                    <HBox spacing="10" alignment="CENTER_RIGHT">
+                        <Label fx:id="commentFeedbackLabel" text="" styleClass="form-feedback" HBox.hgrow="ALWAYS"/>
+                        <Button mnemonicParsing="false" onAction="#handleAddComment" text="Save Comment" styleClass="primary-button compact-button"/>
+                    </HBox>
+                </VBox>
             </VBox>
         </items>
     </SplitPane>

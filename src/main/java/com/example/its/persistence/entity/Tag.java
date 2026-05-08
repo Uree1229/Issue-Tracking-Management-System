@@ -76,4 +76,12 @@ public class Tag {
     public Set<Issue> getIssues() {
         return issues;
     }
+
+    public static Tag create(String name, String description, Project project) {
+        Tag tag = new Tag();
+        tag.name = name;
+        tag.description = description;
+        tag.project = project;
+        return tag;
+    }
 }

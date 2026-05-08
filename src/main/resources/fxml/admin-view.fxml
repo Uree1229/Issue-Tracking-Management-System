@@ -54,7 +54,7 @@
             </padding>
 
             <VBox spacing="6">
-                <Label fx:id="adminPageTitleLabel" text="Bugzilla-inspired Add User" styleClass="page-title"/>
+                <Label fx:id="adminPageTitleLabel" text="Add User" styleClass="page-title"/>
                 <Label fx:id="adminSubtitleLabel" text="Create ITS accounts for admin, PL, dev, and tester roles." styleClass="landing-copy"/>
                 <Label fx:id="permissionNoticeLabel" text="" wrapText="true" styleClass="admin-warning-label"/>
             </VBox>
@@ -169,7 +169,7 @@
                                         <TextField fx:id="defaultCcField" promptText="Optional comma-separated watcher list" GridPane.columnIndex="1" GridPane.rowIndex="8" styleClass="admin-input"/>
                                     </GridPane>
 
-                                    <Label text="Bugzilla's product creation flow is adapted here into project creation. We keep only the fields that fit our term project." wrapText="true" styleClass="landing-copy"/>
+                                    <Label text="Create and manage project records needed for the ITS workflow. Only the fields used in this term project are shown here." wrapText="true" styleClass="landing-copy"/>
                                     <Label fx:id="projectFormFeedbackLabel" text="" wrapText="true" styleClass="form-feedback"/>
 
                                     <HBox spacing="10" alignment="CENTER_LEFT">
@@ -183,7 +183,7 @@
                                         <Insets top="20" right="20" bottom="20" left="20"/>
                                     </padding>
                                     <Label text="Existing Projects" styleClass="section-title"/>
-                                    <Label text="This list is loaded from backend projects. Version, default tag, and default assignee remain UI-only helpers for now." wrapText="true" styleClass="landing-copy"/>
+                                    <Label text="This list is loaded from backend projects. Version and default assignee remain planning notes, while the default tag is stored with the project." wrapText="true" styleClass="landing-copy"/>
                                     <TableView fx:id="projectTable" prefWidth="520" VBox.vgrow="ALWAYS">
                                         <columns>
                                             <TableColumn fx:id="projectIdColumn" text="ID" prefWidth="55"/>

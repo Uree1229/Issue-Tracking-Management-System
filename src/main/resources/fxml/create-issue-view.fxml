@@ -52,11 +52,14 @@
                 <Label text="Priority" GridPane.rowIndex="4" styleClass="admin-form-label"/>
                 <ComboBox fx:id="priorityCombo" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="admin-input"/>
 
-                <Label text="Description" GridPane.rowIndex="5" styleClass="admin-form-label"/>
-                <TextArea fx:id="descriptionArea" wrapText="true" prefRowCount="9" promptText="Add reproduction steps, observed behavior, and expected behavior." GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="admin-text-area"/>
+                <Label text="Tag" GridPane.rowIndex="5" styleClass="admin-form-label"/>
+                <ComboBox fx:id="tagCombo" prefWidth="260" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="admin-input"/>
 
-                <Label text="Initial note" GridPane.rowIndex="6" styleClass="admin-form-label"/>
-                <TextArea fx:id="noteArea" wrapText="true" prefRowCount="4" promptText="Optional first comment to carry extra context into the issue timeline." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>
+                <Label text="Description" GridPane.rowIndex="6" styleClass="admin-form-label"/>
+                <TextArea fx:id="descriptionArea" wrapText="true" prefRowCount="9" promptText="Add reproduction steps, observed behavior, and expected behavior." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>
+
+                <Label text="Initial note" GridPane.rowIndex="7" styleClass="admin-form-label"/>
+                <TextArea fx:id="noteArea" wrapText="true" prefRowCount="4" promptText="Optional first comment to carry extra context into the issue timeline." GridPane.columnIndex="1" GridPane.rowIndex="7" styleClass="admin-text-area"/>
             </GridPane>
 
             <Label fx:id="formFeedbackLabel" text="" wrapText="true" styleClass="form-feedback"/>
@@ -96,7 +99,7 @@
             <Separator/>
 
             <Label text="Frontend Contract Hint" styleClass="section-title"/>
-            <Label text="This form now sends an IssueCreateRequest to the backend facade. The optional initial note is folded into the description because the current contract does not expose comment creation yet." wrapText="true" styleClass="landing-copy"/>
+            <Label text="This form sends an IssueCreateRequest to the backend facade. Tags selected here are stored with the issue and can influence assignee recommendations later." wrapText="true" styleClass="landing-copy"/>
         </VBox>
     </HBox>
 </VBox>

@@ -509,6 +509,14 @@
     -fx-min-width: 360;
 }
 
+.detail-inner-shell {
+    -fx-background-color: #fbfdff;
+    -fx-background-radius: 14;
+    -fx-border-color: #e2e9f1;
+    -fx-border-radius: 14;
+    -fx-padding: 16;
+}
+
 .search-shell {
     -fx-background-color: linear-gradient(to bottom, #f7f9fc, #eef4fa);
 }

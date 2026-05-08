@@ -1,15 +1,21 @@
 package com.example.its.ui.javafx.controller;
 
 import com.example.its.shared.dto.account.AccountResponse;
+import com.example.its.shared.dto.issue.CommentCreateRequest;
 import com.example.its.shared.dto.issue.IssueAssignRequest;
 import com.example.its.shared.dto.issue.IssueCloseRequest;
 import com.example.its.shared.dto.issue.IssueDetailResponse;
+import com.example.its.shared.dto.issue.IssueFailRequest;
 import com.example.its.shared.dto.issue.IssueFixRequest;
+import com.example.its.shared.dto.issue.IssueReopenRequest;
 import com.example.its.shared.dto.issue.IssueResolveRequest;
 import com.example.its.shared.dto.issue.IssueSearchCondition;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
+import com.example.its.shared.dto.issue.RecommendationResponse;
 import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.IssueRowModel;
+import com.example.its.ui.javafx.model.ProjectTagOption;
 import com.example.its.ui.javafx.model.UiIssueStatus;
 import com.example.its.ui.javafx.model.UiPriority;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
@@ -55,6 +61,7 @@ public class IssueBrowserController {
     private final FilteredList<IssueRowModel> filteredIssues = new FilteredList<>(issues);
     private final Map<Long, String> projectNameById = new HashMap<>();
     private final Map<Long, IssueDetailResponse> issueDetailCache = new HashMap<>();
+    private final Map<Long, List<RecommendationResponse>> recommendationCache = new HashMap<>();
 
     @FXML
     private TextField keywordField;
@@ -79,21 +86,6 @@ public class IssueBrowserController {
 
     @FXML
     private TableColumn<IssueRowModel, String> titleColumn;
-
-    @FXML
-    private TableColumn<IssueRowModel, String> statusColumn;
-
-    @FXML
-    private TableColumn<IssueRowModel, String> priorityColumn;
-
-    @FXML
-    private TableColumn<IssueRowModel, String> reporterColumn;
-
-    @FXML
-    private TableColumn<IssueRowModel, String> assigneeColumn;
-
-    @FXML
-    private TableColumn<IssueRowModel, String> reportedAtColumn;
 
     @FXML
     private Label issueIdLabel;
@@ -129,10 +121,20 @@ public class IssueBrowserController {
     private ListView<String> commentListView;
 
     @FXML
+    private ListView<String> recommendationListView;
+
+    @FXML
+    private TextArea commentInputArea;
+
+    @FXML
+    private Label commentFeedbackLabel;
+
+    @FXML
     private void initialize() {
         configureTable();
         configureFilters();
         bindTableData();
+        configureSupportPanels();
         showIssueDetails(null);
 
         issueTable.getSelectionModel()
@@ -148,7 +150,7 @@ public class IssueBrowserController {
     }
 
     @FXML
-    private void handlePlaceholderAction(ActionEvent event) {
+    private void handleWorkflowAction(ActionEvent event) {
         IssueRowModel selectedIssue = issueTable.getSelectionModel().getSelectedItem();
         if (selectedIssue == null) {
             UiAlertHelper.showInfo("No Issue Selected", "Choose an issue first.", "Select an issue from the list before running a workflow action.");
@@ -161,7 +163,9 @@ public class IssueBrowserController {
                 case "Assign" -> handleAssign(selectedIssue);
                 case "Mark Fixed" -> handleMarkFixed(selectedIssue);
                 case "Resolve" -> handleResolve(selectedIssue);
+                case "Fail" -> handleFail(selectedIssue);
                 case "Close" -> handleClose(selectedIssue);
+                case "Reopen" -> handleReopen(selectedIssue);
                 default -> throw new IllegalArgumentException("Unsupported action: " + action);
             };
 
@@ -173,9 +177,69 @@ public class IssueBrowserController {
         }
     }
 
+    @FXML
+    private void handleAddComment() {
+        IssueRowModel selectedIssue = issueTable.getSelectionModel().getSelectedItem();
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+
+        commentFeedbackLabel.getStyleClass().setAll("form-feedback");
+
+        if (selectedIssue == null) {
+            commentFeedbackLabel.getStyleClass().add("form-feedback-error");
+            commentFeedbackLabel.setText("Select an issue before adding a comment.");
+            return;
+        }
+
+        if (currentUser == null) {
+            commentFeedbackLabel.getStyleClass().add("form-feedback-error");
+            commentFeedbackLabel.setText("You need to be signed in to add a comment.");
+            return;
+        }
+
+        String content = commentInputArea.getText() == null ? "" : commentInputArea.getText().trim();
+        if (content.isBlank()) {
+            commentFeedbackLabel.getStyleClass().add("form-feedback-error");
+            commentFeedbackLabel.setText("Comment content cannot be empty.");
+            return;
+        }
+
+        try {
+            CommentCreateRequest request = new CommentCreateRequest(
+                selectedIssue.getIssueId(),
+                currentUser.accountId(),
+                content
+            );
+            IssueDetailResponse updatedIssue = backendBridge().addComment(request);
+            issueDetailCache.put(updatedIssue.getIssueId(), updatedIssue);
+            refreshRowFromDetail(updatedIssue);
+            showIssueDetails(updatedIssue);
+            commentInputArea.clear();
+            commentFeedbackLabel.getStyleClass().add("form-feedback-success");
+            commentFeedbackLabel.setText("Comment added successfully.");
+        } catch (Exception exception) {
+            commentFeedbackLabel.getStyleClass().add("form-feedback-error");
+            commentFeedbackLabel.setText(UiAlertHelper.extractMessage(exception, "Comment could not be added."));
+        }
+    }
+
     private IssueDetailResponse handleAssign(IssueRowModel selectedIssue) {
+        IssueDetailResponse detail = issueDetailCache.computeIfAbsent(selectedIssue.getIssueId(), id -> backendBridge().getIssue(id));
+        Map<Long, Double> recommendationScores = loadRecommendations(detail).stream()
+            .collect(Collectors.toMap(RecommendationResponse::getAccountId, RecommendationResponse::getScore, (left, right) -> left));
+
         List<AccountChoice> developerChoices = backendBridge().getDeveloperAccounts().stream()
-            .map(account -> new AccountChoice(account.getAccountId(), account.getName() + " (" + account.getLoginId() + ")"))
+            .map(account -> {
+                Double score = recommendationScores.get(account.getAccountId());
+                return new AccountChoice(
+                    account.getAccountId(),
+                    account.getName() + " (" + account.getLoginId() + ")",
+                    score
+                );
+            })
+            .sorted(Comparator
+                .comparing(AccountChoice::isRecommended).reversed()
+                .thenComparing(AccountChoice::scoreOrZero, Comparator.reverseOrder())
+                .thenComparing(AccountChoice::label, String.CASE_INSENSITIVE_ORDER))
             .toList();
 
         if (developerChoices.isEmpty()) {
@@ -223,6 +287,23 @@ public class IssueBrowserController {
         return backendBridge().resolve(request);
     }
 
+    private IssueDetailResponse handleFail(IssueRowModel selectedIssue) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Fail Verification");
+        dialog.setHeaderText("Explain why issue #" + selectedIssue.getIssueId() + " should be reopened.");
+        dialog.setContentText("Failure reason:");
+        Optional<String> reason = dialog.showAndWait();
+        if (reason.isEmpty() || reason.get().trim().isBlank()) {
+            throw new IllegalArgumentException("A failure reason is required before reopening the issue.");
+        }
+
+        IssueFailRequest request = new IssueFailRequest();
+        request.setIssueId(selectedIssue.getIssueId());
+        request.setTesterAccountId(UserSession.getCurrentUser().accountId());
+        request.setReason(reason.get().trim());
+        return backendBridge().fail(request);
+    }
+
     private IssueDetailResponse handleClose(IssueRowModel selectedIssue) {
         IssueCloseRequest request = new IssueCloseRequest();
         request.setIssueId(selectedIssue.getIssueId());
@@ -230,18 +311,35 @@ public class IssueBrowserController {
         return backendBridge().close(request);
     }
 
+    private IssueDetailResponse handleReopen(IssueRowModel selectedIssue) {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Reopen Issue");
+        dialog.setHeaderText("Add a reason for reopening issue #" + selectedIssue.getIssueId() + ".");
+        dialog.setContentText("Reopen reason:");
+        Optional<String> reason = dialog.showAndWait();
+        if (reason.isEmpty() || reason.get().trim().isBlank()) {
+            throw new IllegalArgumentException("A reopen reason is required.");
+        }
+
+        IssueReopenRequest request = new IssueReopenRequest();
+        request.setIssueId(selectedIssue.getIssueId());
+        request.setReopenAccountId(UserSession.getCurrentUser().accountId());
+        request.setReason(reason.get().trim());
+        return backendBridge().reopen(request);
+    }
+
     private void configureTable() {
         idColumn.setCellValueFactory(cellData -> new ReadOnlyObjectWrapper<>(cellData.getValue().getIssueId()));
         titleColumn.setCellValueFactory(cellData -> new ReadOnlyStringWrapper(cellData.getValue().getTitle()));
-        statusColumn.setCellValueFactory(cellData -> new ReadOnlyStringWrapper(cellData.getValue().getStatusDisplayName()));
-        priorityColumn.setCellValueFactory(cellData -> new ReadOnlyStringWrapper(cellData.getValue().getPriorityDisplayName()));
-        reporterColumn.setCellValueFactory(cellData -> new ReadOnlyStringWrapper(cellData.getValue().getReporterName()));
-        assigneeColumn.setCellValueFactory(cellData -> new ReadOnlyStringWrapper(cellData.getValue().getAssigneeDisplayName()));
-        reportedAtColumn.setCellValueFactory(
-            cellData -> new ReadOnlyStringWrapper(formatDateTime(cellData.getValue().getReportedAt()))
-        );
 
         issueTable.setPlaceholder(new Label("No issues match the current filters."));
+    }
+
+    private void configureSupportPanels() {
+        recommendationListView.setPlaceholder(new Label("Select an issue to see suggested developers."));
+        commentListView.setPlaceholder(new Label("No activity has been recorded for this issue yet."));
+        commentFeedbackLabel.getStyleClass().setAll("form-feedback");
+        commentFeedbackLabel.setText("");
     }
 
     private void configureFilters() {
@@ -294,6 +392,7 @@ public class IssueBrowserController {
         try {
             refreshProjectNames();
             issueDetailCache.clear();
+            recommendationCache.clear();
 
             IssueSearchCondition condition = new IssueSearchCondition();
             condition.setProjectId(UserSession.getCurrentProjectId());
@@ -513,6 +612,10 @@ public class IssueBrowserController {
             reportedAtValueLabel.setText("-");
             descriptionArea.clear();
             commentListView.setItems(FXCollections.observableArrayList("No issue selected."));
+            recommendationListView.setItems(FXCollections.observableArrayList("Select an issue to see recommendations."));
+            commentInputArea.clear();
+            commentFeedbackLabel.getStyleClass().setAll("form-feedback");
+            commentFeedbackLabel.setText("");
             statusBadgeLabel.getStyleClass().setAll("label", "badge", "status-badge");
             priorityBadgeLabel.getStyleClass().setAll("label", "badge", "priority-badge");
             return;
@@ -532,9 +635,54 @@ public class IssueBrowserController {
         reportedAtValueLabel.setText(formatDateTime(issue.getReportedAt()));
         descriptionArea.setText(issue.getDescription());
         commentListView.setItems(FXCollections.observableArrayList(UiModelMapper.toActivityTimeline(issue)));
+        recommendationListView.setItems(FXCollections.observableArrayList(formatRecommendations(loadRecommendations(issue))));
+        commentFeedbackLabel.getStyleClass().setAll("form-feedback");
+        commentFeedbackLabel.setText("");
 
         statusBadgeLabel.getStyleClass().setAll("label", "badge", "status-badge", "status-" + uiStatus.name().toLowerCase(Locale.ROOT));
         priorityBadgeLabel.getStyleClass().setAll("label", "badge", "priority-badge", "priority-" + uiPriority.name().toLowerCase(Locale.ROOT));
+    }
+
+    private List<RecommendationResponse> loadRecommendations(IssueDetailResponse issue) {
+        if (issue == null || issue.getProjectId() == null) {
+            return List.of();
+        }
+
+        List<Long> tagIds = backendBridge().getProjectTags(issue.getProjectId()).stream()
+            .filter(tag -> issue.getTagNames() != null && issue.getTagNames().contains(tag.name()))
+            .map(ProjectTagOption::tagId)
+            .toList();
+
+        return recommendationCache.computeIfAbsent(
+            issue.getIssueId(),
+            ignored -> backendBridge().recommendAssignees(issue.getProjectId(), tagIds)
+        );
+    }
+
+    private List<String> formatRecommendations(List<RecommendationResponse> recommendations) {
+        if (recommendations == null || recommendations.isEmpty()) {
+            return List.of("No recommendation data is available for this issue yet.");
+        }
+
+        return recommendations.stream()
+            .map(recommendation -> recommendation.getName()
+                + " (" + recommendation.getLoginId() + ")"
+                + "  • score "
+                + String.format(Locale.US, "%.1f", recommendation.getScore()))
+            .toList();
+    }
+
+    private void refreshRowFromDetail(IssueDetailResponse detail) {
+        if (detail == null) {
+            return;
+        }
+
+        for (int index = 0; index < issues.size(); index++) {
+            if (detail.getIssueId().equals(issues.get(index).getIssueId())) {
+                issues.set(index, UiModelMapper.toIssueRowModel(detail));
+                break;
+            }
+        }
     }
 
     private String formatDateTime(LocalDateTime dateTime) {
@@ -545,10 +693,21 @@ public class IssueBrowserController {
         return JavaFxBackendBridge.getInstance();
     }
 
-    private record AccountChoice(Long accountId, String label) {
+    private record AccountChoice(Long accountId, String label, Double recommendationScore) {
+        private boolean isRecommended() {
+            return recommendationScore != null;
+        }
+
+        private double scoreOrZero() {
+            return recommendationScore == null ? 0.0 : recommendationScore;
+        }
+
         @Override
         public String toString() {
-            return label;
+            if (recommendationScore == null) {
+                return label;
+            }
+            return label + "  • recommended " + String.format(Locale.US, "%.1f", recommendationScore);
         }
     }
 }

@@ -7,6 +7,7 @@ import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.AdminProjectRowModel;
 import com.example.its.ui.javafx.model.AdminUserRowModel;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
+import com.example.its.ui.javafx.model.ProjectTagOption;
 import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
@@ -144,7 +145,7 @@ public class AdminController {
     @FXML
     private void initialize() {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
-        adminPageTitleLabel.setText("Bugzilla-inspired Add User");
+        adminPageTitleLabel.setText("Add User");
         adminSubtitleLabel.setText("Create ITS accounts for admin, PL, dev, and tester roles.");
 
         roleCombo.setItems(FXCollections.observableArrayList(UiRole.values()));
@@ -286,13 +287,18 @@ public class AdminController {
             request.setCreatedByAccountId(currentUser.accountId());
 
             ProjectResponse createdProject = backendBridge().createProject(request);
+            ProjectTagOption createdTag = backendBridge().ensureProjectTag(
+                createdProject.getProjectId(),
+                defaultTag,
+                tagDescription
+            );
             upsertProjectRow(new AdminProjectRowModel(
                 createdProject.getProjectId(),
                 createdProject.getName(),
                 createdProject.getDescription(),
                 version,
                 openForIssueEntryCheckBox.isSelected(),
-                defaultTag,
+                createdTag.name(),
                 defaultAssignee.isBlank() ? "-" : defaultAssignee
             ));
             try {
@@ -313,12 +319,12 @@ public class AdminController {
             clearProjectForm();
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-success");
             projectFormFeedbackLabel.setText(
-                "Project '" + createdProject.getName() + "' was created. Version/tag/default assignee stay UI-only for now."
+                "Project '" + createdProject.getName() + "' and default tag '" + createdTag.name() + "' were created successfully."
             );
             UiAlertHelper.showInfo(
                 "Project Created",
                 "Project registration completed.",
-                "Project '" + createdProject.getName() + "' was created successfully."
+                "Project '" + createdProject.getName() + "' was created and the default tag was registered."
             );
         } catch (Exception exception) {
             String detailedMessage = UiAlertHelper.extractRootCauseMessage(exception, "Project creation failed.");
@@ -424,16 +430,14 @@ public class AdminController {
         try {
             refreshUsersFromBackend();
         } catch (Exception exception) {
-            warning.append("User list could not be loaded yet. ")
-                .append(UiAlertHelper.extractMessage(exception, "Backend response could not be read."))
+            warning.append("User list could not be loaded yet. Please check the backend query or data configuration.")
                 .append('\n');
         }
 
         try {
             refreshProjectsFromBackend();
         } catch (Exception exception) {
-            warning.append("Project list could not be loaded yet. ")
-                .append(UiAlertHelper.extractMessage(exception, "Backend response could not be read."));
+            warning.append("Project list could not be loaded yet. Please check the backend query or data configuration.");
         }
 
         if (warning.length() > 0) {

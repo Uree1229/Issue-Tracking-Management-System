@@ -20,14 +20,14 @@
 
     <VBox spacing="6">
         <Label text="Analytics" styleClass="page-title"/>
-        <Label text="Bugzilla-inspired reporting view for status distribution, issue trends, and current workload." styleClass="landing-copy"/>
+        <Label text="Reporting view for status distribution, issue trends, and current workload." styleClass="landing-copy"/>
     </VBox>
 
     <HBox spacing="14">
         <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
             <Label text="Total Issues" styleClass="metric-title"/>
             <Label fx:id="totalIssuesValueLabel" text="0" styleClass="metric-value"/>
-            <Label text="Everything currently tracked in the mock dataset." styleClass="landing-copy"/>
+            <Label text="Everything currently tracked in the selected project." styleClass="landing-copy"/>
         </VBox>
         <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
             <Label text="Open Queue" styleClass="metric-title"/>

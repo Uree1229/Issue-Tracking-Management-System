@@ -3,12 +3,14 @@ package com.example.its.ui.javafx.controller;
 import com.example.its.shared.dto.issue.IssueCreateRequest;
 import com.example.its.shared.dto.issue.IssueDetailResponse;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
+import com.example.its.ui.javafx.model.ProjectTagOption;
 import com.example.its.ui.javafx.model.UiPriority;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
 import com.example.its.ui.javafx.support.UiAlertHelper;
 import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -16,6 +18,10 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 public class CreateIssueController {
+    private static final String NO_TAG_OPTION = "No Tag";
+
+    private final ObservableList<String> tagOptions = FXCollections.observableArrayList(NO_TAG_OPTION);
+    private final java.util.Map<String, Long> tagIdByOption = new java.util.HashMap<>();
 
     private MainLayoutController mainLayoutController;
 
@@ -33,6 +39,9 @@ public class CreateIssueController {
 
     @FXML
     private ComboBox<UiPriority> priorityCombo;
+
+    @FXML
+    private ComboBox<String> tagCombo;
 
     @FXML
     private TextArea descriptionArea;
@@ -59,6 +68,8 @@ public class CreateIssueController {
     private void initialize() {
         priorityCombo.setItems(FXCollections.observableArrayList(UiPriority.values()));
         priorityCombo.setValue(UiPriority.MAJOR);
+        tagCombo.setItems(tagOptions);
+        tagCombo.setValue(NO_TAG_OPTION);
 
         titleField.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
         descriptionArea.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
@@ -80,6 +91,7 @@ public class CreateIssueController {
         String projectName = UserSession.getCurrentProjectName();
         projectValueLabel.setText(projectName == null || projectName.isBlank() ? "No Project Selected" : projectName);
         statusValueLabel.setText("NEW");
+        refreshTagOptions();
         updatePreview();
     }
 
@@ -117,6 +129,10 @@ public class CreateIssueController {
             request.setPriority(UiModelMapper.toBackendPriority(priorityCombo.getValue()));
             request.setReporterAccountId(currentUser.accountId());
             request.setProjectId(projectId);
+            Long selectedTagId = tagIdByOption.get(tagCombo.getValue());
+            if (selectedTagId != null) {
+                request.setTagIds(java.util.List.of(selectedTagId));
+            }
 
             IssueDetailResponse createdIssue = backendBridge().createIssue(request);
             formFeedbackLabel.getStyleClass().add("form-feedback-success");
@@ -142,6 +158,7 @@ public class CreateIssueController {
         descriptionArea.clear();
         noteArea.clear();
         priorityCombo.setValue(UiPriority.MAJOR);
+        tagCombo.setValue(NO_TAG_OPTION);
         formFeedbackLabel.getStyleClass().setAll("form-feedback");
         formFeedbackLabel.setText("");
         updatePreview();
@@ -167,6 +184,30 @@ public class CreateIssueController {
             return description;
         }
         return description + System.lineSeparator() + System.lineSeparator() + "[Initial Note]" + System.lineSeparator() + note;
+    }
+
+    private void refreshTagOptions() {
+        tagIdByOption.clear();
+        tagOptions.setAll(NO_TAG_OPTION);
+
+        Long projectId = UserSession.getCurrentProjectId();
+        if (projectId == null) {
+            tagCombo.setValue(NO_TAG_OPTION);
+            return;
+        }
+
+        try {
+            for (ProjectTagOption tag : backendBridge().getProjectTags(projectId)) {
+                tagOptions.add(tag.name());
+                tagIdByOption.put(tag.name(), tag.tagId());
+            }
+        } catch (Exception ignored) {
+            // Keep issue creation available even if tag data cannot be loaded.
+        }
+
+        if (tagCombo.getValue() == null || !tagOptions.contains(tagCombo.getValue())) {
+            tagCombo.setValue(NO_TAG_OPTION);
+        }
     }
 
     private JavaFxBackendBridge backendBridge() {
