@@ -9,10 +9,6 @@ import java.util.List;
 
 public class IssueRepository extends JpaRepositorySupport<Issue> {
 
-    public IssueRepository() {
-        super(Issue.class);
-    }
-
     public IssueRepository(EntityManager entityManager) {
         super(Issue.class, entityManager);
     }

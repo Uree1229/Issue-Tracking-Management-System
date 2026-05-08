@@ -8,10 +8,6 @@ import java.util.Optional;
 
 public class TagRepository extends JpaRepositorySupport<Tag> {
 
-    public TagRepository() {
-        super(Tag.class);
-    }
-
     public TagRepository(EntityManager entityManager) {
         super(Tag.class, entityManager);
     }

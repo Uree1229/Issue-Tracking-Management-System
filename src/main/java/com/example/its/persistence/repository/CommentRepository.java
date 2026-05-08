@@ -7,10 +7,6 @@ import java.util.List;
 
 public class CommentRepository extends JpaRepositorySupport<Comment> {
 
-    public CommentRepository() {
-        super(Comment.class);
-    }
-
     public CommentRepository(EntityManager entityManager) {
         super(Comment.class, entityManager);
     }

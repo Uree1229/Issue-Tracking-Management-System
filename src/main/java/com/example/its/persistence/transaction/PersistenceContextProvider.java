@@ -1,22 +1,19 @@
-package com.example.its.persistence.repository;
+package com.example.its.persistence.transaction;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
+// TransactionManager에서 사용할 EntityManager를 제공
 final class PersistenceContextProvider {
 
     private static final EntityManagerFactory ENTITY_MANAGER_FACTORY =
         Persistence.createEntityManagerFactory("its-persistence-unit");
-    private static EntityManager sharedEntityManager;
 
     private PersistenceContextProvider() {
     }
 
-    static synchronized EntityManager createEntityManager() {
-        if (sharedEntityManager == null || !sharedEntityManager.isOpen()) {
-            sharedEntityManager = ENTITY_MANAGER_FACTORY.createEntityManager();
-        }
-        return sharedEntityManager;
+    static EntityManager createEntityManager() {
+        return ENTITY_MANAGER_FACTORY.createEntityManager();
     }
 }
