@@ -18,7 +18,7 @@ public class IssueRepository extends JpaRepositorySupport<Issue> {
                 "select i from Issue i where i.project.projectId = :projectId order by i.reportedAt desc",
                 Issue.class
             )
-            .setParameter("projectId", projectId)
+            .setParameter("projectId", toJpaId(projectId))
             .getResultList();
     }
 
@@ -27,7 +27,7 @@ public class IssueRepository extends JpaRepositorySupport<Issue> {
                 "select i from Issue i where i.reporter.accountId = :accountId order by i.reportedAt desc",
                 Issue.class
             )
-            .setParameter("accountId", accountId)
+            .setParameter("accountId", toJpaId(accountId))
             .getResultList();
     }
 
@@ -36,7 +36,7 @@ public class IssueRepository extends JpaRepositorySupport<Issue> {
                 "select i from Issue i where i.assignee.accountId = :accountId order by i.lastModifiedAt desc",
                 Issue.class
             )
-            .setParameter("accountId", accountId)
+            .setParameter("accountId", toJpaId(accountId))
             .getResultList();
     }
 

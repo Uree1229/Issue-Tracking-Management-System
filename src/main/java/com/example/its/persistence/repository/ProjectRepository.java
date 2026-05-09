@@ -27,7 +27,7 @@ public class ProjectRepository extends JpaRepositorySupport<Project> {
                 "select p from Project p where p.createdBy.accountId = :accountId order by p.createdAt desc",
                 Project.class
             )
-            .setParameter("accountId", accountId)
+            .setParameter("accountId", toJpaId(accountId))
             .getResultList();
     }
 }
