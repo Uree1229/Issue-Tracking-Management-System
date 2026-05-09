@@ -17,7 +17,7 @@ public abstract class JpaRepositorySupport<T> {
     }
 
     public Optional<T> findById(Long id) {
-        return Optional.ofNullable(entityManager.find(entityClass, id));
+        return Optional.ofNullable(entityManager.find(entityClass, toJpaId(id)));
     }
 
     public List<T> findAll() {
@@ -54,5 +54,9 @@ public abstract class JpaRepositorySupport<T> {
         if (!entityManager.getTransaction().isActive()) {
             throw new IllegalStateException("쓰기 작업은 TransactionManager.execute 안에서만 수행해야 합니다.");
         }
+    }
+
+    protected Integer toJpaId(Long id) {
+        return id != null ? Math.toIntExact(id) : null;
     }
 }

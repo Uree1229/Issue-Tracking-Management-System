@@ -16,7 +16,7 @@ public class CommentRepository extends JpaRepositorySupport<Comment> {
                 "select c from Comment c where c.issue.issueId = :issueId order by c.createdAt asc",
                 Comment.class
             )
-            .setParameter("issueId", issueId)
+            .setParameter("issueId", toJpaId(issueId))
             .getResultList();
     }
 
@@ -25,7 +25,7 @@ public class CommentRepository extends JpaRepositorySupport<Comment> {
                 "select c from Comment c where c.author.accountId = :accountId order by c.createdAt desc",
                 Comment.class
             )
-            .setParameter("accountId", accountId)
+            .setParameter("accountId", toJpaId(accountId))
             .getResultList();
     }
 }

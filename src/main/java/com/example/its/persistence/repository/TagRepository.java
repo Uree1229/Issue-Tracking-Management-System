@@ -17,7 +17,7 @@ public class TagRepository extends JpaRepositorySupport<Tag> {
                 "select t from Tag t where t.project.projectId = :projectId order by t.name",
                 Tag.class
             )
-            .setParameter("projectId", projectId)
+            .setParameter("projectId", toJpaId(projectId))
             .getResultList();
     }
 
@@ -26,7 +26,7 @@ public class TagRepository extends JpaRepositorySupport<Tag> {
                 "select t from Tag t where t.project.projectId = :projectId and t.name = :name",
                 Tag.class
             )
-            .setParameter("projectId", projectId)
+            .setParameter("projectId", toJpaId(projectId))
             .setParameter("name", name)
             .getResultStream()
             .findFirst();
