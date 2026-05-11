@@ -22,6 +22,18 @@ public class IssueRepository extends JpaRepositorySupport<Issue> {
             .getResultList();
     }
 
+    public List<Issue> findByProjectIdAndTagId(Long projectId, Long tagId) {
+        return entityManager.createQuery(
+                "select distinct i from Issue i join i.tags t "
+                    + "where i.project.projectId = :projectId and t.tagId = :tagId "
+                    + "order by i.reportedAt desc",
+                Issue.class
+            )
+            .setParameter("projectId", toJpaId(projectId))
+            .setParameter("tagId", toJpaId(tagId))
+            .getResultList();
+    }
+
     public List<Issue> findByReporterAccountId(Long accountId) {
         return entityManager.createQuery(
                 "select i from Issue i where i.reporter.accountId = :accountId order by i.reportedAt desc",
