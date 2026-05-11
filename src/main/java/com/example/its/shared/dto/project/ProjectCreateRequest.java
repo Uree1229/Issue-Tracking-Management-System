@@ -1,10 +1,14 @@
 package com.example.its.shared.dto.project;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ProjectCreateRequest {
 
     private String name;
     private String description;
     private Long createdByAccountId;
+    private List<String> tagNames = new ArrayList<>();
 
     public ProjectCreateRequest() {
     }
@@ -13,6 +17,13 @@ public class ProjectCreateRequest {
         this.name = name;
         this.description = description;
         this.createdByAccountId = createdByAccountId;
+    }
+
+    public ProjectCreateRequest(String name, String description, Long createdByAccountId, List<String> tagNames) {
+        this(name, description, createdByAccountId);
+        if (tagNames != null) {
+            this.tagNames = new ArrayList<>(tagNames);
+        }
     }
 
     public String getName() {
@@ -37,5 +48,13 @@ public class ProjectCreateRequest {
 
     public void setCreatedByAccountId(Long createdByAccountId) {
         this.createdByAccountId = createdByAccountId;
+    }
+
+    public List<String> getTagNames() {
+        return tagNames;
+    }
+
+    public void setTagNames(List<String> tagNames) {
+        this.tagNames = tagNames == null ? new ArrayList<>() : new ArrayList<>(tagNames);
     }
 }

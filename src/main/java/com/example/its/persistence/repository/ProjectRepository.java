@@ -12,6 +12,17 @@ public class ProjectRepository extends JpaRepositorySupport<Project> {
         super(Project.class, entityManager);
     }
 
+    @Override
+    public Project save(Project project) {
+        Object identifier = entityManager.getEntityManagerFactory()
+            .getPersistenceUnitUtil()
+            .getIdentifier(project);
+        if (identifier != null) {
+            throw new IllegalStateException("프로젝트는 생성 후 수정할 수 없습니다.");
+        }
+        return super.save(project);
+    }
+
     public Optional<Project> findByName(String name) {
         return entityManager.createQuery(
                 "select p from Project p where p.name = :name",

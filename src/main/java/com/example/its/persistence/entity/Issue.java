@@ -210,6 +210,11 @@ public class Issue {
         tag.getIssues().add(this);
     }
 
+    public void removeTag(Tag tag) {
+        tags.remove(tag);
+        tag.getIssues().remove(this);
+    }
+
     // BE: static factory method 컨벤션 만족 위해 추가
     public static Issue create(String title, String description, Priority priority, Project project, Account reporter) {
         Issue issue = new Issue();
