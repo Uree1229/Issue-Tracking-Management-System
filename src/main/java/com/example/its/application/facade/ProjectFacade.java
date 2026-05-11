@@ -33,4 +33,8 @@ public class ProjectFacade {
     public List<ProjectResponse> getAllProjects() {
         return projectService.getAllProjects();
     }
+
+    public List<ProjectResponse> getProjectsByMember(Long accountId) {
+        return projectService.getProjectsByMember(accountId);
+    }
 }

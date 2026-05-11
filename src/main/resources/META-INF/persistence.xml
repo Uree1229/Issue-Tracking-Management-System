@@ -11,6 +11,7 @@
         <class>com.example.its.persistence.entity.Issue</class>
         <class>com.example.its.persistence.entity.Comment</class>
         <class>com.example.its.persistence.entity.Tag</class>
+        <class>com.example.its.persistence.entity.ProjectMember</class>
         <class>com.example.its.persistence.entity.IssueHistory</class>
         <class>com.example.its.persistence.entity.IssueDelta</class>
 

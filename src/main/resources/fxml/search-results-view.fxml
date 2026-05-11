@@ -48,9 +48,9 @@
     <HBox spacing="16" alignment="CENTER_LEFT" styleClass="panel-card search-results-action-card">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label text="Open a selected issue for full detail." styleClass="section-title"/>
-            <Label text="Use Inquiry for deep inspection, or open the Browser if you want to continue the workflow." wrapText="true" styleClass="landing-copy"/>
+            <Label text="Open the detail window for close review, or jump to the Browser if you want to continue the workflow." wrapText="true" styleClass="landing-copy"/>
         </VBox>
-        <Button mnemonicParsing="false" onAction="#openSelectedInInquiry" text="Open Inquiry" styleClass="primary-button"/>
+        <Button mnemonicParsing="false" onAction="#openSelectedInInquiry" text="Open Details" styleClass="primary-button"/>
         <Button mnemonicParsing="false" onAction="#openSelectedInBrowser" text="Open Browser" styleClass="ghost-button"/>
     </HBox>
 </VBox>

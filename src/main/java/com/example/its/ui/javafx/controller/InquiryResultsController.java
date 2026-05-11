@@ -136,8 +136,8 @@ public class InquiryResultsController {
                 IssueDetailResponse detail = backendBridge().getIssue(issueId);
                 issueDetailCache.put(detail.getIssueId(), detail);
                 inquiryResults.setAll(List.of(UiModelMapper.toIssueRowModel(detail)));
-                resultHeaderLabel.setText("Inquiry Results - Exact Match");
-                inquirySummaryLabel.setText("Showing 1 issue by exact ID lookup.");
+                resultHeaderLabel.setText("Issue Details - Exact Match");
+                inquirySummaryLabel.setText("Showing 1 issue selected for detailed review.");
             } else {
                 IssueSearchCondition condition = new IssueSearchCondition();
                 String keyword = payload.keyword() == null || payload.keyword().isBlank() ? null : payload.keyword();
@@ -148,12 +148,12 @@ public class InquiryResultsController {
                         .map(summary -> UiModelMapper.toIssueRowModel(summary, projectNameById))
                         .toList()
                 );
-                resultHeaderLabel.setText(keyword == null ? "Inquiry Results" : "Inquiry Results - " + keyword);
-                inquirySummaryLabel.setText(inquiryResults.size() + " issue(s) matched the inquiry.");
+                resultHeaderLabel.setText(keyword == null ? "Issue Details" : "Issue Details - " + keyword);
+                inquirySummaryLabel.setText(inquiryResults.size() + " issue(s) are available for detailed review.");
             }
 
             if (inquiryResults.isEmpty()) {
-                inquirySummaryLabel.setText("No issues matched the inquiry.");
+                inquirySummaryLabel.setText("No issues matched this search.");
                 showDetails(null);
                 return;
             }
@@ -161,16 +161,13 @@ public class InquiryResultsController {
         } catch (Exception exception) {
             inquiryResults.clear();
             showDetails(null);
-            resultHeaderLabel.setText("Inquiry Results");
-            inquirySummaryLabel.setText(UiAlertHelper.extractRootCauseMessage(exception, "Inquiry could not be completed."));
+            resultHeaderLabel.setText("Issue Details");
+            inquirySummaryLabel.setText(UiAlertHelper.extractRootCauseMessage(exception, "Issue details could not be opened."));
         }
     }
 
     @FXML
     private void backToInquiry() {
-        if (mainLayoutController != null) {
-            mainLayoutController.showInquiry((javafx.event.ActionEvent) null);
-        }
         if (windowStage != null) {
             windowStage.close();
         }
@@ -244,8 +241,8 @@ public class InquiryResultsController {
                 .map(summary -> UiModelMapper.toIssueRowModel(summary, projectNameById))
                 .toList()
         );
-        resultHeaderLabel.setText("Inquiry Results - Recent Issues");
-        inquirySummaryLabel.setText("Showing the " + inquiryResults.size() + " most recent issues.");
+        resultHeaderLabel.setText("Issue Details - Recent Issues");
+        inquirySummaryLabel.setText("Showing the " + inquiryResults.size() + " most recent issues for detailed review.");
 
         if (inquiryResults.isEmpty()) {
             showDetails(null);

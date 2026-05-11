@@ -26,7 +26,9 @@ import com.example.its.shared.dto.issue.RecommendationResponse;
 import com.example.its.shared.dto.issue.StatisticsResponse;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
 import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.ProjectTagOption;
+import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.support.TagMapper;
 
 import java.util.Comparator;
@@ -77,8 +79,22 @@ public final class JavaFxBackendBridge {
             .collect(Collectors.toList());
     }
 
-    public Optional<ProjectResponse> findPreferredProject() {
-        List<ProjectResponse> projects = getProjects();
+    public List<ProjectResponse> getAccessibleProjects(AuthenticatedUser currentUser) {
+        if (currentUser == null) {
+            return List.of();
+        }
+
+        List<ProjectResponse> projects = currentUser.role() == UiRole.ADMIN
+            ? projectFacade.getAllProjects()
+            : projectFacade.getProjectsByMember(currentUser.accountId());
+
+        return projects.stream()
+            .sorted(Comparator.comparing(ProjectResponse::getName, String.CASE_INSENSITIVE_ORDER))
+            .collect(Collectors.toList());
+    }
+
+    public Optional<ProjectResponse> findPreferredProject(AuthenticatedUser currentUser) {
+        List<ProjectResponse> projects = getAccessibleProjects(currentUser);
         return projects.stream()
             .filter(project -> "project1".equalsIgnoreCase(project.getName()))
             .findFirst()

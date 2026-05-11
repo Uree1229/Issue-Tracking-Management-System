@@ -28,11 +28,28 @@
         <VBox spacing="16">
             <Label text="Issue Browser" styleClass="page-title"/>
             <HBox spacing="12" alignment="CENTER_LEFT">
-                <TextField fx:id="keywordField" promptText="Search by title, description, assignee, reporter..." HBox.hgrow="ALWAYS"/>
-                <ComboBox fx:id="statusFilterCombo" prefWidth="140"/>
-                <ComboBox fx:id="priorityFilterCombo" prefWidth="140"/>
-                <ComboBox fx:id="reporterFilterCombo" prefWidth="140"/>
-                <ComboBox fx:id="assigneeFilterCombo" prefWidth="160"/>
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label text="Keyword" styleClass="filter-label"/>
+                    <TextField fx:id="keywordField" promptText="Search by title, description, assignee, reporter..." HBox.hgrow="ALWAYS"/>
+                </VBox>
+                <VBox spacing="6">
+                    <Label text="Status" styleClass="filter-label"/>
+                    <ComboBox fx:id="statusFilterCombo" prefWidth="120"/>
+                </VBox>
+                <VBox spacing="6">
+                    <Label text="Priority" styleClass="filter-label"/>
+                    <ComboBox fx:id="priorityFilterCombo" prefWidth="120"/>
+                </VBox>
+                <VBox spacing="6">
+                    <Label text="Reporter" styleClass="filter-label"/>
+                    <ComboBox fx:id="reporterFilterCombo" prefWidth="140"/>
+                </VBox>
+                <VBox spacing="6">
+                    <Label text="Assignee" styleClass="filter-label"/>
+                    <ComboBox fx:id="assigneeFilterCombo" prefWidth="150"/>
+                </VBox>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="createIssueButton" mnemonicParsing="false" onAction="#openCreateIssue" text="Create Issue" styleClass="primary-button compact-button"/>
                 <Button mnemonicParsing="false" onAction="#resetFilters" text="Reset" styleClass="ghost-button"/>
             </HBox>
         </VBox>
@@ -75,7 +92,7 @@
                             <Label fx:id="reportedAtValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="field-value"/>
                         </GridPane>
 
-                        <VBox spacing="8" styleClass="detail-section-card">
+                        <VBox fx:id="recommendationSection" spacing="8" styleClass="detail-section-card">
                             <Label text="Recommended Assignees" styleClass="section-title"/>
                             <ListView fx:id="recommendationListView" prefHeight="120"/>
                         </VBox>
@@ -90,22 +107,22 @@
                             <ListView fx:id="commentListView" prefHeight="180" VBox.vgrow="ALWAYS"/>
                         </VBox>
 
-                        <VBox spacing="8" styleClass="detail-section-card">
+                        <VBox fx:id="commentSection" spacing="8" styleClass="detail-section-card">
                             <Label text="Add Comment" styleClass="section-title"/>
                             <TextArea fx:id="commentInputArea" wrapText="true" prefRowCount="3" promptText="Write a progress note, verification result, or follow-up comment..."/>
                             <HBox spacing="10" alignment="CENTER_RIGHT">
                                 <Label fx:id="commentFeedbackLabel" text="" styleClass="form-feedback" HBox.hgrow="ALWAYS"/>
-                                <Button mnemonicParsing="false" onAction="#handleAddComment" text="Save Comment" styleClass="primary-button compact-button"/>
+                                <Button fx:id="saveCommentButton" mnemonicParsing="false" onAction="#handleAddComment" text="Save Comment" styleClass="primary-button compact-button"/>
                             </HBox>
                         </VBox>
 
-                        <HBox spacing="10" alignment="CENTER_LEFT">
-                            <Button mnemonicParsing="false" onAction="#handleWorkflowAction" text="Assign" styleClass="ghost-button"/>
-                            <Button mnemonicParsing="false" onAction="#handleWorkflowAction" text="Mark Fixed" styleClass="ghost-button"/>
-                            <Button mnemonicParsing="false" onAction="#handleWorkflowAction" text="Resolve" styleClass="ghost-button"/>
-                            <Button mnemonicParsing="false" onAction="#handleWorkflowAction" text="Fail" styleClass="ghost-button"/>
-                            <Button mnemonicParsing="false" onAction="#handleWorkflowAction" text="Close" styleClass="ghost-button"/>
-                            <Button mnemonicParsing="false" onAction="#handleWorkflowAction" text="Reopen" styleClass="ghost-button"/>
+                        <HBox fx:id="workflowButtonBar" spacing="10" alignment="CENTER_LEFT">
+                            <Button fx:id="assignButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Assign" styleClass="ghost-button"/>
+                            <Button fx:id="markFixedButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Mark Fixed" styleClass="ghost-button"/>
+                            <Button fx:id="resolveButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Resolve" styleClass="ghost-button"/>
+                            <Button fx:id="failButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Fail" styleClass="ghost-button"/>
+                            <Button fx:id="closeButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Close" styleClass="ghost-button"/>
+                            <Button fx:id="reopenButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Reopen" styleClass="ghost-button"/>
                             <Region HBox.hgrow="ALWAYS"/>
                         </HBox>
                     </VBox>

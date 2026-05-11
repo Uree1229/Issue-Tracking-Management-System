@@ -23,16 +23,17 @@ public final class UiDatabaseBootstrap {
     public static void ensureInitialized() {
         try {
             Files.createDirectories(Path.of("database"));
-            if (Files.exists(DATABASE_PATH) && Files.size(DATABASE_PATH) > 0L) {
-                return;
-            }
+            boolean databaseAlreadyExists = Files.exists(DATABASE_PATH) && Files.size(DATABASE_PATH) > 0L;
 
             try (Connection connection = DriverManager.getConnection(JDBC_URL)) {
                 connection.setAutoCommit(false);
                 executeStatement(connection, "PRAGMA journal_mode=WAL");
                 executeStatement(connection, "PRAGMA busy_timeout=5000");
-                executeScript(connection, SCHEMA_PATH);
-                executeScript(connection, SEED_PATH);
+                if (!databaseAlreadyExists) {
+                    executeScript(connection, SCHEMA_PATH);
+                    executeScript(connection, SEED_PATH);
+                }
+                applyProjectMembershipMigration(connection);
                 connection.commit();
             }
         } catch (IOException | SQLException exception) {
@@ -67,5 +68,50 @@ public final class UiDatabaseBootstrap {
                 }
             }
         }
+    }
+
+    private static void applyProjectMembershipMigration(Connection connection) throws SQLException {
+        executeStatement(connection, """
+            CREATE TABLE IF NOT EXISTS project_members (
+                project_member_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                account_id INTEGER NOT NULL,
+                assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uq_project_members_project_account UNIQUE (project_id, account_id),
+                CONSTRAINT fk_project_members_project
+                    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+                    ON DELETE CASCADE,
+                CONSTRAINT fk_project_members_account
+                    FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+                    ON DELETE CASCADE
+            )
+            """);
+        executeStatement(connection, "CREATE INDEX IF NOT EXISTS idx_project_members_account ON project_members (account_id)");
+        executeStatement(connection, "CREATE INDEX IF NOT EXISTS idx_project_members_project ON project_members (project_id)");
+
+        // Backfill memberships for existing local data so seeded and in-progress projects remain reachable.
+        executeStatement(connection, """
+            INSERT OR IGNORE INTO project_members (project_id, account_id, assigned_at)
+            SELECT p.project_id, p.created_by_account_id, COALESCE(p.created_at, CURRENT_TIMESTAMP)
+            FROM projects p
+            """);
+        executeStatement(connection, """
+            INSERT OR IGNORE INTO project_members (project_id, account_id, assigned_at)
+            SELECT DISTINCT i.project_id, i.reporter_account_id, COALESCE(i.reported_at, CURRENT_TIMESTAMP)
+            FROM issues i
+            WHERE i.reporter_account_id IS NOT NULL
+            """);
+        executeStatement(connection, """
+            INSERT OR IGNORE INTO project_members (project_id, account_id, assigned_at)
+            SELECT DISTINCT i.project_id, i.assignee_account_id, COALESCE(i.last_modified_at, CURRENT_TIMESTAMP)
+            FROM issues i
+            WHERE i.assignee_account_id IS NOT NULL
+            """);
+        executeStatement(connection, """
+            INSERT OR IGNORE INTO project_members (project_id, account_id, assigned_at)
+            SELECT DISTINCT i.project_id, i.fixer_account_id, COALESCE(i.last_modified_at, CURRENT_TIMESTAMP)
+            FROM issues i
+            WHERE i.fixer_account_id IS NOT NULL
+            """);
     }
 }

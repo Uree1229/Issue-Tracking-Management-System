@@ -2,10 +2,12 @@ package com.example.its.ui.javafx.controller;
 
 import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.SearchQueryPayload;
 import com.example.its.ui.javafx.model.UiIssueStatus;
 import com.example.its.ui.javafx.model.UiPriority;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
+import com.example.its.ui.javafx.session.UserSession;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -159,7 +161,8 @@ public class SearchController {
     }
 
     private void populateProjectOptions() {
-        List<ProjectResponse> projects = backendBridge().getProjects();
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        List<ProjectResponse> projects = backendBridge().getAccessibleProjects(currentUser);
         projectIdByOption.clear();
 
         ObservableList<String> options = FXCollections.observableArrayList();

@@ -1,10 +1,13 @@
 package com.example.its.shared.dto.project;
 
+import java.util.List;
+
 public class ProjectCreateRequest {
 
     private String name;
     private String description;
     private Long createdByAccountId;
+    private List<Long> memberAccountIds;
 
     public ProjectCreateRequest() {
     }
@@ -37,5 +40,13 @@ public class ProjectCreateRequest {
 
     public void setCreatedByAccountId(Long createdByAccountId) {
         this.createdByAccountId = createdByAccountId;
+    }
+
+    public List<Long> getMemberAccountIds() {
+        return memberAccountIds;
+    }
+
+    public void setMemberAccountIds(List<Long> memberAccountIds) {
+        this.memberAccountIds = memberAccountIds;
     }
 }

@@ -7,6 +7,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 public class HomeController {
 
@@ -22,10 +24,19 @@ public class HomeController {
     private Button reportIssueButton;
 
     @FXML
+    private Button searchIssuesButton;
+
+    @FXML
     private Button analyticsButton;
 
     @FXML
     private Button adminButton;
+
+    @FXML
+    private HBox quickSearchShell;
+
+    @FXML
+    private VBox commonQueriesPanel;
 
     @FXML
     private TextField quickSearchField;
@@ -51,9 +62,19 @@ public class HomeController {
         reportIssueButton.setVisible(canReportIssue);
         reportIssueButton.setManaged(canReportIssue);
 
+        boolean canSearch = role.canOpenSearch();
+        searchIssuesButton.setVisible(canSearch);
+        searchIssuesButton.setManaged(canSearch);
+        quickSearchShell.setVisible(canSearch);
+        quickSearchShell.setManaged(canSearch);
+
         boolean canViewAnalytics = role.canViewAnalytics();
         analyticsButton.setVisible(canViewAnalytics);
         analyticsButton.setManaged(canViewAnalytics);
+
+        boolean canBrowseIssues = role.canOpenIssueBrowser();
+        commonQueriesPanel.setVisible(canBrowseIssues);
+        commonQueriesPanel.setManaged(canBrowseIssues);
     }
 
     public void setMainLayoutController(MainLayoutController mainLayoutController) {
@@ -156,8 +177,8 @@ public class HomeController {
         return switch (currentUser.role()) {
             case ADMIN -> "Use the admin area to manage accounts and projects.";
             case PL -> "Search issues, assign developers, and review project analytics.";
-            case DEV -> "Browse assigned issues and track progress through the workflow.";
-            case TESTER -> "Report bugs, verify fixes, and reopen issues when needed.";
+            case DEV -> "Browse the issues assigned to you, then update progress through the workflow.";
+            case TESTER -> "Register issues, review details, add comments, and verify fixes.";
         };
     }
 }

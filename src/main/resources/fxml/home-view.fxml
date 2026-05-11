@@ -30,7 +30,7 @@
                 <Label fx:id="welcomeLabel" text="Welcome to ITS" styleClass="landing-title"/>
                 <Label fx:id="roleHintLabel" text="Browse issues and continue the project workflow." wrapText="true" styleClass="landing-copy landing-hero-subtitle"/>
 
-                <HBox spacing="10" alignment="CENTER" styleClass="landing-search-shell">
+                <HBox fx:id="quickSearchShell" spacing="10" alignment="CENTER" styleClass="landing-search-shell">
                     <TextField fx:id="quickSearchField" onAction="#quickSearch" promptText="Search by issue ID, keyword, assignee, or reporter" styleClass="landing-search-field landing-search-field-large" HBox.hgrow="ALWAYS"/>
                     <Button mnemonicParsing="false" onAction="#quickSearch" text="Search" styleClass="primary-button landing-search-action"/>
                 </HBox>
@@ -55,7 +55,7 @@
                     </graphic>
                 </Button>
 
-                <Button mnemonicParsing="false" onAction="#openSearch" text="" styleClass="feature-tile">
+                <Button fx:id="searchIssuesButton" mnemonicParsing="false" onAction="#openSearch" text="" styleClass="feature-tile">
                     <graphic>
                         <VBox spacing="14" alignment="CENTER">
                             <StackPane styleClass="feature-icon-box">
@@ -111,7 +111,7 @@
             </HBox>
 
             <HBox spacing="20" alignment="TOP_CENTER">
-                <VBox spacing="14" styleClass="landing-info-panel landing-secondary-card" HBox.hgrow="ALWAYS">
+                <VBox fx:id="commonQueriesPanel" spacing="14" styleClass="landing-info-panel landing-secondary-card" HBox.hgrow="ALWAYS">
                     <padding>
                         <Insets top="20" right="22" bottom="20" left="22"/>
                     </padding>

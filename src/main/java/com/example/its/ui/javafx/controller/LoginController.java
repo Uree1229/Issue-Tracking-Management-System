@@ -92,7 +92,8 @@ public class LoginController {
     private void performLogin(String loginId, String password) {
         try {
             AccountResponse response = backendBridge().login(loginId, password);
-            UserSession.setCurrentUser(UiModelMapper.toAuthenticatedUser(response));
+            AuthenticatedUser authenticatedUser = UiModelMapper.toAuthenticatedUser(response);
+            UserSession.setCurrentUser(authenticatedUser);
             initializeProjectContext();
             showNeutralFeedback("");
             ItsApplication.showMainView();
@@ -105,7 +106,7 @@ public class LoginController {
     }
 
     private void initializeProjectContext() {
-        ProjectResponse preferredProject = backendBridge().findPreferredProject().orElse(null);
+        ProjectResponse preferredProject = backendBridge().findPreferredProject(UserSession.getCurrentUser()).orElse(null);
         if (preferredProject == null) {
             UserSession.setCurrentProject(null, null);
             return;

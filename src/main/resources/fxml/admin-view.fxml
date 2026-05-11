@@ -35,13 +35,9 @@
             </padding>
             <Button mnemonicParsing="false" onAction="#openHome" text="Home" styleClass="landing-nav-button"/>
             <Separator orientation="VERTICAL"/>
-            <Button mnemonicParsing="false" onAction="#openNewIssue" text="New" styleClass="landing-nav-button"/>
+            <Button mnemonicParsing="false" onAction="#openProjectManagement" text="Project" styleClass="landing-nav-button"/>
             <Separator orientation="VERTICAL"/>
-            <Button mnemonicParsing="false" onAction="#openBrowse" text="Browse" styleClass="landing-nav-button"/>
-            <Separator orientation="VERTICAL"/>
-            <Button mnemonicParsing="false" onAction="#openSearch" text="Search" styleClass="landing-nav-button"/>
-            <Separator orientation="VERTICAL"/>
-            <Label text="Administration" styleClass="landing-nav-button active"/>
+            <Button mnemonicParsing="false" onAction="#openAccountManagement" text="Account Management" styleClass="landing-nav-button"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label text="ITS User Administration" styleClass="landing-meta"/>
         </HBox>
@@ -59,7 +55,7 @@
                 <Label fx:id="permissionNoticeLabel" text="" wrapText="true" styleClass="admin-warning-label"/>
             </VBox>
 
-            <TabPane fx:id="adminTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+            <TabPane fx:id="adminTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" styleClass="admin-tab-pane">
                 <tabs>
                     <Tab text="Add User">
                         <content>
@@ -162,11 +158,14 @@
                                         <Label text="Tag description:" GridPane.rowIndex="6" styleClass="admin-form-label"/>
                                         <TextArea fx:id="tagDescriptionArea" wrapText="true" prefRowCount="3" promptText="Explain the initial tag or component this project starts with." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>
 
-                                        <Label text="Default assignee:" GridPane.rowIndex="7" styleClass="admin-form-label"/>
-                                        <TextField fx:id="defaultAssigneeField" promptText="Optional default dev login ID" GridPane.columnIndex="1" GridPane.rowIndex="7" styleClass="admin-input"/>
-
-                                        <Label text="Default CC list:" GridPane.rowIndex="8" styleClass="admin-form-label"/>
-                                        <TextField fx:id="defaultCcField" promptText="Optional comma-separated watcher list" GridPane.columnIndex="1" GridPane.rowIndex="8" styleClass="admin-input"/>
+                                        <Label text="Assign members:" GridPane.rowIndex="7" styleClass="admin-form-label"/>
+                                        <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="7">
+                                            <Label text="Open the member picker and choose PL, DEV, and TESTER accounts in separate role sections." wrapText="true" styleClass="landing-copy"/>
+                                            <HBox spacing="10" alignment="CENTER_LEFT">
+                                                <Button fx:id="assignMembersButton" mnemonicParsing="false" onAction="#openProjectMemberPicker" text="Assign Members" styleClass="ghost-button"/>
+                                                <Label fx:id="projectMembersSummaryLabel" text="No members selected yet." wrapText="true" styleClass="landing-copy"/>
+                                            </HBox>
+                                        </VBox>
                                     </GridPane>
 
                                     <Label text="Create and manage project records needed for the ITS workflow. Only the fields used in this term project are shown here." wrapText="true" styleClass="landing-copy"/>
@@ -183,7 +182,7 @@
                                         <Insets top="20" right="20" bottom="20" left="20"/>
                                     </padding>
                                     <Label text="Existing Projects" styleClass="section-title"/>
-                                    <Label text="This list is loaded from backend projects. Version and default assignee remain planning notes, while the default tag is stored with the project." wrapText="true" styleClass="landing-copy"/>
+                                    <Label text="This list is loaded from backend projects. Version remains a planning note, while the default tag is stored with the project." wrapText="true" styleClass="landing-copy"/>
                                     <TableView fx:id="projectTable" prefWidth="520" VBox.vgrow="ALWAYS">
                                         <columns>
                                             <TableColumn fx:id="projectIdColumn" text="ID" prefWidth="55"/>
@@ -191,7 +190,7 @@
                                             <TableColumn fx:id="versionColumn" text="Version" prefWidth="75"/>
                                             <TableColumn fx:id="entryColumn" text="Entry" prefWidth="75"/>
                                             <TableColumn fx:id="tagColumn" text="Default Tag" prefWidth="90"/>
-                                            <TableColumn fx:id="assigneeColumn" text="Default Assignee" prefWidth="105"/>
+                                            <TableColumn fx:id="assigneeColumn" text="Created By" prefWidth="105"/>
                                         </columns>
                                     </TableView>
                                 </VBox>

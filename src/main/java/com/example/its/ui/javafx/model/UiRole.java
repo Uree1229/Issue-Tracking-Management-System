@@ -7,11 +7,19 @@ public enum UiRole {
     TESTER;
 
     public boolean canCreateIssue() {
-        return this != ADMIN;
+        return this == PL || this == TESTER;
     }
 
     public boolean canViewAnalytics() {
-        return this == ADMIN || this == PL;
+        return this == PL;
+    }
+
+    public boolean canOpenIssueBrowser() {
+        return this == PL || this == DEV || this == TESTER;
+    }
+
+    public boolean canOpenSearch() {
+        return this == PL || this == DEV || this == TESTER;
     }
 
     public boolean isAdmin() {

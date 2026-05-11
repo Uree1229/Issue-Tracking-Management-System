@@ -18,6 +18,7 @@ import com.example.its.ui.javafx.model.IssueRowModel;
 import com.example.its.ui.javafx.model.ProjectTagOption;
 import com.example.its.ui.javafx.model.UiIssueStatus;
 import com.example.its.ui.javafx.model.UiPriority;
+import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
 import com.example.its.ui.javafx.support.UiAlertHelper;
@@ -39,6 +40,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.control.TextInputDialog;
 
 import java.time.LocalDateTime;
@@ -62,6 +65,7 @@ public class IssueBrowserController {
     private final Map<Long, String> projectNameById = new HashMap<>();
     private final Map<Long, IssueDetailResponse> issueDetailCache = new HashMap<>();
     private final Map<Long, List<RecommendationResponse>> recommendationCache = new HashMap<>();
+    private MainLayoutController mainLayoutController;
 
     @FXML
     private TextField keywordField;
@@ -77,6 +81,9 @@ public class IssueBrowserController {
 
     @FXML
     private ComboBox<String> assigneeFilterCombo;
+
+    @FXML
+    private Button createIssueButton;
 
     @FXML
     private TableView<IssueRowModel> issueTable;
@@ -124,10 +131,40 @@ public class IssueBrowserController {
     private ListView<String> recommendationListView;
 
     @FXML
+    private VBox recommendationSection;
+
+    @FXML
+    private VBox commentSection;
+
+    @FXML
     private TextArea commentInputArea;
 
     @FXML
     private Label commentFeedbackLabel;
+
+    @FXML
+    private Button saveCommentButton;
+
+    @FXML
+    private HBox workflowButtonBar;
+
+    @FXML
+    private Button assignButton;
+
+    @FXML
+    private Button markFixedButton;
+
+    @FXML
+    private Button resolveButton;
+
+    @FXML
+    private Button failButton;
+
+    @FXML
+    private Button closeButton;
+
+    @FXML
+    private Button reopenButton;
 
     @FXML
     private void initialize() {
@@ -136,6 +173,7 @@ public class IssueBrowserController {
         bindTableData();
         configureSupportPanels();
         showIssueDetails(null);
+        configureRoleScopedActions();
 
         issueTable.getSelectionModel()
             .selectedItemProperty()
@@ -147,6 +185,13 @@ public class IssueBrowserController {
     @FXML
     private void resetFilters() {
         resetFiltersInternal();
+    }
+
+    @FXML
+    private void openCreateIssue() {
+        if (mainLayoutController != null) {
+            mainLayoutController.showCreateIssue(null);
+        }
     }
 
     @FXML
@@ -342,6 +387,34 @@ public class IssueBrowserController {
         commentFeedbackLabel.setText("");
     }
 
+    private void configureRoleScopedActions() {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        UiRole role = currentUser == null ? null : currentUser.role();
+
+        boolean isPl = role == UiRole.PL;
+        boolean isDev = role == UiRole.DEV;
+        boolean isTester = role == UiRole.TESTER;
+        boolean canComment = role == UiRole.PL || role == UiRole.DEV || role == UiRole.TESTER;
+        boolean canCreateIssue = role != null && role.canCreateIssue();
+
+        setActionVisibility(assignButton, isPl);
+        setActionVisibility(closeButton, isPl);
+        setActionVisibility(markFixedButton, isDev);
+        setActionVisibility(reopenButton, isDev);
+        setActionVisibility(resolveButton, isTester);
+        setActionVisibility(failButton, isTester);
+
+        recommendationSection.setVisible(isPl);
+        recommendationSection.setManaged(isPl);
+        workflowButtonBar.setVisible(isPl || isDev || isTester);
+        workflowButtonBar.setManaged(isPl || isDev || isTester);
+        commentSection.setVisible(canComment);
+        commentSection.setManaged(canComment);
+        saveCommentButton.setDisable(!canComment);
+        createIssueButton.setVisible(canCreateIssue);
+        createIssueButton.setManaged(canCreateIssue);
+    }
+
     private void configureFilters() {
         keywordField.textProperty().addListener((observable, oldValue, newValue) -> applyFilters());
         statusFilterCombo.valueProperty().addListener((observable, oldValue, newValue) -> applyFilters());
@@ -396,6 +469,10 @@ public class IssueBrowserController {
 
             IssueSearchCondition condition = new IssueSearchCondition();
             condition.setProjectId(UserSession.getCurrentProjectId());
+            AuthenticatedUser currentUser = UserSession.getCurrentUser();
+            if (currentUser != null && currentUser.role() == UiRole.DEV) {
+                condition.setAssigneeAccountId(currentUser.accountId());
+            }
             List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
             issues.setAll(
                 summaries.stream()
@@ -435,6 +512,10 @@ public class IssueBrowserController {
     private void loadIssueAcrossProjects(Long issueId) {
         try {
             IssueSearchCondition condition = new IssueSearchCondition();
+            AuthenticatedUser currentUser = UserSession.getCurrentUser();
+            if (currentUser != null && currentUser.role() == UiRole.DEV) {
+                condition.setAssigneeAccountId(currentUser.accountId());
+            }
             List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
             issues.setAll(
                 summaries.stream()
@@ -575,6 +656,16 @@ public class IssueBrowserController {
         if (assigneeFilterCombo.getValue() == null) {
             assigneeFilterCombo.setValue(ALL_OPTION);
         }
+
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        if (currentUser != null && currentUser.role() == UiRole.DEV) {
+            String option = currentUser.displayName();
+            ensureOptionPresent(assigneeFilterCombo, option);
+            assigneeFilterCombo.setValue(option);
+            assigneeFilterCombo.setDisable(true);
+        } else {
+            assigneeFilterCombo.setDisable(false);
+        }
     }
 
     private void refreshProjectNames() {
@@ -618,6 +709,7 @@ public class IssueBrowserController {
             commentFeedbackLabel.setText("");
             statusBadgeLabel.getStyleClass().setAll("label", "badge", "status-badge");
             priorityBadgeLabel.getStyleClass().setAll("label", "badge", "priority-badge");
+            updateWorkflowAvailability(null);
             return;
         }
 
@@ -641,6 +733,33 @@ public class IssueBrowserController {
 
         statusBadgeLabel.getStyleClass().setAll("label", "badge", "status-badge", "status-" + uiStatus.name().toLowerCase(Locale.ROOT));
         priorityBadgeLabel.getStyleClass().setAll("label", "badge", "priority-badge", "priority-" + uiPriority.name().toLowerCase(Locale.ROOT));
+        updateWorkflowAvailability(issue);
+    }
+
+    private void updateWorkflowAvailability(IssueDetailResponse issue) {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        UiRole role = currentUser == null ? null : currentUser.role();
+
+        boolean hasIssue = issue != null;
+        UiIssueStatus status = hasIssue ? UiModelMapper.toUiIssueStatus(issue.getStatus()) : null;
+        boolean assignedToCurrentDev = hasIssue
+            && currentUser != null
+            && issue.getAssigneeAccountId() != null
+            && issue.getAssigneeAccountId().equals(currentUser.accountId());
+
+        boolean canActAsPl = role == UiRole.PL;
+
+        assignButton.setDisable(!hasIssue || !canActAsPl || (status != UiIssueStatus.NEW && status != UiIssueStatus.REOPENED));
+        closeButton.setDisable(!hasIssue || !canActAsPl || status != UiIssueStatus.RESOLVED);
+        markFixedButton.setDisable(!hasIssue || role != UiRole.DEV || status != UiIssueStatus.ASSIGNED || !assignedToCurrentDev);
+        reopenButton.setDisable(!hasIssue || role != UiRole.DEV || status != UiIssueStatus.CLOSED);
+        resolveButton.setDisable(!hasIssue || role != UiRole.TESTER || status != UiIssueStatus.FIXED);
+        failButton.setDisable(!hasIssue || role != UiRole.TESTER || status != UiIssueStatus.FIXED);
+    }
+
+    private void setActionVisibility(Button button, boolean visible) {
+        button.setVisible(visible);
+        button.setManaged(visible);
     }
 
     private List<RecommendationResponse> loadRecommendations(IssueDetailResponse issue) {
@@ -691,6 +810,10 @@ public class IssueBrowserController {
 
     private JavaFxBackendBridge backendBridge() {
         return JavaFxBackendBridge.getInstance();
+    }
+
+    public void setMainLayoutController(MainLayoutController mainLayoutController) {
+        this.mainLayoutController = mainLayoutController;
     }
 
     private record AccountChoice(Long accountId, String label, Double recommendationScore) {

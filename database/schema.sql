@@ -22,6 +22,20 @@ CREATE TABLE IF NOT EXISTS projects (
         ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS project_members (
+    project_member_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    account_id INTEGER NOT NULL,
+    assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_project_members_project_account UNIQUE (project_id, account_id),
+    CONSTRAINT fk_project_members_project
+        FOREIGN KEY (project_id) REFERENCES projects(project_id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_project_members_account
+        FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+        ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS tags (
     tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -128,3 +142,9 @@ CREATE INDEX IF NOT EXISTS idx_issue_histories_issue_changed_at
 
 CREATE INDEX IF NOT EXISTS idx_issue_histories_changed_by
     ON issue_histories (changed_by_account_id, changed_at);
+
+CREATE INDEX IF NOT EXISTS idx_project_members_account
+    ON project_members (account_id);
+
+CREATE INDEX IF NOT EXISTS idx_project_members_project
+    ON project_members (project_id);

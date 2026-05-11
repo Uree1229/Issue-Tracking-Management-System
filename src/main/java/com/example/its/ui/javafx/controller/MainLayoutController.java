@@ -1,10 +1,12 @@
 package com.example.its.ui.javafx.controller;
 
 import com.example.its.ItsApplication;
+import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.InquiryQueryPayload;
 import com.example.its.ui.javafx.model.SearchQueryPayload;
 import com.example.its.ui.javafx.model.UiRole;
+import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
 import com.example.its.ui.javafx.support.UiAlertHelper;
 import javafx.event.ActionEvent;
@@ -13,16 +15,19 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
+
+import java.util.List;
 
 public class MainLayoutController {
 
     @FXML
-    private Label currentProjectLabel;
+    private ComboBox<ProjectResponse> projectSwitcherCombo;
 
     @FXML
     private Label currentUserLabel;
@@ -43,9 +48,6 @@ public class MainLayoutController {
     private Button searchNavButton;
 
     @FXML
-    private Button inquiryNavButton;
-
-    @FXML
     private Button createIssueNavButton;
 
     @FXML
@@ -57,43 +59,41 @@ public class MainLayoutController {
     private Node homeView;
     private Node issueBrowserView;
     private Node searchView;
-    private Node inquiryView;
     private Node createIssueView;
     private Node analyticsView;
     private Node adminView;
     private IssueBrowserController issueBrowserController;
     private SearchController searchController;
-    private InquiryController inquiryController;
     private CreateIssueController createIssueController;
     private AnalyticsController analyticsController;
     private AdminController adminController;
     private Stage searchResultsStage;
     private Stage inquiryResultsStage;
+    private boolean suppressProjectSwitch;
 
     @FXML
     private void initialize() {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        configureProjectSwitcher();
+        loadAccessibleProjects();
         refreshCurrentContext();
         boolean isAdmin = currentUser != null && currentUser.role() == UiRole.ADMIN;
-        boolean canCreateIssue = currentUser != null && currentUser.role().canCreateIssue();
-        boolean canViewAnalytics = currentUser != null && currentUser.role().canViewAnalytics();
+        UiRole role = currentUser == null ? null : currentUser.role();
+        boolean canCreateIssue = role != null && role.canCreateIssue();
+        boolean canViewAnalytics = role != null && role.canViewAnalytics();
+        boolean canOpenIssues = role != null && role.canOpenIssueBrowser();
+        boolean canOpenSearch = role != null && role.canOpenSearch();
 
-        adminNavButton.setVisible(isAdmin);
-        adminNavButton.setManaged(isAdmin);
-        createIssueNavButton.setVisible(canCreateIssue);
-        createIssueNavButton.setManaged(canCreateIssue);
-        analyticsNavButton.setVisible(canViewAnalytics);
-        analyticsNavButton.setManaged(canViewAnalytics);
+        configureSidebarForRole(isAdmin, canOpenIssues, canOpenSearch, canViewAnalytics);
         loadHomeView();
         showHome(null);
     }
 
     public void refreshCurrentContext() {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
-        String projectName = UserSession.getCurrentProjectName();
-        currentProjectLabel.setText(projectName == null || projectName.isBlank() ? "No Project" : projectName);
         currentUserLabel.setText(currentUser == null ? "Guest" : currentUser.displayName());
         currentRoleLabel.setText(currentUser == null ? "UNAUTHENTICATED" : currentUser.role().name());
+        syncProjectSwitcherSelection();
     }
 
     @FXML
@@ -108,11 +108,33 @@ public class MainLayoutController {
 
     @FXML
     public void showIssues(ActionEvent event) {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        if (currentUser != null && currentUser.role() == UiRole.ADMIN) {
+            showAdminProjectTab();
+            activateNav(issuesNavButton);
+            return;
+        }
+        if (currentUser == null || !currentUser.role().canOpenIssueBrowser()) {
+            UiAlertHelper.showInfo("Access Restricted", "Issue Browser is not available for this role.", "Sign in as PL, DEV, or TESTER to browse issues.");
+            navigateHome();
+            return;
+        }
         showIssueBrowser();
     }
 
     @FXML
     public void showSearch(ActionEvent event) {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        if (currentUser != null && currentUser.role() == UiRole.ADMIN) {
+            showAdmin(null);
+            activateNav(searchNavButton);
+            return;
+        }
+        if (currentUser == null || !currentUser.role().canOpenSearch()) {
+            UiAlertHelper.showInfo("Access Restricted", "Search is not available for this role.", "Sign in as PL, DEV, or TESTER to use the issue search flow.");
+            navigateHome();
+            return;
+        }
         activateNav(searchNavButton);
         if (searchView == null) {
             loadSearchView();
@@ -127,26 +149,22 @@ public class MainLayoutController {
     }
 
     public void showSearchResults(SearchQueryPayload payload) {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        if (currentUser == null || !currentUser.role().canOpenSearch()) {
+            UiAlertHelper.showInfo("Access Restricted", "Search results are not available for this role.", "Sign in as PL, DEV, or TESTER to use the structured search flow.");
+            return;
+        }
         showSearchResultsWindow(payload);
     }
 
     @FXML
-    public void showInquiry(ActionEvent event) {
-        activateNav(inquiryNavButton);
-        if (inquiryView == null) {
-            loadInquiryView();
-        }
-        if (inquiryView == null) {
+    public void showCreateIssue(ActionEvent event) {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        if (currentUser == null || !currentUser.role().canCreateIssue()) {
+            UiAlertHelper.showInfo("Access Restricted", "Issue registration is not available for this role.", "Only PL and TESTER accounts can create new issues in this UI.");
+            navigateHome();
             return;
         }
-        contentContainer.getChildren().setAll(inquiryView);
-        if (inquiryController != null) {
-            inquiryController.refreshData();
-        }
-    }
-
-    @FXML
-    public void showCreateIssue(ActionEvent event) {
         activateNav(createIssueNavButton);
         if (createIssueView == null) {
             loadCreateIssueView();
@@ -162,6 +180,12 @@ public class MainLayoutController {
 
     @FXML
     public void showAnalytics(ActionEvent event) {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        if (currentUser == null || !currentUser.role().canViewAnalytics()) {
+            UiAlertHelper.showInfo("Access Restricted", "Analytics are only available for PL accounts.", "Use the admin area for project setup, or sign in as PL to view project metrics.");
+            navigateHome();
+            return;
+        }
         activateNav(analyticsNavButton);
         if (analyticsView == null) {
             loadAnalyticsView();
@@ -177,7 +201,8 @@ public class MainLayoutController {
 
     @FXML
     public void showAdmin(ActionEvent event) {
-        activateNav(adminNavButton);
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        activateNav(currentUser != null && currentUser.role() == UiRole.ADMIN ? searchNavButton : adminNavButton);
         if (adminView == null) {
             loadAdminView();
         }
@@ -191,7 +216,8 @@ public class MainLayoutController {
     }
 
     public void showAdminProjectTab() {
-        activateNav(adminNavButton);
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        activateNav(currentUser != null && currentUser.role() == UiRole.ADMIN ? issuesNavButton : adminNavButton);
         if (adminView == null) {
             loadAdminView();
         }
@@ -208,6 +234,21 @@ public class MainLayoutController {
     private void handleLogout() {
         UserSession.clear();
         ItsApplication.showLoginView();
+    }
+
+    @FXML
+    private void handleProjectSwitch() {
+        if (suppressProjectSwitch) {
+            return;
+        }
+
+        ProjectResponse selectedProject = projectSwitcherCombo.getValue();
+        UserSession.setCurrentProject(
+            selectedProject == null ? null : selectedProject.getProjectId(),
+            selectedProject == null ? null : selectedProject.getName()
+        );
+        refreshCurrentContext();
+        refreshActiveViewForProjectChange();
     }
 
     public void showIssuesWithKeyword(String keyword) {
@@ -284,11 +325,17 @@ public class MainLayoutController {
         }
     }
 
+    public void reloadProjectOptions() {
+        loadAccessibleProjects();
+        refreshCurrentContext();
+    }
+
     private void loadIssueBrowserView() {
         try {
             FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/issue-browser.fxml"));
             Node view = loader.load();
             issueBrowserController = loader.getController();
+            issueBrowserController.setMainLayoutController(this);
             issueBrowserView = view;
         } catch (Exception exception) {
             UiAlertHelper.showError("View Load Failed", "Issues view could not be opened.", exception);
@@ -353,7 +400,7 @@ public class MainLayoutController {
             scene.getStylesheets().add(ItsApplication.class.getResource("/styles/app.css").toExternalForm());
 
             Stage stage = new Stage();
-            stage.setTitle("Inquiry Results");
+            stage.setTitle("Issue Details");
             stage.setMinWidth(1040);
             stage.setMinHeight(660);
             if (ItsApplication.getPrimaryStage() != null) {
@@ -366,7 +413,7 @@ public class MainLayoutController {
             stage.toFront();
             inquiryResultsStage = stage;
         } catch (Exception exception) {
-            UiAlertHelper.showError("View Load Failed", "Inquiry results window could not be opened.", exception);
+            UiAlertHelper.showError("View Load Failed", "Issue details window could not be opened.", exception);
         }
     }
 
@@ -376,17 +423,6 @@ public class MainLayoutController {
             loader.load();
         } catch (Exception exception) {
             UiAlertHelper.showError("View Load Failed", "Search results view could not be opened.", exception);
-        }
-    }
-
-    private void loadInquiryView() {
-        try {
-            FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/inquiry-view.fxml"));
-            inquiryView = loader.load();
-            inquiryController = loader.getController();
-            inquiryController.setMainLayoutController(this);
-        } catch (Exception exception) {
-            UiAlertHelper.showError("View Load Failed", "Inquiry view could not be opened.", exception);
         }
     }
 
@@ -423,13 +459,126 @@ public class MainLayoutController {
     }
 
     private void activateNav(Button activeButton) {
-        Button[] buttons = {homeNavButton, issuesNavButton, searchNavButton, inquiryNavButton, createIssueNavButton, analyticsNavButton, adminNavButton};
+        Button[] buttons = {homeNavButton, issuesNavButton, searchNavButton, createIssueNavButton, analyticsNavButton, adminNavButton};
         for (Button button : buttons) {
             button.getStyleClass().remove("active");
         }
         if (!activeButton.getStyleClass().contains("active")) {
             activeButton.getStyleClass().add("active");
         }
+    }
+
+    private void configureProjectSwitcher() {
+        projectSwitcherCombo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ProjectResponse project) {
+                return project == null ? "No Project" : project.getName();
+            }
+
+            @Override
+            public ProjectResponse fromString(String string) {
+                return null;
+            }
+        });
+        projectSwitcherCombo.setPromptText("No Project");
+    }
+
+    private void loadAccessibleProjects() {
+        AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        List<ProjectResponse> projects = backendBridge().getAccessibleProjects(currentUser);
+
+        suppressProjectSwitch = true;
+        projectSwitcherCombo.getItems().setAll(projects);
+
+        ProjectResponse selectedProject = null;
+        Long currentProjectId = UserSession.getCurrentProjectId();
+        if (currentProjectId != null) {
+            selectedProject = projects.stream()
+                .filter(project -> currentProjectId.equals(project.getProjectId()))
+                .findFirst()
+                .orElse(null);
+        }
+        if (selectedProject == null) {
+            selectedProject = backendBridge().findPreferredProject(currentUser).orElse(null);
+        }
+
+        projectSwitcherCombo.setDisable(projects.isEmpty());
+        projectSwitcherCombo.setValue(selectedProject);
+        UserSession.setCurrentProject(
+            selectedProject == null ? null : selectedProject.getProjectId(),
+            selectedProject == null ? null : selectedProject.getName()
+        );
+        suppressProjectSwitch = false;
+    }
+
+    private void syncProjectSwitcherSelection() {
+        Long currentProjectId = UserSession.getCurrentProjectId();
+        ProjectResponse selectedProject = projectSwitcherCombo.getItems().stream()
+            .filter(project -> currentProjectId != null && currentProjectId.equals(project.getProjectId()))
+            .findFirst()
+            .orElse(null);
+
+        suppressProjectSwitch = true;
+        projectSwitcherCombo.setValue(selectedProject);
+        suppressProjectSwitch = false;
+    }
+
+    private void refreshActiveViewForProjectChange() {
+        if (contentContainer.getChildren().isEmpty()) {
+            return;
+        }
+
+        Node activeView = contentContainer.getChildren().get(0);
+        if (activeView == issueBrowserView && issueBrowserController != null) {
+            issueBrowserController.refreshData();
+            return;
+        }
+        if (activeView == searchView && searchController != null) {
+            searchController.refreshData();
+            return;
+        }
+        if (activeView == createIssueView && createIssueController != null) {
+            createIssueController.refreshContext();
+            return;
+        }
+        if (activeView == analyticsView && analyticsController != null) {
+            analyticsController.refreshMetrics();
+        }
+    }
+
+    private JavaFxBackendBridge backendBridge() {
+        return JavaFxBackendBridge.getInstance();
+    }
+
+    private void configureSidebarForRole(boolean isAdmin, boolean canOpenIssues, boolean canOpenSearch, boolean canViewAnalytics) {
+        if (isAdmin) {
+            issuesNavButton.setText("Project");
+            searchNavButton.setText("Account Management");
+            issuesNavButton.setVisible(true);
+            issuesNavButton.setManaged(true);
+            searchNavButton.setVisible(true);
+            searchNavButton.setManaged(true);
+            adminNavButton.setVisible(false);
+            adminNavButton.setManaged(false);
+            createIssueNavButton.setVisible(false);
+            createIssueNavButton.setManaged(false);
+            analyticsNavButton.setVisible(false);
+            analyticsNavButton.setManaged(false);
+            return;
+        }
+
+        issuesNavButton.setText("Issues");
+        searchNavButton.setText("Search");
+        issuesNavButton.setVisible(canOpenIssues);
+        issuesNavButton.setManaged(canOpenIssues);
+        searchNavButton.setVisible(canOpenSearch);
+        searchNavButton.setManaged(canOpenSearch);
+        createIssueNavButton.setVisible(false);
+        createIssueNavButton.setManaged(false);
+        analyticsNavButton.setVisible(canViewAnalytics);
+        analyticsNavButton.setManaged(canViewAnalytics);
+        adminNavButton.setVisible(false);
+        adminNavButton.setManaged(false);
     }
 
 }

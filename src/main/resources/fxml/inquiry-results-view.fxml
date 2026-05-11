@@ -24,10 +24,10 @@
 
     <HBox spacing="14" alignment="CENTER_LEFT" styleClass="panel-card">
         <VBox spacing="6" HBox.hgrow="ALWAYS">
-            <Label text="Inquiry Results" styleClass="page-title"/>
-            <Label fx:id="resultHeaderLabel" text="Inquiry Results" wrapText="true" styleClass="landing-copy"/>
+            <Label text="Issue Details" styleClass="page-title"/>
+            <Label fx:id="resultHeaderLabel" text="Issue Details" wrapText="true" styleClass="landing-copy"/>
         </VBox>
-        <Button mnemonicParsing="false" onAction="#backToInquiry" text="Back to Inquiry" styleClass="ghost-button"/>
+        <Button mnemonicParsing="false" onAction="#backToInquiry" text="Back to Results" styleClass="ghost-button"/>
     </HBox>
 
     <Label fx:id="inquirySummaryLabel" text="Showing the most recent issues." styleClass="landing-copy"/>
