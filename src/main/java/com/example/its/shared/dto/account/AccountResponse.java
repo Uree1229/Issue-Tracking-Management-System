@@ -1,6 +1,5 @@
 package com.example.its.shared.dto.account;
 
-import com.example.its.persistence.entity.Account;
 import com.example.its.persistence.entity.Role;
 
 import java.time.LocalDateTime;
@@ -27,18 +26,6 @@ public class AccountResponse {
         this.role = role;
         this.createdAt = createdAt;
         this.active = active;
-    }
-
-    public static AccountResponse from(Account account) {
-        return new AccountResponse(
-            account.getAccountId(),
-            account.getLoginId(),
-            account.getName(),
-            account.getEmail(),
-            account.getRole(),
-            account.getCreatedAt(),
-            account.isActive()
-        );
     }
 
     public Long getAccountId() {

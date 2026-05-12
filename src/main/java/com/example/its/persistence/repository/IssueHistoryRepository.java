@@ -7,10 +7,6 @@ import java.util.List;
 
 public class IssueHistoryRepository extends JpaRepositorySupport<IssueHistory> {
 
-    public IssueHistoryRepository() {
-        super(IssueHistory.class);
-    }
-
     public IssueHistoryRepository(EntityManager entityManager) {
         super(IssueHistory.class, entityManager);
     }
@@ -20,7 +16,7 @@ public class IssueHistoryRepository extends JpaRepositorySupport<IssueHistory> {
                 "select h from IssueHistory h where h.issue.issueId = :issueId order by h.changedAt desc",
                 IssueHistory.class
             )
-            .setParameter("issueId", issueId)
+            .setParameter("issueId", toJpaId(issueId))
             .getResultList();
     }
 
@@ -29,7 +25,7 @@ public class IssueHistoryRepository extends JpaRepositorySupport<IssueHistory> {
                 "select h from IssueHistory h where h.changedBy.accountId = :accountId order by h.changedAt desc",
                 IssueHistory.class
             )
-            .setParameter("accountId", accountId)
+            .setParameter("accountId", toJpaId(accountId))
             .getResultList();
     }
 }

@@ -1,21 +1,15 @@
 package com.example.its.persistence.repository;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.PersistenceUnitUtil;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
-public abstract class JpaRepositorySupport<T> implements AutoCloseable {
+public abstract class JpaRepositorySupport<T> {
 
     private final Class<T> entityClass;
     protected final EntityManager entityManager;
-
-    protected JpaRepositorySupport(Class<T> entityClass) {
-        this(entityClass, PersistenceContextProvider.createEntityManager());
-    }
 
     protected JpaRepositorySupport(Class<T> entityClass, EntityManager entityManager) {
         this.entityClass = entityClass;
@@ -23,7 +17,7 @@ public abstract class JpaRepositorySupport<T> implements AutoCloseable {
     }
 
     public Optional<T> findById(Long id) {
-        return Optional.ofNullable(entityManager.find(entityClass, id));
+        return Optional.ofNullable(entityManager.find(entityClass, toJpaId(id)));
     }
 
     public List<T> findAll() {
@@ -34,48 +28,35 @@ public abstract class JpaRepositorySupport<T> implements AutoCloseable {
     }
 
     public T save(T entity) {
-        return executeInTransaction(manager -> {
-            PersistenceUnitUtil unitUtil = manager.getEntityManagerFactory().getPersistenceUnitUtil();
-            Object identifier = unitUtil.getIdentifier(entity);
-            if (identifier == null) {
-                manager.persist(entity);
-                return entity;
-            }
-            return manager.merge(entity);
-        });
+        requireActiveTransaction();
+
+        PersistenceUnitUtil unitUtil = entityManager.getEntityManagerFactory().getPersistenceUnitUtil();
+        Object identifier = unitUtil.getIdentifier(entity);
+        if (identifier == null) {
+            entityManager.persist(entity);
+            return entity;
+        }
+        return entityManager.merge(entity);
     }
 
     public void delete(T entity) {
-        executeInTransaction(manager -> {
-            T attachedEntity = manager.contains(entity) ? entity : manager.merge(entity);
-            manager.remove(attachedEntity);
-            return null;
-        });
+        requireActiveTransaction();
+
+        T attachedEntity = entityManager.contains(entity) ? entity : entityManager.merge(entity);
+        entityManager.remove(attachedEntity);
     }
 
     public void deleteById(Long id) {
         findById(id).ifPresent(this::delete);
     }
 
-    protected <R> R executeInTransaction(Function<EntityManager, R> action) {
-        EntityTransaction transaction = entityManager.getTransaction();
-        try {
-            transaction.begin();
-            R result = action.apply(entityManager);
-            transaction.commit();
-            return result;
-        } catch (RuntimeException exception) {
-            if (transaction.isActive()) {
-                transaction.rollback();
-            }
-            throw exception;
+    private void requireActiveTransaction() {
+        if (!entityManager.getTransaction().isActive()) {
+            throw new IllegalStateException("쓰기 작업은 TransactionManager.execute 안에서만 수행해야 합니다.");
         }
     }
 
-    @Override
-    public void close() {
-        if (entityManager.isOpen()) {
-            entityManager.close();
-        }
+    protected Integer toJpaId(Long id) {
+        return id != null ? Math.toIntExact(id) : null;
     }
 }

@@ -7,10 +7,6 @@ import java.util.Optional;
 
 public class IssueDeltaRepository extends JpaRepositorySupport<IssueDelta> {
 
-    public IssueDeltaRepository() {
-        super(IssueDelta.class);
-    }
-
     public IssueDeltaRepository(EntityManager entityManager) {
         super(IssueDelta.class, entityManager);
     }
@@ -20,7 +16,7 @@ public class IssueDeltaRepository extends JpaRepositorySupport<IssueDelta> {
                 "select d from IssueDelta d where d.issueHistory.historyId = :historyId",
                 IssueDelta.class
             )
-            .setParameter("historyId", historyId)
+            .setParameter("historyId", toJpaId(historyId))
             .getResultStream()
             .findFirst();
     }

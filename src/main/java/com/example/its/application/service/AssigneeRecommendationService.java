@@ -7,6 +7,7 @@ import com.example.its.persistence.entity.Role;
 import com.example.its.persistence.entity.Tag;
 import com.example.its.persistence.repository.AccountRepository;
 import com.example.its.persistence.repository.IssueRepository;
+import com.example.its.persistence.transaction.TransactionManager;
 import com.example.its.shared.dto.issue.RecommendationResponse;
 
 import java.util.ArrayList;
@@ -22,43 +23,43 @@ import java.util.stream.Collectors;
 
 public class AssigneeRecommendationService {
 
-    private final AccountRepository accountRepository;
-    private final IssueRepository issueRepository;
-
-    public AssigneeRecommendationService(AccountRepository accountRepository, IssueRepository issueRepository) {
-        this.accountRepository = accountRepository;
-        this.issueRepository = issueRepository;
+    public AssigneeRecommendationService() {
     }
 
     // 1. 태그 기반 담당자(DEV) 추천 알고리즘 (초기 구현, 나중에 더 고도화할 예정)
     public List<RecommendationResponse> recommendAssignees(Long projectId, List<Long> targetTagIds) {
-        // Step 1. 후보군 추출: 시스템 내 모든 활성 상태의 DEV 계정
-        List<Account> devAccounts = accountRepository.findByRole(Role.DEV).stream()
-                .filter(Account::isActive)
-                .toList();
+        return TransactionManager.execute(entityManager -> {
+            AccountRepository accountRepository = new AccountRepository(entityManager);
+            IssueRepository issueRepository = new IssueRepository(entityManager);
 
-        List<RecommendationResponse> recommendations = new ArrayList<>();
+            // Step 1. 후보군 추출: 시스템 내 모든 활성 상태의 DEV 계정
+            List<Account> devAccounts = accountRepository.findByRole(Role.DEV).stream()
+                    .filter(Account::isActive)
+                    .toList();
 
-        // Step 2. 각 DEV 후보별 스코어링 계산
-        for (Account dev : devAccounts) {
-            double score = calculateScore(dev, projectId, targetTagIds);
-            recommendations.add(new RecommendationResponse(
-                    dev.getAccountId(),
-                    dev.getLoginId(),
-                    dev.getName(),
-                    score
-            ));
-        }
+            List<RecommendationResponse> recommendations = new ArrayList<>();
 
-        // Step 3. 점수 기준 내림차순 정렬 (가장 점수가 높은 사람이 1위)
-        recommendations.sort((r1, r2) -> Double.compare(r2.getScore(), r1.getScore()));
+            // Step 2. 각 DEV 후보별 스코어링 계산
+            for (Account dev : devAccounts) {
+                double score = calculateScore(issueRepository, dev, projectId, targetTagIds);
+                recommendations.add(new RecommendationResponse(
+                        dev.getAccountId(),
+                        dev.getLoginId(),
+                        dev.getName(),
+                        score
+                ));
+            }
 
-        // Step 4. 상위 5명만 끊어서 리턴
-        return recommendations.stream().limit(5).collect(Collectors.toList());
+            // Step 3. 점수 기준 내림차순 정렬 (가장 점수가 높은 사람이 1위)
+            recommendations.sort((r1, r2) -> Double.compare(r2.getScore(), r1.getScore()));
+
+            // Step 4. 상위 5명만 끊어서 리턴
+            return recommendations.stream().limit(5).collect(Collectors.toList());
+        });
     }
 
     // 2. 가중치 계산 및 점수 산출 모델
-    private double calculateScore(Account dev, Long projectId, List<Long> targetTagIds) {
+    private double calculateScore(IssueRepository issueRepository, Account dev, Long projectId, List<Long> targetTagIds) {
         double score = 50.0; // 기본 점수
 
         // DEV가 과거에 담당했던 혹은 현재 담당 중인 모든 이슈 조회

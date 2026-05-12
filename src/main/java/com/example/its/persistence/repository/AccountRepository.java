@@ -9,10 +9,6 @@ import java.util.Optional;
 
 public class AccountRepository extends JpaRepositorySupport<Account> {
 
-    public AccountRepository() {
-        super(Account.class);
-    }
-
     public AccountRepository(EntityManager entityManager) {
         super(Account.class, entityManager);
     }
@@ -48,7 +44,7 @@ public class AccountRepository extends JpaRepositorySupport<Account> {
 
     public List<Account> findActiveAccounts() {
         return entityManager.createQuery(
-                "select a from Account a where a.isActive = true order by a.name",
+                "select a from Account a where a.isActive = 1 order by a.name",
                 Account.class
             )
             .getResultList();

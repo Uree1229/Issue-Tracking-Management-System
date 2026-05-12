@@ -9,10 +9,6 @@ import java.util.List;
 
 public class IssueRepository extends JpaRepositorySupport<Issue> {
 
-    public IssueRepository() {
-        super(Issue.class);
-    }
-
     public IssueRepository(EntityManager entityManager) {
         super(Issue.class, entityManager);
     }
@@ -22,7 +18,19 @@ public class IssueRepository extends JpaRepositorySupport<Issue> {
                 "select i from Issue i where i.project.projectId = :projectId order by i.reportedAt desc",
                 Issue.class
             )
-            .setParameter("projectId", projectId)
+            .setParameter("projectId", toJpaId(projectId))
+            .getResultList();
+    }
+
+    public List<Issue> findByProjectIdAndTagId(Long projectId, Long tagId) {
+        return entityManager.createQuery(
+                "select distinct i from Issue i join i.tags t "
+                    + "where i.project.projectId = :projectId and t.tagId = :tagId "
+                    + "order by i.reportedAt desc",
+                Issue.class
+            )
+            .setParameter("projectId", toJpaId(projectId))
+            .setParameter("tagId", toJpaId(tagId))
             .getResultList();
     }
 
@@ -31,7 +39,7 @@ public class IssueRepository extends JpaRepositorySupport<Issue> {
                 "select i from Issue i where i.reporter.accountId = :accountId order by i.reportedAt desc",
                 Issue.class
             )
-            .setParameter("accountId", accountId)
+            .setParameter("accountId", toJpaId(accountId))
             .getResultList();
     }
 
@@ -40,7 +48,7 @@ public class IssueRepository extends JpaRepositorySupport<Issue> {
                 "select i from Issue i where i.assignee.accountId = :accountId order by i.lastModifiedAt desc",
                 Issue.class
             )
-            .setParameter("accountId", accountId)
+            .setParameter("accountId", toJpaId(accountId))
             .getResultList();
     }
 
