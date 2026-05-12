@@ -70,4 +70,9 @@ public class IssueFacade {
     public IssueDetailResponse addComment(CommentCreateRequest request) {
         return issueService.addComment(request);
     }
+
+    // Feat: 이슈 태그 업데이트 기능 추가
+    public IssueDetailResponse updateIssueTags(IssueTagUpdateRequest request) {
+        return issueService.updateIssueTags(request);
+    }
 }
