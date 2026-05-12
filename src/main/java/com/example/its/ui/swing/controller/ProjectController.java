@@ -1,20 +1,32 @@
 package com.example.its.ui.swing.controller;
 
+import com.example.its.application.facade.ProjectFacade;
+import com.example.its.persistence.entity.Role;
+import com.example.its.shared.dto.project.ProjectCreateRequest;
+import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.ui.swing.SessionContext;
 import com.example.its.ui.swing.view.MainFrame;
 import com.example.its.ui.swing.view.ProjectListView;
 import com.example.its.ui.swing.view.dialog.ProjectCreateDialog;
+
+import java.util.List;
 
 public class ProjectController {
 
     private final ProjectListView view;
     private final MainFrame mainFrame;
-    // TODO: private final ProjectFacade projectFacade;
-    // TODO: private final AccountFacade accountFacade;
+    private final ProjectFacade projectFacade;
+    private IssueController issueController;
 
-    public ProjectController(ProjectListView view, MainFrame mainFrame) {
+    public ProjectController(ProjectListView view, MainFrame mainFrame, ProjectFacade projectFacade) {
         this.view = view;
         this.mainFrame = mainFrame;
+        this.projectFacade = projectFacade;
         initListeners();
+    }
+
+    public void setIssueController(IssueController issueController) {
+        this.issueController = issueController;
     }
 
     private void initListeners() {
@@ -28,9 +40,12 @@ public class ProjectController {
         int row = view.getSelectedRow();
         if (row < 0) return;
 
-        // TODO: 선택한 프로젝트 ID를 SessionContext 또는 IssueController에 전달
-        // Long projectId = (Long) view.getValueAt(row, 0);
-        // SessionContext.setCurrentProjectId(projectId);
+        Long projectId = (Long) view.getValueAt(row, 0);
+        SessionContext.setCurrentProjectId(projectId);
+        if (issueController != null) {
+            issueController.setCurrentProjectId(projectId);
+            issueController.loadIssues();
+        }
         mainFrame.showIssueList();
     }
 
@@ -40,41 +55,45 @@ public class ProjectController {
             String name = dialog.getProjectName();
             if (name.isEmpty()) { dialog.showError("프로젝트명을 입력하세요."); return; }
 
-            // TODO: projectFacade.createProject(new ProjectCreateRequest(name, dialog.getDescription()));
-            // loadProjects();
-            dialog.dispose();
+            try {
+                Long creatorId = SessionContext.getCurrentAccount().getAccountId();
+                projectFacade.createProject(new ProjectCreateRequest(name, dialog.getDescription(), creatorId));
+                loadProjects();
+                dialog.dispose();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                dialog.showError("생성 실패: " + ex.getMessage());
+            }
         });
         dialog.setVisible(true);
     }
 
     private void handleDeleteProject() {
-        int row = view.getSelectedRow();
-        if (row < 0) return;
-        // TODO: Long projectId = (Long) view.getValueAt(row, 0);
-        // projectFacade.deleteProject(projectId);
-        // loadProjects();
+        // TODO: ProjectFacade에 deleteProject 노출 필요
     }
 
     private void handleLogout() {
-        // TODO: accountFacade.logout(); SessionContext.clear();
+        SessionContext.clear();
         mainFrame.showLogin();
     }
 
-    // TODO: BE 연결 후 실제 데이터 로딩
     public void loadProjects() {
-        // List<ProjectResponse> projects = projectFacade.getAllProjects();
-        // Object[][] data = projects.stream()
-        //     .map(p -> new Object[]{p.getProjectId(), p.getName(), p.getDescription(), p.getCreatedAt()})
-        //     .toArray(Object[][]::new);
-        // view.setProjects(data);
+        try {
+            List<ProjectResponse> projects = projectFacade.getAllProjects();
+            Object[][] data = projects.stream()
+                .map(p -> new Object[]{
+                    p.getProjectId(), p.getName(), p.getDescription(),
+                    p.getCreatedAt() != null ? p.getCreatedAt().toLocalDate().toString() : ""
+                })
+                .toArray(Object[][]::new);
+            view.setProjects(data);
+        } catch (Exception ex) {
+            view.setProjects(new Object[0][]);
+        }
 
-        // 임시 더미 데이터
-        view.setProjects(new Object[][]{
-            {1L, "project1", "샘플 프로젝트", "2026-01-01"}
-        });
-
-        // TODO: 현재 로그인 계정이 ADMIN일 때만 관리 버튼 표시
-        // boolean isAdmin = SessionContext.getCurrentAccount().getRole() == Role.ADMIN;
-        // view.setAdminButtonsVisible(isAdmin);
+        if (SessionContext.getCurrentAccount() != null) {
+            boolean isAdmin = SessionContext.getCurrentAccount().getRole() == Role.ADMIN;
+            view.setAdminButtonsVisible(isAdmin);
+        }
     }
 }

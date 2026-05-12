@@ -1,5 +1,8 @@
 package com.example.its.ui.swing.controller;
 
+import com.example.its.application.facade.AccountFacade;
+import com.example.its.shared.dto.account.AccountResponse;
+import com.example.its.ui.swing.SessionContext;
 import com.example.its.ui.swing.view.LoginView;
 import com.example.its.ui.swing.view.MainFrame;
 
@@ -7,11 +10,12 @@ public class LoginController {
 
     private final LoginView view;
     private final MainFrame mainFrame;
-    // TODO: private final AccountFacade accountFacade;
+    private final AccountFacade accountFacade;
 
-    public LoginController(LoginView view, MainFrame mainFrame) {
+    public LoginController(LoginView view, MainFrame mainFrame, AccountFacade accountFacade) {
         this.view = view;
         this.mainFrame = mainFrame;
+        this.accountFacade = accountFacade;
         initListeners();
     }
 
@@ -28,20 +32,14 @@ public class LoginController {
             return;
         }
 
-        // TODO: BE 연결 후 아래 주석 해제
-        // try {
-        //     AccountResponse account = accountFacade.login(loginId, password);
-        //     SessionContext.setCurrentAccount(account);
-        //     view.clearFields();
-        //     view.clearError();
-        //     mainFrame.showProjectList();
-        // } catch (Exception ex) {
-        //     view.showError("아이디 또는 비밀번호가 올바르지 않습니다.");
-        // }
-
-        // 임시: 화면 전환 확인용
-        view.clearError();
-        view.clearFields();
-        mainFrame.showProjectList();
+        try {
+            AccountResponse account = accountFacade.login(loginId, password);
+            SessionContext.setCurrentAccount(account);
+            view.clearFields();
+            view.clearError();
+            mainFrame.showProjectList();
+        } catch (Exception ex) {
+            view.showError("아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
     }
 }

@@ -1,10 +1,20 @@
 package com.example.its.ui.swing.controller;
 
-import com.example.its.ui.swing.view.IssueCreateView;
-import com.example.its.ui.swing.view.IssueDetailView;
-import com.example.its.ui.swing.view.IssueListView;
-import com.example.its.ui.swing.view.MainFrame;
+import com.example.its.application.facade.AccountFacade;
+import com.example.its.application.facade.IssueFacade;
+import com.example.its.persistence.entity.IssueStatus;
+import com.example.its.persistence.entity.Priority;
+import com.example.its.persistence.entity.Role;
+import com.example.its.shared.dto.account.AccountResponse;
+import com.example.its.shared.dto.issue.*;
+import com.example.its.ui.swing.SessionContext;
+import com.example.its.ui.swing.view.*;
 import com.example.its.ui.swing.view.dialog.AssigneeDialog;
+
+import javax.swing.JOptionPane;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class IssueController {
 
@@ -12,33 +22,35 @@ public class IssueController {
     private final IssueDetailView detailView;
     private final IssueCreateView createView;
     private final MainFrame mainFrame;
-    // TODO: private final IssueFacade issueFacade;
-    // TODO: private final AccountFacade accountFacade;
+    private final IssueFacade issueFacade;
+    private final AccountFacade accountFacade;
 
     private Long currentProjectId;
     private Long currentIssueId;
+    private IssueDetailResponse currentDetail;
 
     public IssueController(IssueListView listView, IssueDetailView detailView,
-                           IssueCreateView createView, MainFrame mainFrame) {
-        this.listView   = listView;
+                           IssueCreateView createView, MainFrame mainFrame,
+                           IssueFacade issueFacade, AccountFacade accountFacade) {
+        this.listView = listView;
         this.detailView = detailView;
         this.createView = createView;
-        this.mainFrame  = mainFrame;
+        this.mainFrame = mainFrame;
+        this.issueFacade = issueFacade;
+        this.accountFacade = accountFacade;
         initListeners();
     }
 
     private void initListeners() {
-        // 이슈 목록
         listView.getSearchButton().addActionListener(e -> loadIssues());
         listView.getResetButton().addActionListener(e -> { listView.resetFilters(); loadIssues(); });
         listView.getCreateButton().addActionListener(e -> showCreateView());
-        listView.getStatisticsButton().addActionListener(e -> mainFrame.showStatistics());
+        listView.getStatisticsButton().addActionListener(e -> showStatistics());
         listView.getBackButton().addActionListener(e -> mainFrame.showProjectList());
         listView.getTable().getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) showIssueDetail();
         });
 
-        // 이슈 상세
         detailView.getBackButton().addActionListener(e -> mainFrame.showIssueList());
         detailView.getAddCommentButton().addActionListener(e -> handleAddComment());
         detailView.getAssignButton().addActionListener(e -> handleAssign());
@@ -47,9 +59,11 @@ public class IssueController {
         detailView.getReopenButton().addActionListener(e -> handleReopen());
         detailView.getCloseButton().addActionListener(e -> handleClose());
 
-        // 이슈 등록
         createView.getSubmitButton().addActionListener(e -> handleCreateIssue());
         createView.getCancelButton().addActionListener(e -> mainFrame.showIssueList());
+
+        mainFrame.getStatisticsView().getBackButton().addActionListener(e -> mainFrame.showIssueList());
+        mainFrame.getStatisticsView().getRefreshButton().addActionListener(e -> loadStatistics());
     }
 
     public void setCurrentProjectId(Long projectId) {
@@ -59,14 +73,26 @@ public class IssueController {
     // ── 이슈 목록 ──────────────────────────────────────────────
 
     public void loadIssues() {
-        // TODO: IssueSearchCondition 조건 조합 후 issueFacade.searchIssues(currentProjectId, condition)
-        // List<IssueSummaryResponse> issues = issueFacade.searchIssues(currentProjectId, condition);
-        // listView.getIssueTableModel().setRows(...);
+        try {
+            List<IssueSummaryResponse> issues = issueFacade.searchIssues(buildSearchCondition());
+            listView.getIssueTableModel().setRows(issues);
+        } catch (Exception ex) {
+            listView.getIssueTableModel().clearRows();
+        }
+    }
 
-        // 임시 더미 데이터
-        java.util.List<Object[]> dummy = new java.util.ArrayList<>();
-        dummy.add(new Object[]{1L, "로그인 버튼 클릭 시 에러", "NEW", "MAJOR", "tester1", "", "2026-04-27"});
-        listView.getIssueTableModel().setRows(dummy);
+    private IssueSearchCondition buildSearchCondition() {
+        String statusStr = listView.getStatusFilter();
+        String priorityStr = listView.getPriorityFilter();
+        String keyword = listView.getKeywordFilter();
+
+        IssueStatus status = "전체".equals(statusStr) ? null : IssueStatus.valueOf(statusStr);
+        Priority priority = "전체".equals(priorityStr) ? null : Priority.valueOf(priorityStr);
+
+        return new IssueSearchCondition(
+            currentProjectId, status, priority, null, null,
+            keyword.isEmpty() ? null : keyword
+        );
     }
 
     // ── 이슈 상세 ──────────────────────────────────────────────
@@ -76,85 +102,200 @@ public class IssueController {
         if (row < 0) return;
 
         currentIssueId = listView.getIssueTableModel().getIssueIdAt(row);
-        // TODO: IssueDetailResponse detail = issueFacade.getIssue(currentIssueId);
-        // bindDetailView(detail);
-        // configureActionButtons(detail.getStatus(), SessionContext.getCurrentAccount().getRole());
+        if (currentIssueId == null) return;
 
-        // 임시 바인딩
-        detailView.setTitle("로그인 버튼 클릭 시 에러");
-        detailView.setStatus("NEW");
-        detailView.setPriority("MAJOR");
-        detailView.setReporter("tester1");
-        detailView.setAssignee("-");
-        detailView.setFixer("-");
-        detailView.setReportedAt("2026-04-27");
-        detailView.setLastModifiedAt("2026-04-27");
-        detailView.setDescription("로그인 화면에서 버튼 클릭 시 NPE 발생");
-        detailView.setTags("");
-        detailView.setCommentHistory("");
-
-        detailView.hideAllActionButtons();
-        // TODO: 역할+상태 기반으로 버튼 표시
-        detailView.setAssignButtonVisible(true);
-
+        try {
+            currentDetail = issueFacade.getIssue(currentIssueId);
+            bindDetailView(currentDetail);
+            configureActionButtons(currentDetail.getStatus(), SessionContext.getCurrentAccount());
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "이슈 조회 실패: " + ex.getMessage());
+            return;
+        }
         mainFrame.showIssueDetail();
+    }
+
+    private void bindDetailView(IssueDetailResponse d) {
+        detailView.setTitle(d.getTitle() != null ? d.getTitle() : "");
+        detailView.setStatus(d.getStatus() != null ? d.getStatus().name() : "");
+        detailView.setPriority(d.getPriority() != null ? d.getPriority().name() : "");
+        detailView.setReporter(d.getReporterName() != null ? d.getReporterName() : "-");
+        detailView.setAssignee(d.getAssigneeName() != null ? d.getAssigneeName() : "-");
+        detailView.setFixer(d.getFixerName() != null ? d.getFixerName() : "-");
+        detailView.setReportedAt(d.getReportedAt() != null ? d.getReportedAt().toLocalDate().toString() : "");
+        detailView.setLastModifiedAt(d.getLastModifiedAt() != null ? d.getLastModifiedAt().toLocalDate().toString() : "");
+        detailView.setDescription(d.getDescription() != null ? d.getDescription() : "");
+        detailView.setTags(d.getTagNames() != null ? String.join(", ", d.getTagNames()) : "");
+
+        if (d.getComments() != null) {
+            String commentText = d.getComments().stream()
+                .map(c -> "[" + (c.getCreatedAt() != null ? c.getCreatedAt().toLocalDate() : "") + "] "
+                        + (c.getAuthorName() != null ? c.getAuthorName() : "") + ": " + c.getContent())
+                .collect(Collectors.joining("\n"));
+            detailView.setCommentHistory(commentText);
+        }
+    }
+
+    private void configureActionButtons(IssueStatus status, AccountResponse me) {
+        detailView.hideAllActionButtons();
+        detailView.setRecommendationVisible(false);
+        if (me == null || status == null) return;
+
+        Role role = me.getRole();
+
+        switch (status) {
+            case NEW, REOPENED -> {
+                if (role == Role.PL) {
+                    detailView.setAssignButtonVisible(true);
+                    loadRecommendations();
+                }
+            }
+            case ASSIGNED -> {
+                if (role == Role.DEV && me.getAccountId().equals(currentDetail.getAssigneeAccountId())) {
+                    detailView.setFixButtonVisible(true);
+                }
+            }
+            case FIXED -> {
+                if (role == Role.TESTER) {
+                    detailView.setResolveButtonVisible(true);
+                    detailView.setReopenButtonVisible(true);
+                }
+            }
+            case RESOLVED -> {
+                if (role == Role.PL) detailView.setCloseButtonVisible(true);
+            }
+            case CLOSED -> {
+                if (role == Role.PL || role == Role.TESTER) detailView.setReopenButtonVisible(true);
+            }
+        }
+    }
+
+    private void loadRecommendations() {
+        try {
+            List<RecommendationResponse> recs = issueFacade.recommendAssignees(currentProjectId, Collections.emptyList());
+            if (!recs.isEmpty()) {
+                String text = recs.stream()
+                    .map(r -> r.getName() + " [" + String.format("%.1f", r.getScore()) + "점]")
+                    .collect(Collectors.joining(", "));
+                detailView.setRecommendations(text);
+                detailView.setRecommendationVisible(true);
+            }
+        } catch (Exception ex) {
+            detailView.setRecommendationVisible(false);
+        }
     }
 
     // ── 상태 변경 핸들러 ──────────────────────────────────────
 
     private void handleAssign() {
-        AssigneeDialog dialog = new AssigneeDialog(mainFrame);
-        // TODO: AccountResponse 리스트 로딩
-        // List<AccountResponse> devs = accountFacade.getDevAccounts();
-        dialog.setDevelopers(new String[]{"dev1 (추천 1위)", "dev2 (추천 2위)", "dev3"});
-        dialog.getConfirmButton().addActionListener(e -> {
-            int idx = dialog.getSelectedIndex();
-            if (idx < 0) return;
-            // TODO: issueFacade.assignIssue(currentIssueId, selectedAccountId);
-            dialog.dispose();
-            refreshDetail();
-        });
-        dialog.setVisible(true);
+        try {
+            List<RecommendationResponse> recs = issueFacade.recommendAssignees(currentProjectId, Collections.emptyList());
+            AssigneeDialog dialog = new AssigneeDialog(mainFrame);
+            dialog.setRecommendations(recs);
+            dialog.getConfirmButton().addActionListener(e -> {
+                Long assigneeId = dialog.getSelectedAccountId();
+                if (assigneeId == null) return;
+                try {
+                    Long plId = SessionContext.getCurrentAccount().getAccountId();
+                    issueFacade.assign(new IssueAssignRequest(currentIssueId, plId, assigneeId));
+                    dialog.dispose();
+                    refreshDetail();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "Assign 실패: " + ex.getMessage());
+                }
+            });
+            dialog.setVisible(true);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "추천 목록 조회 실패: " + ex.getMessage());
+        }
     }
 
     private void handleFix() {
-        // TODO: issueFacade.fixIssue(currentIssueId);
-        refreshDetail();
+        String comment = JOptionPane.showInputDialog(mainFrame, "완료 코멘트를 입력하세요:", "Fixed 처리", JOptionPane.PLAIN_MESSAGE);
+        if (comment == null || comment.trim().isEmpty()) return;
+        try {
+            Long devId = SessionContext.getCurrentAccount().getAccountId();
+            issueFacade.fix(new IssueFixRequest(currentIssueId, devId, comment.trim()));
+            refreshDetail();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "Fixed 처리 실패: " + ex.getMessage());
+        }
     }
 
     private void handleResolve() {
-        // TODO: issueFacade.resolveIssue(currentIssueId);
-        refreshDetail();
+        try {
+            Long testerId = SessionContext.getCurrentAccount().getAccountId();
+            issueFacade.resolve(new IssueResolveRequest(currentIssueId, testerId));
+            refreshDetail();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "Resolved 처리 실패: " + ex.getMessage());
+        }
     }
 
     private void handleReopen() {
-        // TODO: issueFacade.reopenIssue(currentIssueId);
-        refreshDetail();
+        IssueStatus status = currentDetail != null ? currentDetail.getStatus() : null;
+        Long accountId = SessionContext.getCurrentAccount().getAccountId();
+
+        if (status == IssueStatus.FIXED) {
+            // TESTER가 검증 실패 처리 (FIXED → REOPENED)
+            String reason = JOptionPane.showInputDialog(mainFrame, "반려 사유를 입력하세요:", "검증 실패", JOptionPane.PLAIN_MESSAGE);
+            if (reason == null || reason.trim().isEmpty()) return;
+            try {
+                issueFacade.fail(new IssueFailRequest(currentIssueId, accountId, reason.trim()));
+                refreshDetail();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(mainFrame, "검증 실패 처리 오류: " + ex.getMessage());
+            }
+        } else {
+            // CLOSED → REOPENED (PL 또는 TESTER)
+            try {
+                issueFacade.reopen(new IssueReopenRequest(currentIssueId, accountId, null));
+                refreshDetail();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(mainFrame, "Reopen 실패: " + ex.getMessage());
+            }
+        }
     }
 
     private void handleClose() {
-        // TODO: issueFacade.closeIssue(currentIssueId);
-        refreshDetail();
+        try {
+            Long plId = SessionContext.getCurrentAccount().getAccountId();
+            issueFacade.close(new IssueCloseRequest(currentIssueId, plId));
+            refreshDetail();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "Close 실패: " + ex.getMessage());
+        }
     }
 
     private void handleAddComment() {
         String content = detailView.getCommentInput();
         if (content.isEmpty()) return;
-        // TODO: issueFacade.addComment(currentIssueId, new CommentCreateRequest(content));
-        detailView.clearCommentInput();
-        refreshDetail();
+        try {
+            Long authorId = SessionContext.getCurrentAccount().getAccountId();
+            issueFacade.addComment(new CommentCreateRequest(currentIssueId, authorId, content));
+            detailView.clearCommentInput();
+            refreshDetail();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "댓글 추가 실패: " + ex.getMessage());
+        }
     }
 
     private void refreshDetail() {
-        // TODO: 상세 화면 재로딩
+        try {
+            currentDetail = issueFacade.getIssue(currentIssueId);
+            bindDetailView(currentDetail);
+            configureActionButtons(currentDetail.getStatus(), SessionContext.getCurrentAccount());
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "새로고침 실패: " + ex.getMessage());
+        }
     }
 
     // ── 이슈 등록 ──────────────────────────────────────────────
 
     private void showCreateView() {
-        // TODO: SessionContext에서 현재 계정명과 현재 시각 설정
-        createView.setReporter("현재계정");
-        createView.setReportedAt(java.time.LocalDateTime.now().toString());
+        AccountResponse me = SessionContext.getCurrentAccount();
+        createView.setReporter(me != null ? me.getName() : "");
+        createView.setReportedAt(java.time.LocalDate.now().toString());
         createView.clearForm();
         mainFrame.showIssueCreate();
     }
@@ -162,12 +303,44 @@ public class IssueController {
     private void handleCreateIssue() {
         String title = createView.getTitle();
         String desc  = createView.getDescription();
-
         if (title.isEmpty() || desc.isEmpty()) return;
 
-        // TODO: issueFacade.createIssue(currentProjectId, new IssueCreateRequest(title, desc, priority));
-        createView.clearForm();
-        loadIssues();
-        mainFrame.showIssueList();
+        try {
+            Long reporterId = SessionContext.getCurrentAccount().getAccountId();
+            Priority priority = Priority.valueOf(createView.getPriority());
+            issueFacade.registerIssue(new IssueCreateRequest(
+                title, desc, priority, reporterId, null, currentProjectId, Collections.emptyList()
+            ));
+            createView.clearForm();
+            loadIssues();
+            mainFrame.showIssueList();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "이슈 등록 실패: " + ex.getMessage());
+        }
+    }
+
+    // ── 통계 ──────────────────────────────────────────────────
+
+    private void showStatistics() {
+        loadStatistics();
+        mainFrame.showStatistics();
+    }
+
+    public void loadStatistics() {
+        StatisticsView statsView = mainFrame.getStatisticsView();
+        try {
+            StatisticsResponse stats = issueFacade.getStatistics(currentProjectId);
+
+            StringBuilder statusSb = new StringBuilder("전체: ").append(stats.getTotalIssueCount()).append("\n\n");
+            stats.getStatusCounts().forEach((s, c) -> statusSb.append(s.name()).append(": ").append(c).append("\n"));
+            statsView.setStatusStats(statusSb.toString());
+
+            StringBuilder prioritySb = new StringBuilder();
+            stats.getPriorityCounts().forEach((p, c) -> prioritySb.append(p.name()).append(": ").append(c).append("\n"));
+            statsView.setDailyStats(prioritySb.toString());
+            statsView.setMonthlyStats("");
+        } catch (Exception ex) {
+            statsView.setStatusStats("통계 조회 실패: " + ex.getMessage());
+        }
     }
 }

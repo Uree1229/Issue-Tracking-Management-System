@@ -35,3 +35,10 @@ tasks.register('copyDatabase', Copy) {
     from(layout.projectDirectory.dir('database'))
     into(layout.buildDirectory.dir('database'))
 }
+
+tasks.register('runSwing', JavaExec) {
+    group = 'application'
+    description = 'Run Swing UI'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.its.ui.swing.SwingApp'
+}

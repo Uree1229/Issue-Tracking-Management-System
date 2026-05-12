@@ -1,18 +1,25 @@
 package com.example.its.ui.swing.controller;
 
+import com.example.its.application.facade.AccountFacade;
+import com.example.its.persistence.entity.Role;
+import com.example.its.shared.dto.account.AccountCreateRequest;
+import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.ui.swing.view.AccountManageView;
 import com.example.its.ui.swing.view.MainFrame;
 import com.example.its.ui.swing.view.dialog.AccountCreateDialog;
+
+import java.util.List;
 
 public class AccountController {
 
     private final AccountManageView view;
     private final MainFrame mainFrame;
-    // TODO: private final AccountFacade accountFacade;
+    private final AccountFacade accountFacade;
 
-    public AccountController(AccountManageView view, MainFrame mainFrame) {
+    public AccountController(AccountManageView view, MainFrame mainFrame, AccountFacade accountFacade) {
         this.view = view;
         this.mainFrame = mainFrame;
+        this.accountFacade = accountFacade;
         initListeners();
     }
 
@@ -23,18 +30,18 @@ public class AccountController {
     }
 
     public void loadAccounts() {
-        // TODO: List<AccountResponse> accounts = accountFacade.getAllAccounts();
-        // Object[][] data = accounts.stream()
-        //     .map(a -> new Object[]{a.getAccountId(), a.getLoginId(), a.getName(),
-        //                            a.getEmail(), a.getRole(), a.isActive()})
-        //     .toArray(Object[][]::new);
-        // view.setAccounts(data);
-
-        // 임시 더미 데이터
-        view.setAccounts(new Object[][]{
-            {1L, "admin", "관리자", "admin@its.com", "ADMIN", true},
-            {2L, "dev1",  "개발자1", "dev1@its.com",  "DEV",   true}
-        });
+        try {
+            List<AccountResponse> accounts = accountFacade.getActiveAccounts();
+            Object[][] data = accounts.stream()
+                .map(a -> new Object[]{
+                    a.getAccountId(), a.getLoginId(), a.getName(),
+                    a.getEmail(), a.getRole().name(), a.isActive()
+                })
+                .toArray(Object[][]::new);
+            view.setAccounts(data);
+        } catch (Exception ex) {
+            view.setAccounts(new Object[0][]);
+        }
     }
 
     private void handleCreateAccount() {
@@ -44,25 +51,25 @@ public class AccountController {
             String password = dialog.getPassword();
             String name     = dialog.getName();
             String email    = dialog.getEmail();
-            String role     = dialog.getRole();
 
             if (loginId.isEmpty() || password.isEmpty() || name.isEmpty() || email.isEmpty()) {
                 dialog.showError("모든 필수 항목을 입력하세요.");
                 return;
             }
 
-            // TODO: accountFacade.createAccount(new AccountCreateRequest(loginId, password, name, email, role));
-            loadAccounts();
-            dialog.dispose();
+            try {
+                Role role = Role.valueOf(dialog.getRole());
+                accountFacade.register(new AccountCreateRequest(loginId, password, name, email, role));
+                loadAccounts();
+                dialog.dispose();
+            } catch (Exception ex) {
+                dialog.showError("계정 생성 실패: " + ex.getMessage());
+            }
         });
         dialog.setVisible(true);
     }
 
     private void handleDeactivate() {
-        int row = view.getSelectedRow();
-        if (row < 0) return;
-        // TODO: Long accountId = (Long) view.getValueAt(row, 0);
-        // accountFacade.deactivateAccount(accountId);
-        // loadAccounts();
+        // TODO: AccountFacade에 deactivateAccount 메서드 노출 필요
     }
 }

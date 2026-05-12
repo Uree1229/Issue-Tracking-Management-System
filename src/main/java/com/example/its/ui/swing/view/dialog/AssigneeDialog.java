@@ -1,5 +1,7 @@
 package com.example.its.ui.swing.view.dialog;
 
+import com.example.its.shared.dto.issue.RecommendationResponse;
+
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -11,16 +13,17 @@ import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AssigneeDialog extends JDialog {
 
     private final DefaultListModel<String> listModel = new DefaultListModel<>();
     private final JList<String> devList = new JList<>(listModel);
+    private final List<Long> accountIds = new ArrayList<>();
 
     private final JButton confirmButton = new JButton("Assign");
     private final JButton cancelButton  = new JButton("취소");
-
-    private Long selectedAccountId = null;
 
     public AssigneeDialog(JFrame parent) {
         super(parent, "Assignee 지정", true);
@@ -43,16 +46,22 @@ public class AssigneeDialog extends JDialog {
         cancelButton.addActionListener(e -> dispose());
     }
 
-    // TODO: AccountResponse 리스트로 교체, 추천 순위 함께 표시
-    public void setDevelopers(String[] displayNames) {
+    public void setRecommendations(List<RecommendationResponse> recommendations) {
         listModel.clear();
-        for (String name : displayNames) listModel.addElement(name);
+        accountIds.clear();
+        for (RecommendationResponse r : recommendations) {
+            listModel.addElement(String.format("%s (%s) [%.1f점]", r.getName(), r.getLoginId(), r.getScore()));
+            accountIds.add(r.getAccountId());
+        }
     }
 
     public int getSelectedIndex() { return devList.getSelectedIndex(); }
 
-    public Long getSelectedAccountId() { return selectedAccountId; }
-    public void setSelectedAccountId(Long id) { this.selectedAccountId = id; }
+    public Long getSelectedAccountId() {
+        int idx = devList.getSelectedIndex();
+        if (idx < 0 || idx >= accountIds.size()) return null;
+        return accountIds.get(idx);
+    }
 
     public JButton getConfirmButton() { return confirmButton; }
     public JButton getCancelButton()  { return cancelButton; }
