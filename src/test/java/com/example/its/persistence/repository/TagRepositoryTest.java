@@ -6,7 +6,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -26,11 +26,13 @@ class TagRepositoryTest {
     private EntityManager entityManager;
     private TagRepository tagRepository;
 
-    @BeforeEach
-    void resetDatabaseBeforeEachTest() {
+    @BeforeAll
+    static void resetDatabaseBeforeAllTests() {
         // 테스트 DB 초기화
         TestDatabaseManager.resetDatabase();
+    }
 
+    void setUpEntityManagerAndRepository() {
         // EntityManager 생성 및 TagRepository 초기화
         entityManager = ENTITY_MANAGER_FACTORY.createEntityManager();
         entityManager.getTransaction().begin();
@@ -50,6 +52,8 @@ class TagRepositoryTest {
 
     @Test
     void testFindByProjectId() {
+        setUpEntityManagerAndRepository();
+
         List<Tag> tags = tagRepository.findByProjectId(1L);
 
         assertEquals(2, tags.size());
@@ -59,6 +63,8 @@ class TagRepositoryTest {
 
     @Test
     void testFindByProjectIdAndName() {
+        setUpEntityManagerAndRepository();
+
         Optional<Tag> tag = tagRepository.findByProjectIdAndName(1L, "backend");
 
         assertTrue(tag.isPresent());
@@ -68,6 +74,8 @@ class TagRepositoryTest {
 
     @Test
     void testExistsByProjectIdAndName() {
+        setUpEntityManagerAndRepository();
+
         Boolean exists = tagRepository.existsByProjectIdAndName(1L, "ui");
 
         assertTrue(exists);
@@ -75,6 +83,11 @@ class TagRepositoryTest {
 
     @Test
     void testDeleteTagUsedByIssue() {
+        setUpEntityManagerAndRepository();
+        entityManager.createNativeQuery("delete from issue_tags").executeUpdate();
+        entityManager.createNativeQuery("insert into issue_tags (issue_id, tag_id) values (1, 1), (2, 2)")
+            .executeUpdate();
+
         Tag tag = tagRepository.findById(1L)
             .orElseThrow();
 

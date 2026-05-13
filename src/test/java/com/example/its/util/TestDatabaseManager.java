@@ -10,9 +10,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public final class TestDatabaseManager {
-
-    private static final Path TEST_DATABASE_PATH = Path.of("build", "test-database", "its-test.db");
-    private static final String TEST_DATABASE_URL = "jdbc:sqlite:" + TEST_DATABASE_PATH;
+    private static final Path TEST_DATABASE_PATH = Path.of("database", "its.db");
+    private static final String TEST_DATABASE_URL = "jdbc:sqlite:" + toSqlitePath(TEST_DATABASE_PATH);
     private static final Path SCHEMA_SQL_PATH = Path.of("database", "schema.sql");
     private static final Path TEST_SEED_SQL_PATH = Path.of("src", "test", "resources", "database", "test-seed-data.sql");
 
@@ -45,6 +44,10 @@ public final class TestDatabaseManager {
 
     private static String readSqlFile(Path path) throws IOException {
         return Files.readString(path, StandardCharsets.UTF_8);
+    }
+
+    private static String toSqlitePath(Path path) {
+        return path.toString().replace('\\', '/');
     }
 
     private static void executeSql(Connection connection, String sql) throws SQLException {
