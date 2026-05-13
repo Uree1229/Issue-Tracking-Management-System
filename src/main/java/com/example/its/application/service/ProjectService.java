@@ -91,7 +91,8 @@ public class ProjectService {
                 }
             }
 
-            return projectMapper.toResponse(projectRepository.save(project));
+            // Fix: save() 호출을 없애고, 변경된 project 객체를 그대로 반환 (JPA가 알아서 DB에 반영하도록)
+            return projectMapper.toResponse(project);
         });
     }
 
