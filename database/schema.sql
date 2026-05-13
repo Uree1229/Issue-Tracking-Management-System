@@ -114,6 +114,20 @@ CREATE TABLE IF NOT EXISTS issue_tags (
         ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS project_members (
+    project_member_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    account_id INTEGER NOT NULL,
+    assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_project_members_project_account UNIQUE (project_id, account_id),
+    CONSTRAINT fk_project_members_project
+        FOREIGN KEY (project_id) REFERENCES projects(project_id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_project_members_account
+        FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+        ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_issues_project_status_priority
     ON issues (project_id, status, priority);
 
