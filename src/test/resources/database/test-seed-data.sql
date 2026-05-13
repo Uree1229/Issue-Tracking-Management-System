@@ -11,7 +11,7 @@ INSERT INTO accounts (
     (1, 'admin', 'admin', 'Default Admin', 'admin@its.test', 'ADMIN', '2026-01-01T00:00:00', 1),
     (2, 'dev1', 'password', 'Dev One', 'dev1@its.test', 'DEV', '2026-01-01T00:00:00', 1),
     (3, 'tester1', 'password', 'Tester One', 'tester1@its.test', 'TESTER', '2026-01-01T00:00:00', 1),
-    (4, 'pl1', 'password', 'Project Leader One', 'pl1@its.test', 'PL', '2026-01-01T00:00:00', 1),
+    (4, 'pl1', 'password', 'Project Leader One', 'pl1@its.test', 'PL', '2026-01-01T00:00:00', 1);
 
 INSERT INTO projects (
     project_id,
