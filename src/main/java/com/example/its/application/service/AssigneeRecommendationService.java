@@ -57,29 +57,43 @@ public class AssigneeRecommendationService {
     }
 
     // 2. 가중치 계산 및 점수 산출 모델 (다중 팩터 통합 알고리즘)
-
     /**
-     * 본 시스템의 담당자 추천 엔진은 단순한 과거 이력의 합산을 넘어, 
-     * 데이터의 시계열적 가치(Time-Decay)와 현재 업무의 리스크 볼륨(Risk-Weighted Workload)을 종합적으로 평가하는 다중 팩터 모델(Multi-Factor Model)을 채택하고 있습니다. 
-     * 이를 통해 가장 최근의 폼(Form)이 좋고, 현재 업무 병목이 없는 최적의 개발자를 산출합니다.
-     * 
-     * 최종 점수 = 기본점수(50) + 경험 점수(시계열 반감기 적용) - 리스크 기반 부하량 패널티
-     * 
-     * 1. Risk-Weighted Workload (리스크 차등 패널티): 현재 진행 중인 이슈의 Priority 단위별로 차등 패널티 부여
-     * - BLOCKER/CRITICAL (-8), MAJOR (-5), MINOR (-1)
-     * 
-     * 2. Time-Decay Factor (시계열 반감기): 과거에 해결한 이슈일수록 현재 폼(Form)이 좋은지/나쁜지에 미치는 영향이 적다고 판단하여
-     * 주(Week) 단위로 10%씩 경험치 가중치를 지수 감소(Exponential Decay)시킴. (최소 10% 보존)
-     * 
-     * 3. Coverage Ratio (전문성 커버리지): Jaccard Similarity 개념을 차용하여, 타겟 이슈의 태그 중
-     * 후보 개발자가 다루어본 태그의 비율(%)을 계산하여 점수에 반영.
-     * 
-     * @param issueRepository DB 조회를 위한 Repository
-     * @param dev 평가 대상 개발자의 계정
-     * @param projectId 현재 할당하려는 이슈가 속한 프로젝트 ID
-     * @param targetTagIds 현재 할당하려는 이슈의 요구 기술 스택(Tag) 목록
-     * @return 0 이상의 최종 추천 점수 (높을수록 적합하다는 의미)
-     */
+    본 소프트웨어의 ‘Tag 기반 담당 개발자 추천 엔진’은 단순히 태그의 일치 여부만을 확인하는 것이 아닌,
+    데이터의 시계열적 가치와 현재 업무의 부하를 종합적으로 평가하는 
+    다중 팩터 모델(Multi-Factor Model)을 채택하고 있습니다. 
+
+    아래는 개발자 추천을 위한 구체적인 3요소입니다.
+
+    1. Risk-Weighted Workload (리스크 차등 패널티)
+    현재 진행 중인 이슈의 Priority를 기준으로 페널티 점수를 부여합니다. 
+    즉, 현재 Priority가 높은 이슈를 검토/해결중인 개발자는 추천 대상에서 멀어지게 됩니다. 
+    구체적인 패널티 점수 수치는 아래와 같습니다. 
+    - BLOCKER/CRITICAL (-8)
+    - MAJOR (-5)
+    - MINOR (-1)
+
+    2. Time-Decay Factor (시계열 반감기)
+    과거에 해결한 이슈일수록 디테일을 까먹을 가능성이 높겠죠? 
+    같은 경험치이면 되도록 최근에 동종 이슈를를 해결한 개발자가 더 빠르게 이슈를 해결할 수 있을 것입니다.
+    따라서, 동일한 이슈 해결 경험이더라도 시간이 오래될수록(더 과거일수록) 점수를 깎습니다.
+    - 주(Week) 단위로 10%씩 경험치 가중치를 지수 감소(Exponential Decay)시킴. 
+    - (단, 0으로 수렴하지 않도록 최솟값은 10%로 설정
+    
+    3. Coverage Ratio (전문성 커버리지)
+    - Jaccard Similarity 개념을 차용하여, 
+    - 타겟 이슈의 태그 중 후보 개발자가 다루어본 태그의 비율(%)을 계산하여 점수에 반영합니다. 
+    - 즉, 가장 근본적으로 해당 이슈와 유사한 이슈를 해결해본 개발자를 추천하도록 합니다.
+
+    위 3요소의 조화를 통해, 사용자는 현재 업무 병목이 없으며, 
+    과거에 유사한 이슈 해결 경험이 있고, 해당 이슈 해결 경험이 되도록 최근에 있었던 
+    최적의 개발자를 추천받을 수 있습니다.
+    
+    * @param issueRepository DB 조회를 위한 Repository
+    * @param dev 평가 대상 개발자의 계정
+    * @param projectId 현재 할당하려는 이슈가 속한 프로젝트 ID
+    * @param targetTagIds 현재 할당하려는 이슈의 요구 기술 스택(Tag) 목록
+    * @return 0 이상의 최종 추천 점수 (높을수록 적합하다는 의미)
+    **/
 
     private double calculateScore(IssueRepository issueRepository, Account dev, Long projectId, List<Long> targetTagIds) {
         double score = 50.0; // 기본 점수
