@@ -64,7 +64,7 @@ public class MainFrame extends JFrame {
         this.projectController = new ProjectController(projectListView, this, projectFacade);
 
         IssueController issueController =
-            new IssueController(issueListView, issueDetailView, issueCreateView, this, issueFacade, accountFacade);
+            new IssueController(issueListView, issueDetailView, issueCreateView, this, issueFacade, accountFacade, projectFacade);
 
         projectController.setIssueController(issueController);
 

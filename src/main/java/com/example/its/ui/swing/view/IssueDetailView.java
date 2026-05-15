@@ -42,6 +42,7 @@ public class IssueDetailView extends JPanel {
     // 추천 영역 (PL 전용)
     private final JLabel recommendationLabel = new JLabel(" ");
 
+    private final JButton editTagsButton = new JButton("태그 편집");
     private final JButton backButton = new JButton("← 이슈 목록");
 
     public IssueDetailView() {
@@ -117,6 +118,7 @@ public class IssueDetailView extends JPanel {
     private JPanel buildActionPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         panel.add(backButton);
+        panel.add(editTagsButton);
         panel.add(assignButton);
         panel.add(fixButton);
         panel.add(resolveButton);
@@ -164,5 +166,6 @@ public class IssueDetailView extends JPanel {
     public JButton getReopenButton()     { return reopenButton; }
     public JButton getCloseButton()      { return closeButton; }
     public JButton getAddCommentButton() { return addCommentButton; }
+    public JButton getEditTagsButton()   { return editTagsButton; }
     public JButton getBackButton()       { return backButton; }
 }

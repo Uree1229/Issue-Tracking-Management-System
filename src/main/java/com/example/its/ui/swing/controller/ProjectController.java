@@ -9,10 +9,9 @@ import com.example.its.ui.swing.SessionContext;
 import com.example.its.ui.swing.view.MainFrame;
 import com.example.its.ui.swing.view.ProjectListView;
 import com.example.its.ui.swing.view.dialog.ProjectCreateDialog;
-import com.example.its.ui.swing.view.dialog.ProjectTagDialog;
+import com.example.its.ui.swing.view.dialog.TagManageDialog;
 
 import javax.swing.JOptionPane;
-import java.util.Collections;
 import java.util.List;
 
 public class ProjectController {
@@ -76,23 +75,24 @@ public class ProjectController {
     private void handleManageTags() {
         int row = view.getSelectedRow();
         if (row < 0) {
-            JOptionPane.showMessageDialog(mainFrame, "태그를 추가할 프로젝트를 선택하세요.");
+            JOptionPane.showMessageDialog(mainFrame, "태그를 관리할 프로젝트를 선택하세요.");
             return;
         }
         Long projectId = (Long) view.getValueAt(row, 0);
-        ProjectTagDialog dialog = new ProjectTagDialog(mainFrame);
-        dialog.getApplyButton().addActionListener(e -> {
-            List<String> tagNames = dialog.getTagNames();
-            if (tagNames.isEmpty()) { dialog.showError("태그명을 입력하세요."); return; }
-            try {
-                projectFacade.updateProjectTags(new ProjectTagUpdateRequest(projectId, tagNames, Collections.emptyList()));
-                dialog.dispose();
-                JOptionPane.showMessageDialog(mainFrame, "태그가 추가됐습니다.");
-            } catch (Exception ex) {
-                dialog.showError("태그 추가 실패: " + ex.getMessage());
+        try {
+            ProjectResponse project = projectFacade.getProject(projectId);
+            TagManageDialog dialog = new TagManageDialog(mainFrame, project.getTags());
+            dialog.setVisible(true);
+
+            List<String> toAdd    = dialog.getTagNamesToAdd();
+            List<Long>   toRemove = dialog.getTagIdsToRemove();
+            if (!toAdd.isEmpty() || !toRemove.isEmpty()) {
+                projectFacade.updateProjectTags(new ProjectTagUpdateRequest(projectId, toAdd, toRemove));
+                loadProjects();
             }
-        });
-        dialog.setVisible(true);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "태그 관리 실패: " + ex.getMessage());
+        }
     }
 
     private void handleLogout() {

@@ -2,18 +2,24 @@ package com.example.its.ui.swing.controller;
 
 import com.example.its.application.facade.AccountFacade;
 import com.example.its.application.facade.IssueFacade;
+import com.example.its.application.facade.ProjectFacade;
 import com.example.its.persistence.entity.IssueStatus;
 import com.example.its.persistence.entity.Priority;
 import com.example.its.persistence.entity.Role;
 import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.shared.dto.issue.*;
+import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.shared.dto.tag.TagResponse;
 import com.example.its.ui.swing.SessionContext;
 import com.example.its.ui.swing.view.*;
 import com.example.its.ui.swing.view.dialog.AssigneeDialog;
+import com.example.its.ui.swing.view.dialog.TagEditDialog;
 
 import javax.swing.JOptionPane;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class IssueController {
@@ -24,6 +30,7 @@ public class IssueController {
     private final MainFrame mainFrame;
     private final IssueFacade issueFacade;
     private final AccountFacade accountFacade;
+    private final ProjectFacade projectFacade;
 
     private Long currentProjectId;
     private Long currentIssueId;
@@ -31,19 +38,21 @@ public class IssueController {
 
     public IssueController(IssueListView listView, IssueDetailView detailView,
                            IssueCreateView createView, MainFrame mainFrame,
-                           IssueFacade issueFacade, AccountFacade accountFacade) {
+                           IssueFacade issueFacade, AccountFacade accountFacade,
+                           ProjectFacade projectFacade) {
         this.listView = listView;
         this.detailView = detailView;
         this.createView = createView;
         this.mainFrame = mainFrame;
         this.issueFacade = issueFacade;
         this.accountFacade = accountFacade;
+        this.projectFacade = projectFacade;
         initListeners();
     }
 
     private void initListeners() {
         listView.getSearchButton().addActionListener(e -> loadIssues());
-        listView.getResetButton().addActionListener(e -> { listView.resetFilters(); loadIssues(); });
+        listView.getResetButton().addActionListener(e -> { listView.resetFilters(); applyRoleRestrictions(); loadIssues(); });
         listView.getCreateButton().addActionListener(e -> showCreateView());
         listView.getStatisticsButton().addActionListener(e -> showStatistics());
         listView.getBackButton().addActionListener(e -> mainFrame.showProjectList());
@@ -53,6 +62,7 @@ public class IssueController {
 
         detailView.getBackButton().addActionListener(e -> mainFrame.showIssueList());
         detailView.getAddCommentButton().addActionListener(e -> handleAddComment());
+        detailView.getEditTagsButton().addActionListener(e -> handleEditIssueTags());
         detailView.getAssignButton().addActionListener(e -> handleAssign());
         detailView.getFixButton().addActionListener(e -> handleFix());
         detailView.getResolveButton().addActionListener(e -> handleResolve());
@@ -68,6 +78,22 @@ public class IssueController {
 
     public void setCurrentProjectId(Long projectId) {
         this.currentProjectId = projectId;
+        applyRoleRestrictions();
+    }
+
+    private void applyRoleRestrictions() {
+        AccountResponse me = SessionContext.getCurrentAccount();
+        if (me == null) return;
+        Role role = me.getRole();
+
+        listView.setStatisticsButtonVisible(role == Role.PL);
+
+        if (role == Role.DEV) {
+            listView.setAssigneeFilterText(me.getLoginId());
+            listView.setAssigneeFilterEditable(false);
+        } else {
+            listView.setAssigneeFilterEditable(true);
+        }
     }
 
     // ── 이슈 목록 ──────────────────────────────────────────────
@@ -82,22 +108,37 @@ public class IssueController {
     }
 
     private IssueSearchCondition buildSearchCondition() {
-        String statusStr = listView.getStatusFilter();
-        String priorityStr = listView.getPriorityFilter();
-        String keyword = listView.getKeywordFilter();
+        String statusStr       = listView.getStatusFilter();
+        String priorityStr     = listView.getPriorityFilter();
+        String reporterLoginId = listView.getReporterFilter();
+        String assigneeLoginId = listView.getAssigneeFilter();
+        String keyword         = listView.getKeywordFilter();
 
-        IssueStatus status = "전체".equals(statusStr) ? null : IssueStatus.valueOf(statusStr);
-        Priority priority = "전체".equals(priorityStr) ? null : Priority.valueOf(priorityStr);
+        IssueStatus status   = "전체".equals(statusStr)   ? null : IssueStatus.valueOf(statusStr);
+        Priority    priority = "전체".equals(priorityStr) ? null : Priority.valueOf(priorityStr);
 
-        // DEV는 자신에게 assigned된 이슈만 조회
-        Long assigneeId = null;
-        AccountResponse me = SessionContext.getCurrentAccount();
-        if (me != null && me.getRole() == Role.DEV) {
-            assigneeId = me.getAccountId();
+        Long reporterAccountId = null;
+        Long assigneeAccountId = null;
+        if (!reporterLoginId.isEmpty() || !assigneeLoginId.isEmpty()) {
+            try {
+                List<AccountResponse> accounts = accountFacade.getActiveAccounts();
+                if (!reporterLoginId.isEmpty()) {
+                    reporterAccountId = accounts.stream()
+                        .filter(a -> a.getLoginId().equals(reporterLoginId))
+                        .map(AccountResponse::getAccountId)
+                        .findFirst().orElse(null);
+                }
+                if (!assigneeLoginId.isEmpty()) {
+                    assigneeAccountId = accounts.stream()
+                        .filter(a -> a.getLoginId().equals(assigneeLoginId))
+                        .map(AccountResponse::getAccountId)
+                        .findFirst().orElse(null);
+                }
+            } catch (Exception ignored) {}
         }
 
         return new IssueSearchCondition(
-            currentProjectId, status, priority, null, assigneeId,
+            currentProjectId, status, priority, reporterAccountId, assigneeAccountId,
             keyword.isEmpty() ? null : keyword
         );
     }
@@ -274,6 +315,34 @@ public class IssueController {
         }
     }
 
+    private void handleEditIssueTags() {
+        if (currentDetail == null) return;
+        try {
+            ProjectResponse project = projectFacade.getProject(currentProjectId);
+            List<TagResponse> projectTags = project.getTags();
+
+            Set<String> currentTagNames = currentDetail.getTagNames() != null
+                    ? new HashSet<>(currentDetail.getTagNames()) : Collections.emptySet();
+            Set<Long> currentTagIds = projectTags.stream()
+                    .filter(t -> currentTagNames.contains(t.getName()))
+                    .map(TagResponse::getTagId)
+                    .collect(Collectors.toSet());
+
+            TagEditDialog dialog = new TagEditDialog(mainFrame, projectTags, currentTagIds);
+            dialog.setVisible(true);
+            if (!dialog.isConfirmed()) return;
+
+            List<Long> toAdd    = dialog.getTagIdsToAdd();
+            List<Long> toRemove = dialog.getTagIdsToRemove();
+            if (!toAdd.isEmpty() || !toRemove.isEmpty()) {
+                issueFacade.updateIssueTags(new IssueTagUpdateRequest(currentIssueId, toAdd, toRemove));
+                refreshDetail();
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "태그 편집 실패: " + ex.getMessage());
+        }
+    }
+
     private void handleAddComment() {
         String content = detailView.getCommentInput();
         if (content.isEmpty()) return;
@@ -301,9 +370,15 @@ public class IssueController {
 
     private void showCreateView() {
         AccountResponse me = SessionContext.getCurrentAccount();
+        createView.clearForm();
         createView.setReporter(me != null ? me.getName() : "");
         createView.setReportedAt(java.time.LocalDate.now().toString());
-        createView.clearForm();
+        try {
+            ProjectResponse project = projectFacade.getProject(currentProjectId);
+            createView.setAvailableTags(project.getTags());
+        } catch (Exception ex) {
+            createView.setAvailableTags(Collections.emptyList());
+        }
         mainFrame.showIssueCreate();
     }
 
@@ -316,7 +391,7 @@ public class IssueController {
             Long reporterId = SessionContext.getCurrentAccount().getAccountId();
             Priority priority = Priority.valueOf(createView.getPriority());
             issueFacade.registerIssue(new IssueCreateRequest(
-                title, desc, priority, reporterId, null, currentProjectId, Collections.emptyList()
+                title, desc, priority, reporterId, null, currentProjectId, createView.getSelectedTagIds()
             ));
             createView.clearForm();
             loadIssues();
@@ -338,14 +413,15 @@ public class IssueController {
         try {
             StatisticsResponse stats = issueFacade.getStatistics(currentProjectId);
 
-            StringBuilder statusSb = new StringBuilder("전체: ").append(stats.getTotalIssueCount()).append("\n\n");
-            stats.getStatusCounts().forEach((s, c) -> statusSb.append(s.name()).append(": ").append(c).append("\n"));
+            StringBuilder statusSb = new StringBuilder("전체: ").append(stats.getTotalIssueCount()).append("건\n\n");
+            stats.getStatusCounts().forEach((s, c) -> statusSb.append(s.name()).append(": ").append(c).append("건\n"));
             statsView.setStatusStats(statusSb.toString());
 
-            StringBuilder prioritySb = new StringBuilder();
-            stats.getPriorityCounts().forEach((p, c) -> prioritySb.append(p.name()).append(": ").append(c).append("\n"));
+            StringBuilder prioritySb = new StringBuilder("[ 우선순위별 집계 ]\n\n");
+            stats.getPriorityCounts().forEach((p, c) -> prioritySb.append(p.name()).append(": ").append(c).append("건\n"));
             statsView.setDailyStats(prioritySb.toString());
-            statsView.setMonthlyStats("");
+
+            statsView.setMonthlyStats("일별/월별 이슈 추이\n데이터 미제공");
         } catch (Exception ex) {
             statsView.setStatusStats("통계 조회 실패: " + ex.getMessage());
         }
