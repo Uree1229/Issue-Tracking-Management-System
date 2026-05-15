@@ -4,11 +4,15 @@ import com.example.its.application.facade.ProjectFacade;
 import com.example.its.persistence.entity.Role;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
 import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.shared.dto.project.ProjectTagUpdateRequest;
 import com.example.its.ui.swing.SessionContext;
 import com.example.its.ui.swing.view.MainFrame;
 import com.example.its.ui.swing.view.ProjectListView;
 import com.example.its.ui.swing.view.dialog.ProjectCreateDialog;
+import com.example.its.ui.swing.view.dialog.ProjectTagDialog;
 
+import javax.swing.JOptionPane;
+import java.util.Collections;
 import java.util.List;
 
 public class ProjectController {
@@ -32,7 +36,8 @@ public class ProjectController {
     private void initListeners() {
         view.getSelectButton().addActionListener(e -> handleSelectProject());
         view.getCreateButton().addActionListener(e -> handleCreateProject());
-        view.getDeleteButton().addActionListener(e -> handleDeleteProject());
+        view.getTagButton().addActionListener(e -> handleManageTags());
+        view.getAccountButton().addActionListener(e -> mainFrame.showAccountManage());
         view.getLogoutButton().addActionListener(e -> handleLogout());
     }
 
@@ -57,19 +62,37 @@ public class ProjectController {
 
             try {
                 Long creatorId = SessionContext.getCurrentAccount().getAccountId();
-                projectFacade.createProject(new ProjectCreateRequest(name, dialog.getDescription(), creatorId));
+                List<String> tagNames = dialog.getTagNames();
+                projectFacade.createProject(new ProjectCreateRequest(name, dialog.getDescription(), creatorId, tagNames));
                 loadProjects();
                 dialog.dispose();
             } catch (Exception ex) {
-                ex.printStackTrace();
                 dialog.showError("생성 실패: " + ex.getMessage());
             }
         });
         dialog.setVisible(true);
     }
 
-    private void handleDeleteProject() {
-        // TODO: ProjectFacade에 deleteProject 노출 필요
+    private void handleManageTags() {
+        int row = view.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(mainFrame, "태그를 추가할 프로젝트를 선택하세요.");
+            return;
+        }
+        Long projectId = (Long) view.getValueAt(row, 0);
+        ProjectTagDialog dialog = new ProjectTagDialog(mainFrame);
+        dialog.getApplyButton().addActionListener(e -> {
+            List<String> tagNames = dialog.getTagNames();
+            if (tagNames.isEmpty()) { dialog.showError("태그명을 입력하세요."); return; }
+            try {
+                projectFacade.updateProjectTags(new ProjectTagUpdateRequest(projectId, tagNames, Collections.emptyList()));
+                dialog.dispose();
+                JOptionPane.showMessageDialog(mainFrame, "태그가 추가됐습니다.");
+            } catch (Exception ex) {
+                dialog.showError("태그 추가 실패: " + ex.getMessage());
+            }
+        });
+        dialog.setVisible(true);
     }
 
     private void handleLogout() {

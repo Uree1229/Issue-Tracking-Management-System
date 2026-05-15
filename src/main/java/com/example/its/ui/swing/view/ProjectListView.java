@@ -18,10 +18,11 @@ public class ProjectListView extends JPanel {
     };
     private final JTable table = new JTable(tableModel);
 
-    private final JButton createButton = new JButton("프로젝트 생성");
-    private final JButton deleteButton = new JButton("프로젝트 삭제");
-    private final JButton selectButton = new JButton("선택");
-    private final JButton logoutButton = new JButton("로그아웃");
+    private final JButton createButton  = new JButton("프로젝트 생성");
+    private final JButton tagButton     = new JButton("태그 관리");
+    private final JButton accountButton = new JButton("계정 관리");
+    private final JButton selectButton  = new JButton("선택");
+    private final JButton logoutButton  = new JButton("로그아웃");
 
     public ProjectListView() {
         setLayout(new BorderLayout(8, 8));
@@ -35,9 +36,9 @@ public class ProjectListView extends JPanel {
         add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        // 관리자 전용 버튼 — 역할 확인 후 Controller에서 표시/숨김 처리
+        btnPanel.add(accountButton);
         btnPanel.add(createButton);
-        btnPanel.add(deleteButton);
+        btnPanel.add(tagButton);
         btnPanel.add(selectButton);
         btnPanel.add(logoutButton);
         add(btnPanel, BorderLayout.SOUTH);
@@ -52,13 +53,15 @@ public class ProjectListView extends JPanel {
     public int getSelectedRow() { return table.getSelectedRow(); }
     public Object getValueAt(int row, int col) { return tableModel.getValueAt(row, col); }
 
-    public JButton getCreateButton() { return createButton; }
-    public JButton getDeleteButton() { return deleteButton; }
-    public JButton getSelectButton() { return selectButton; }
-    public JButton getLogoutButton() { return logoutButton; }
+    public JButton getCreateButton()  { return createButton; }
+    public JButton getTagButton()     { return tagButton; }
+    public JButton getAccountButton() { return accountButton; }
+    public JButton getSelectButton()  { return selectButton; }
+    public JButton getLogoutButton()  { return logoutButton; }
 
     public void setAdminButtonsVisible(boolean visible) {
         createButton.setVisible(visible);
-        deleteButton.setVisible(visible);
+        tagButton.setVisible(visible);
+        accountButton.setVisible(visible);
     }
 }

@@ -14,18 +14,22 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProjectCreateDialog extends JDialog {
 
     private final JTextField nameField  = new JTextField(25);
     private final JTextArea descArea    = new JTextArea(4, 25);
+    private final JTextField tagField   = new JTextField(25);
     private final JButton createButton  = new JButton("생성");
     private final JButton cancelButton  = new JButton("취소");
     private final JLabel errorLabel     = new JLabel(" ");
 
     public ProjectCreateDialog(JFrame parent) {
         super(parent, "프로젝트 생성", true);
-        setSize(400, 280);
+        setSize(400, 330);
         setLocationRelativeTo(parent);
         initComponents();
     }
@@ -50,7 +54,12 @@ public class ProjectCreateDialog extends JDialog {
         gbc.gridx = 1; gbc.weightx = 1.0;
         form.add(new JScrollPane(descArea), gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0; gbc.gridwidth = 1;
+        form.add(new JLabel("태그 (쉼표 구분)"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        form.add(tagField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         errorLabel.setForeground(java.awt.Color.RED);
         form.add(errorLabel, gbc);
 
@@ -66,6 +75,12 @@ public class ProjectCreateDialog extends JDialog {
 
     public String getProjectName()    { return nameField.getText().trim(); }
     public String getDescription()    { return descArea.getText().trim(); }
+    public List<String> getTagNames() {
+        return Arrays.stream(tagField.getText().split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
+    }
     public void showError(String msg) { errorLabel.setText(msg); }
     public void clearError()          { errorLabel.setText(" "); }
 

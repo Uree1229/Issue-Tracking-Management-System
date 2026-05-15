@@ -89,8 +89,15 @@ public class IssueController {
         IssueStatus status = "전체".equals(statusStr) ? null : IssueStatus.valueOf(statusStr);
         Priority priority = "전체".equals(priorityStr) ? null : Priority.valueOf(priorityStr);
 
+        // DEV는 자신에게 assigned된 이슈만 조회
+        Long assigneeId = null;
+        AccountResponse me = SessionContext.getCurrentAccount();
+        if (me != null && me.getRole() == Role.DEV) {
+            assigneeId = me.getAccountId();
+        }
+
         return new IssueSearchCondition(
-            currentProjectId, status, priority, null, null,
+            currentProjectId, status, priority, null, assigneeId,
             keyword.isEmpty() ? null : keyword
         );
     }

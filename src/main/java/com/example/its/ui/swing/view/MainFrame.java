@@ -34,6 +34,7 @@ public class MainFrame extends JFrame {
     private final AccountManageView accountManageView = new AccountManageView();
 
     private ProjectController projectController;
+    private AccountController accountController;
 
     public MainFrame() {
         setTitle("ITS - Issue Tracking System");
@@ -67,7 +68,7 @@ public class MainFrame extends JFrame {
 
         projectController.setIssueController(issueController);
 
-        AccountController accountController =
+        this.accountController =
             new AccountController(accountManageView, this, accountFacade);
         accountController.loadAccounts();
     }
@@ -77,7 +78,10 @@ public class MainFrame extends JFrame {
     public void showIssueDetail() { cardLayout.show(cardPanel, ISSUE_DETAIL); }
     public void showIssueCreate() { cardLayout.show(cardPanel, ISSUE_CREATE); }
     public void showStatistics()  { cardLayout.show(cardPanel, STATISTICS); }
-    public void showAccountManage() { cardLayout.show(cardPanel, ACCOUNT_MANAGE); }
+    public void showAccountManage() {
+        if (accountController != null) accountController.loadAccounts();
+        cardLayout.show(cardPanel, ACCOUNT_MANAGE);
+    }
 
     public void showProjectList() {
         if (projectController != null) projectController.loadProjects();
