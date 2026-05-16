@@ -3,13 +3,7 @@ package com.example.its.ui.javafx.service;
 import com.example.its.application.facade.AccountFacade;
 import com.example.its.application.facade.IssueFacade;
 import com.example.its.application.facade.ProjectFacade;
-import com.example.its.persistence.entity.Project;
 import com.example.its.persistence.entity.Role;
-import com.example.its.persistence.entity.Tag;
-import com.example.its.persistence.repository.AccountRepository;
-import com.example.its.persistence.repository.ProjectRepository;
-import com.example.its.persistence.repository.TagRepository;
-import com.example.its.persistence.transaction.TransactionManager;
 import com.example.its.shared.dto.account.AccountCreateRequest;
 import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.shared.dto.issue.CommentCreateRequest;
@@ -27,30 +21,30 @@ import com.example.its.shared.dto.issue.RecommendationResponse;
 import com.example.its.shared.dto.issue.StatisticsResponse;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
 import com.example.its.shared.dto.project.ProjectResponse;
-import com.example.its.shared.dto.project.ProjectTagUpdateRequest;
+import com.example.its.shared.dto.tag.TagResponse;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.ProjectTagOption;
-import com.example.its.ui.javafx.model.UiRole;
-import com.example.its.ui.javafx.support.TagMapper;
 
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class JavaFxBackendBridge {
 
-    private final AccountFacade accountFacade = new AccountFacade();
-    private final IssueFacade issueFacade = new IssueFacade();
-    private final ProjectFacade projectFacade = new ProjectFacade();
+    private static final JavaFxBackendBridge INSTANCE = new JavaFxBackendBridge();
+
+    private final AccountFacade accountFacade;
+    private final IssueFacade issueFacade;
+    private final ProjectFacade projectFacade;
 
     private JavaFxBackendBridge() {
+        this.accountFacade = new AccountFacade();
+        this.issueFacade = new IssueFacade();
+        this.projectFacade = new ProjectFacade();
     }
 
     public static JavaFxBackendBridge getInstance() {
-        return Holder.INSTANCE;
+        return INSTANCE;
     }
 
     public AccountResponse login(String loginId, String password) {
@@ -62,14 +56,13 @@ public final class JavaFxBackendBridge {
     }
 
     public List<AccountResponse> getActiveAccounts() {
-        return accountFacade.getActiveAccounts().stream()
-            .sorted(Comparator.comparing(AccountResponse::getName, String.CASE_INSENSITIVE_ORDER))
-            .collect(Collectors.toList());
+        return accountFacade.getActiveAccounts();
     }
 
     public List<AccountResponse> getDeveloperAccounts() {
         return getActiveAccounts().stream()
             .filter(account -> account.getRole() == Role.DEV)
+            .sorted(Comparator.comparing(AccountResponse::getName, String.CASE_INSENSITIVE_ORDER))
             .toList();
     }
 
@@ -80,69 +73,18 @@ public final class JavaFxBackendBridge {
     public List<ProjectResponse> getProjects() {
         return projectFacade.getAllProjects().stream()
             .sorted(Comparator.comparing(ProjectResponse::getName, String.CASE_INSENSITIVE_ORDER))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     public List<ProjectResponse> getAccessibleProjects(AuthenticatedUser currentUser) {
         if (currentUser == null) {
             return List.of();
         }
-
-        List<ProjectResponse> projects = currentUser.role() == UiRole.ADMIN
-            ? projectFacade.getAllProjects()
-            : getProjectsForMember(currentUser.accountId());
-
-        return projects.stream()
-            .sorted(Comparator.comparing(ProjectResponse::getName, String.CASE_INSENSITIVE_ORDER))
-            .collect(Collectors.toList());
-    }
-
-    public void assignProjectMembers(Long projectId, List<Long> memberAccountIds) {
-        if (projectId == null) {
-            throw new IllegalArgumentException("Project ID is required.");
-        }
-
-        List<Long> normalizedIds = memberAccountIds == null ? List.of() : memberAccountIds.stream()
-            .filter(id -> id != null)
-            .distinct()
-            .toList();
-
-        TransactionManager.executeVoid(entityManager -> {
-            entityManager.createNativeQuery("DELETE FROM project_members WHERE project_id = :projectId")
-                .setParameter("projectId", projectId)
-                .executeUpdate();
-
-            if (normalizedIds.isEmpty()) {
-                return;
-            }
-
-            ProjectRepository projectRepository = new ProjectRepository(entityManager);
-            AccountRepository accountRepository = new AccountRepository(entityManager);
-
-            Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("Project not found. ID: " + projectId));
-
-            for (Long accountId : normalizedIds) {
-                var account = accountRepository.findById(accountId)
-                    .orElseThrow(() -> new IllegalArgumentException("Account not found. ID: " + accountId));
-
-                entityManager.createNativeQuery("""
-                        INSERT INTO project_members (project_id, account_id, assigned_at)
-                        VALUES (:projectId, :accountId, CURRENT_TIMESTAMP)
-                    """)
-                    .setParameter("projectId", project.getProjectId())
-                    .setParameter("accountId", account.getAccountId())
-                    .executeUpdate();
-            }
-        });
+        return getProjects();
     }
 
     public Optional<ProjectResponse> findPreferredProject(AuthenticatedUser currentUser) {
-        List<ProjectResponse> projects = getAccessibleProjects(currentUser);
-        return projects.stream()
-            .filter(project -> "project1".equalsIgnoreCase(project.getName()))
-            .findFirst()
-            .or(() -> projects.stream().findFirst());
+        return getAccessibleProjects(currentUser).stream().findFirst();
     }
 
     public List<ProjectTagOption> getProjectTags(Long projectId) {
@@ -150,28 +92,15 @@ public final class JavaFxBackendBridge {
             return List.of();
         }
 
-        return TransactionManager.execute(entityManager -> new TagRepository(entityManager).findByProjectId(projectId).stream()
-            .map(TagMapper::toOption)
+        ProjectResponse project = projectFacade.getProject(projectId);
+        if (project == null || project.getTags() == null) {
+            return List.of();
+        }
+
+        return project.getTags().stream()
+            .map(this::toProjectTagOption)
             .sorted(Comparator.comparing(ProjectTagOption::name, String.CASE_INSENSITIVE_ORDER))
-            .toList());
-    }
-
-    public ProjectTagOption ensureProjectTag(Long projectId, String name, String description) {
-        return TransactionManager.execute(entityManager -> {
-            TagRepository tagRepository = new TagRepository(entityManager);
-            Tag existingTag = tagRepository.findByProjectIdAndName(projectId, name).orElse(null);
-            if (existingTag == null) {
-                projectFacade.updateProjectTags(new ProjectTagUpdateRequest(projectId, List.of(name), List.of()));
-                existingTag = tagRepository.findByProjectIdAndName(projectId, name)
-                    .orElseThrow(() -> new IllegalArgumentException("Tag could not be created. Name: " + name));
-            }
-
-            if (description != null && !description.isBlank()) {
-                existingTag.setDescription(description);
-                tagRepository.save(existingTag);
-            }
-            return TagMapper.toOption(existingTag);
-        });
+            .toList();
     }
 
     public IssueDetailResponse createIssue(IssueCreateRequest request) {
@@ -222,38 +151,7 @@ public final class JavaFxBackendBridge {
         return issueFacade.reopen(request);
     }
 
-    private List<ProjectResponse> getProjectsForMember(Long accountId) {
-        return TransactionManager.execute(entityManager -> {
-            List<?> rawProjectIds = entityManager.createNativeQuery("""
-                    SELECT project_id
-                    FROM project_members
-                    WHERE account_id = :accountId
-                """)
-                .setParameter("accountId", accountId)
-                .getResultList();
-
-            if (rawProjectIds.isEmpty()) {
-                return List.<ProjectResponse>of();
-            }
-
-            Set<Long> projectIds = rawProjectIds.stream()
-                .map(JavaFxBackendBridge::toLongId)
-                .collect(Collectors.toCollection(HashSet::new));
-
-            return projectFacade.getAllProjects().stream()
-                .filter(project -> projectIds.contains(project.getProjectId()))
-                .toList();
-        });
-    }
-
-    private static Long toLongId(Object value) {
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        return Long.valueOf(String.valueOf(value));
-    }
-
-    private static final class Holder {
-        private static final JavaFxBackendBridge INSTANCE = new JavaFxBackendBridge();
+    private ProjectTagOption toProjectTagOption(TagResponse tag) {
+        return new ProjectTagOption(tag.getTagId(), tag.getName(), tag.getDescription());
     }
 }

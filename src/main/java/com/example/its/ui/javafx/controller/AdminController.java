@@ -1,6 +1,5 @@
 package com.example.its.ui.javafx.controller;
 
-import com.example.its.ItsApplication;
 import com.example.its.shared.dto.account.AccountCreateRequest;
 import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
@@ -8,7 +7,6 @@ import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.AdminProjectRowModel;
 import com.example.its.ui.javafx.model.AdminUserRowModel;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
-import com.example.its.ui.javafx.model.ProjectTagOption;
 import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
@@ -19,42 +17,25 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class AdminController {
 
     private final ObservableList<AdminUserRowModel> users = FXCollections.observableArrayList();
     private final ObservableList<AdminProjectRowModel> projects = FXCollections.observableArrayList();
-    private final ObservableList<AdminUserRowModel> assignableProjectMembers = FXCollections.observableArrayList();
     private final ObservableList<String> draftProjectTags = FXCollections.observableArrayList();
-    private final Set<Long> selectedProjectMemberIds = new LinkedHashSet<>();
 
     private MainLayoutController mainLayoutController;
 
@@ -119,16 +100,7 @@ public class AdminController {
     private TextField tagNameField;
 
     @FXML
-    private TextArea tagDescriptionArea;
-
-    @FXML
     private ListView<String> projectTagListView;
-
-    @FXML
-    private Button assignMembersButton;
-
-    @FXML
-    private Label projectMembersSummaryLabel;
 
     @FXML
     private Label projectFormFeedbackLabel;
@@ -168,7 +140,6 @@ public class AdminController {
 
         userTable.setItems(users);
         projectTable.setItems(projects);
-        refreshProjectMemberSummary();
         adminTabPane.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> updateAdminPageCopy());
         updateAdminPageCopy();
 
@@ -177,55 +148,13 @@ public class AdminController {
         permissionNoticeLabel.setManaged(!isAdmin);
 
         if (!isAdmin) {
-            permissionNoticeLabel.setText("Only ADMIN should create accounts. This page stays visible for UI review, but keep it read-only in the real integration.");
+            permissionNoticeLabel.setText("Only ADMIN should create accounts and projects. This page stays visible for UI review, but keep it read-only in the real integration.");
             disableForms();
         } else {
             permissionNoticeLabel.setText("");
         }
 
         loadAdminData();
-    }
-
-    @FXML
-    private void handleActiveToggle() {
-    }
-
-    @FXML
-    private void openHome() {
-        if (mainLayoutController != null) {
-            mainLayoutController.navigateHome();
-        }
-    }
-
-    @FXML
-    private void openNewIssue() {
-        if (mainLayoutController != null) {
-            mainLayoutController.showCreateIssue(null);
-        }
-    }
-
-    @FXML
-    private void openBrowse() {
-        if (mainLayoutController != null) {
-            mainLayoutController.showIssues(null);
-        }
-    }
-
-    @FXML
-    private void openSearch() {
-        if (mainLayoutController != null) {
-            mainLayoutController.showSearch(null);
-        }
-    }
-
-    @FXML
-    private void openProjectManagement() {
-        selectProjectTab();
-    }
-
-    @FXML
-    private void openAccountManagement() {
-        selectUserTab();
     }
 
     @FXML
@@ -272,8 +201,10 @@ public class AdminController {
         String projectName = trimmed(projectNameField.getText());
         String description = trimmed(projectDescriptionArea.getText());
         String version = trimmed(versionField.getText());
-        List<ProjectTagDraft> projectTags = getDraftProjectTags();
-        List<Long> selectedMemberIds = getCheckedProjectMemberIds();
+        List<String> projectTags = draftProjectTags.stream()
+            .map(String::trim)
+            .filter(tag -> !tag.isBlank())
+            .toList();
 
         if (projectName.isBlank() || description.isBlank() || version.isBlank()) {
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
@@ -285,11 +216,7 @@ public class AdminController {
             projectFormFeedbackLabel.setText("Add at least one project tag before creating the project.");
             return;
         }
-        if (selectedMemberIds.isEmpty()) {
-            projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
-            projectFormFeedbackLabel.setText("Assign at least one PL, DEV, or TESTER account to the project.");
-            return;
-        }
+
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
         if (currentUser == null) {
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
@@ -302,13 +229,9 @@ public class AdminController {
             request.setName(projectName);
             request.setDescription(description);
             request.setCreatedByAccountId(currentUser.accountId());
-            request.setTagNames(projectTags.stream().map(ProjectTagDraft::name).toList());
+            request.setTagNames(projectTags);
 
             ProjectResponse createdProject = backendBridge().createProject(request);
-            backendBridge().assignProjectMembers(createdProject.getProjectId(), selectedMemberIds);
-            List<ProjectTagOption> createdTags = projectTags.stream()
-                .map(tag -> backendBridge().ensureProjectTag(createdProject.getProjectId(), tag.name(), tag.description()))
-                .toList();
 
             upsertProjectRow(new AdminProjectRowModel(
                 createdProject.getProjectId(),
@@ -316,7 +239,7 @@ public class AdminController {
                 createdProject.getDescription(),
                 version,
                 true,
-                summarizeTags(createdTags.stream().map(ProjectTagOption::name).toList()),
+                summarizeTags(projectTags),
                 currentUser.loginId()
             ));
 
@@ -338,12 +261,12 @@ public class AdminController {
             clearProjectForm();
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-success");
             projectFormFeedbackLabel.setText(
-                "Project '" + createdProject.getName() + "' was created, members were assigned, and " + createdTags.size() + " tag(s) were registered."
+                "Project '" + createdProject.getName() + "' was created and " + projectTags.size() + " tag(s) were registered."
             );
             UiAlertHelper.showInfo(
                 "Project Created",
                 "Project registration completed.",
-                "Project '" + createdProject.getName() + "' was created, members were assigned, and project tags were registered."
+                "Project '" + createdProject.getName() + "' was created and its tags were saved."
             );
         } catch (Exception exception) {
             String detailedMessage = UiAlertHelper.extractRootCauseMessage(exception, "Project creation failed.");
@@ -368,9 +291,7 @@ public class AdminController {
         projectDescriptionArea.clear();
         versionField.setText("1.0.0");
         tagNameField.clear();
-        tagDescriptionArea.clear();
         draftProjectTags.clear();
-        clearProjectMemberSelections();
     }
 
     private void configureUserTable() {
@@ -391,231 +312,6 @@ public class AdminController {
         assigneeColumn.setCellValueFactory(cellData -> new ReadOnlyStringWrapper(cellData.getValue().getDefaultAssignee()));
     }
 
-    @FXML
-    private void openProjectMemberPicker() {
-        if (assignableProjectMembers.isEmpty()) {
-            UiAlertHelper.showInfo(
-                "No Members Available",
-                "There are no assignable members yet.",
-                "Create PL, DEV, or TESTER accounts first, then open the member selector again."
-            );
-            return;
-        }
-
-        Stage pickerStage = new Stage();
-        pickerStage.initModality(Modality.WINDOW_MODAL);
-        if (ItsApplication.getPrimaryStage() != null) {
-            pickerStage.initOwner(ItsApplication.getPrimaryStage());
-        }
-        pickerStage.setTitle("Assign Project Members");
-        pickerStage.setMinWidth(520);
-        pickerStage.setMinHeight(480);
-
-        VBox root = new VBox(16);
-        root.setPadding(new Insets(20));
-        root.getStyleClass().add("admin-member-picker-shell");
-
-        Label titleLabel = new Label("Assign Project Members");
-        titleLabel.getStyleClass().add("section-title");
-
-        Label subtitleLabel = new Label("Choose the PL, DEV, and TESTER accounts that should belong to this project.");
-        subtitleLabel.setWrapText(true);
-        subtitleLabel.getStyleClass().add("landing-copy");
-
-        List<CheckBox> memberCheckBoxes = new ArrayList<>();
-        VBox checkboxContainer = new VBox(14);
-        checkboxContainer.getChildren().addAll(
-            buildMemberRoleSection("PL Members", "Select one or more project leads.", UiRole.PL, memberCheckBoxes),
-            buildMemberRoleSection("DEV Members", "Select one or more developers who can be assigned to issues in this project.", UiRole.DEV, memberCheckBoxes),
-            buildMemberRoleSection("TESTER Members", "Select one or more testers who can verify issue fixes in this project.", UiRole.TESTER, memberCheckBoxes)
-        );
-
-        ScrollPane scrollPane = new ScrollPane(checkboxContainer);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setPrefViewportHeight(320);
-        scrollPane.getStyleClass().add("admin-member-picker-scroll");
-
-        Label footerLabel = new Label();
-        footerLabel.getStyleClass().add("landing-copy");
-        footerLabel.setWrapText(true);
-        refreshMemberPickerFooter(memberCheckBoxes, footerLabel);
-        for (CheckBox checkBox : memberCheckBoxes) {
-            checkBox.selectedProperty().addListener((obs, oldValue, newValue) ->
-                refreshMemberPickerFooter(memberCheckBoxes, footerLabel)
-            );
-        }
-
-        Button clearButton = new Button("Clear");
-        clearButton.getStyleClass().add("ghost-button");
-        clearButton.setOnAction(event -> memberCheckBoxes.forEach(memberCheckBox -> memberCheckBox.setSelected(false)));
-
-        Button cancelButton = new Button("Cancel");
-        cancelButton.getStyleClass().add("ghost-button");
-        cancelButton.setOnAction(event -> pickerStage.close());
-
-        Button applyButton = new Button("Apply Members");
-        applyButton.getStyleClass().add("primary-button");
-        applyButton.setOnAction(event -> {
-            selectedProjectMemberIds.clear();
-            for (CheckBox memberCheckBox : memberCheckBoxes) {
-                if (memberCheckBox.isSelected()) {
-                    AdminUserRowModel user = (AdminUserRowModel) memberCheckBox.getUserData();
-                    selectedProjectMemberIds.add(user.getAccountId());
-                }
-            }
-            refreshProjectMemberSummary();
-            pickerStage.close();
-        });
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        HBox actionBar = new HBox(10, clearButton, spacer, cancelButton, applyButton);
-        actionBar.setAlignment(Pos.CENTER_LEFT);
-
-        root.getChildren().addAll(titleLabel, subtitleLabel, scrollPane, footerLabel, actionBar);
-
-        Scene scene = new Scene(root, 520, 480);
-        scene.getStylesheets().add(ItsApplication.class.getResource("/styles/app.css").toExternalForm());
-        pickerStage.setScene(scene);
-        pickerStage.showAndWait();
-    }
-
-    private void updateMemberPickerFooter(List<CheckBox> memberCheckBoxes, Label footerLabel) {
-        long selectedCount = memberCheckBoxes.stream().filter(CheckBox::isSelected).count();
-        if (selectedCount == 0) {
-            footerLabel.setText("No members selected yet.");
-            return;
-        }
-        long plCount = countSelectedInControls(memberCheckBoxes, UiRole.PL);
-        long devCount = countSelectedInControls(memberCheckBoxes, UiRole.DEV);
-        long testerCount = countSelectedInControls(memberCheckBoxes, UiRole.TESTER);
-        footerLabel.setText(
-            selectedCount + " member(s) selected. "
-                + "PL " + plCount + " · DEV " + devCount + " · TESTER " + testerCount
-                + ". Each project must have exactly one DEV and one TESTER."
-        );
-    }
-
-    private void updateProjectMemberSummary() {
-        if (projectMembersSummaryLabel == null) {
-            return;
-        }
-
-        if (selectedProjectMemberIds.isEmpty()) {
-            projectMembersSummaryLabel.setText("No members selected yet.");
-            return;
-        }
-
-        long plCount = countSelectedByRole(UiRole.PL);
-        long devCount = countSelectedByRole(UiRole.DEV);
-        long testerCount = countSelectedByRole(UiRole.TESTER);
-        projectMembersSummaryLabel.setText(
-            selectedProjectMemberIds.size() + " member(s) selected · "
-                + "PL " + plCount + " · DEV " + devCount + " · TESTER " + testerCount
-        );
-    }
-
-    private void refreshMemberPickerFooter(List<CheckBox> memberCheckBoxes, Label footerLabel) {
-        long selectedCount = memberCheckBoxes.stream().filter(CheckBox::isSelected).count();
-        if (selectedCount == 0) {
-            footerLabel.setText("No members selected yet.");
-            return;
-        }
-
-        long plCount = countSelectedInControls(memberCheckBoxes, UiRole.PL);
-        long devCount = countSelectedInControls(memberCheckBoxes, UiRole.DEV);
-        long testerCount = countSelectedInControls(memberCheckBoxes, UiRole.TESTER);
-        footerLabel.setText(
-            selectedCount + " member(s) selected. "
-                + "PL " + plCount + " | DEV " + devCount + " | TESTER " + testerCount
-        );
-    }
-
-    private void refreshProjectMemberSummary() {
-        if (projectMembersSummaryLabel == null) {
-            return;
-        }
-
-        if (selectedProjectMemberIds.isEmpty()) {
-            projectMembersSummaryLabel.setText("No members selected yet.");
-            return;
-        }
-
-        long plCount = countSelectedByRole(UiRole.PL);
-        long devCount = countSelectedByRole(UiRole.DEV);
-        long testerCount = countSelectedByRole(UiRole.TESTER);
-        projectMembersSummaryLabel.setText(
-            selectedProjectMemberIds.size() + " member(s) selected | "
-                + "PL " + plCount + " | DEV " + devCount + " | TESTER " + testerCount
-        );
-    }
-
-    private VBox buildMemberRoleSection(
-        String title,
-        String description,
-        UiRole role,
-        List<CheckBox> memberCheckBoxes
-    ) {
-        VBox section = new VBox(8);
-        section.getStyleClass().add("admin-member-picker-role-shell");
-
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("section-title");
-
-        Label descriptionLabel = new Label(description);
-        descriptionLabel.getStyleClass().add("landing-copy");
-        descriptionLabel.setWrapText(true);
-
-        VBox roleList = new VBox(8);
-        roleList.getStyleClass().add("admin-member-picker-list");
-
-        List<AdminUserRowModel> members = assignableProjectMembers.stream()
-            .filter(user -> user.getRole() == role)
-            .sorted(Comparator.comparing(AdminUserRowModel::getRealName, String.CASE_INSENSITIVE_ORDER))
-            .toList();
-
-        if (members.isEmpty()) {
-            Label emptyLabel = new Label("No " + role.name() + " accounts are available yet.");
-            emptyLabel.getStyleClass().add("landing-copy");
-            roleList.getChildren().add(emptyLabel);
-        } else {
-            for (AdminUserRowModel user : members) {
-                CheckBox checkBox = new CheckBox(user.getRealName() + " (" + user.getLoginId() + ")");
-                checkBox.getStyleClass().add("admin-member-picker-check");
-                checkBox.setSelected(selectedProjectMemberIds.contains(user.getAccountId()));
-                checkBox.setUserData(user);
-                memberCheckBoxes.add(checkBox);
-                roleList.getChildren().add(checkBox);
-            }
-        }
-
-        section.getChildren().addAll(titleLabel, descriptionLabel, roleList);
-        return section;
-    }
-
-    private long countSelectedByRole(UiRole role) {
-        return assignableProjectMembers.stream()
-            .filter(user -> user.getRole() == role)
-            .filter(user -> selectedProjectMemberIds.contains(user.getAccountId()))
-            .count();
-    }
-
-    private long countSelectedInControls(List<CheckBox> checkBoxes, UiRole role) {
-        return checkBoxes.stream()
-            .filter(CheckBox::isSelected)
-            .map(checkBox -> (AdminUserRowModel) checkBox.getUserData())
-            .filter(user -> user.getRole() == role)
-            .count();
-    }
-
-    private long countSelectedMembersByRole(List<Long> selectedMemberIds, UiRole role) {
-        return assignableProjectMembers.stream()
-            .filter(user -> user.getRole() == role)
-            .filter(user -> selectedMemberIds.contains(user.getAccountId()))
-            .count();
-    }
-
     private void updateAdminPageCopy() {
         if (adminTabPane.getSelectionModel().getSelectedIndex() == 1) {
             adminPageTitleLabel.setText("Project Management");
@@ -627,7 +323,6 @@ public class AdminController {
     @FXML
     private void handleAddProjectTag() {
         String name = trimmed(tagNameField.getText());
-        String description = trimmed(tagDescriptionArea.getText());
 
         projectFormFeedbackLabel.getStyleClass().setAll("form-feedback");
 
@@ -636,17 +331,17 @@ public class AdminController {
             projectFormFeedbackLabel.setText("Enter a tag name before adding it to the project.");
             return;
         }
-        boolean duplicate = getDraftProjectTags().stream()
-            .anyMatch(tag -> tag.name().equalsIgnoreCase(name));
+        boolean duplicate = draftProjectTags.stream()
+            .anyMatch(tag -> tag.equalsIgnoreCase(name));
         if (duplicate) {
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
             projectFormFeedbackLabel.setText("The tag '" + name + "' is already in the project tag list.");
             return;
         }
 
-        draftProjectTags.add(formatDraftTag(new ProjectTagDraft(name, description)));
+        draftProjectTags.add(name);
+        draftProjectTags.sort(String.CASE_INSENSITIVE_ORDER);
         tagNameField.clear();
-        tagDescriptionArea.clear();
         projectFormFeedbackLabel.setText("");
     }
 
@@ -668,9 +363,7 @@ public class AdminController {
         projectDescriptionArea.setDisable(true);
         versionField.setDisable(true);
         tagNameField.setDisable(true);
-        tagDescriptionArea.setDisable(true);
         projectTagListView.setDisable(true);
-        assignMembersButton.setDisable(true);
     }
 
     private String trimmed(String value) {
@@ -678,21 +371,11 @@ public class AdminController {
     }
 
     private void refreshUsersFromBackend() {
-        List<AdminUserRowModel> activeUsers = backendBridge().getActiveAccounts().stream()
-            .map(UiModelMapper::toAdminUserRowModel)
-            .toList();
-        users.setAll(activeUsers);
-        assignableProjectMembers.setAll(
-            activeUsers.stream()
-                .filter(user -> user.getRole() != UiRole.ADMIN)
+        users.setAll(
+            backendBridge().getActiveAccounts().stream()
+                .map(UiModelMapper::toAdminUserRowModel)
                 .toList()
         );
-
-        Set<Long> validIds = assignableProjectMembers.stream()
-            .map(AdminUserRowModel::getAccountId)
-            .collect(Collectors.toSet());
-        selectedProjectMemberIds.retainAll(validIds);
-        refreshProjectMemberSummary();
     }
 
     private void refreshProjectsFromBackend() {
@@ -741,35 +424,6 @@ public class AdminController {
         projects.sort(Comparator.comparing(AdminProjectRowModel::getName, String.CASE_INSENSITIVE_ORDER));
     }
 
-    private List<Long> getCheckedProjectMemberIds() {
-        return new ArrayList<>(selectedProjectMemberIds);
-    }
-
-    private void clearProjectMemberSelections() {
-        selectedProjectMemberIds.clear();
-        refreshProjectMemberSummary();
-    }
-
-    private List<ProjectTagDraft> getDraftProjectTags() {
-        return draftProjectTags.stream()
-            .map(this::parseDraftTag)
-            .toList();
-    }
-
-    private String formatDraftTag(ProjectTagDraft tag) {
-        if (tag.description().isBlank()) {
-            return tag.name();
-        }
-        return tag.name() + " :: " + tag.description();
-    }
-
-    private ProjectTagDraft parseDraftTag(String value) {
-        String[] parts = value.split(" :: ", 2);
-        String name = parts.length > 0 ? parts[0].trim() : "";
-        String description = parts.length > 1 ? parts[1].trim() : "";
-        return new ProjectTagDraft(name, description);
-    }
-
     private String summarizeTags(List<String> tagNames) {
         if (tagNames == null || tagNames.isEmpty()) {
             return "-";
@@ -793,8 +447,5 @@ public class AdminController {
 
     private JavaFxBackendBridge backendBridge() {
         return JavaFxBackendBridge.getInstance();
-    }
-
-    private record ProjectTagDraft(String name, String description) {
     }
 }

@@ -123,20 +123,11 @@
                                         <Label text="Project tags:" GridPane.rowIndex="3" styleClass="admin-form-label"/>
                                         <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="3">
                                             <TextField fx:id="tagNameField" promptText="Tag name (e.g. auth, ui, workflow)" styleClass="admin-input"/>
-                                            <TextArea fx:id="tagDescriptionArea" wrapText="true" prefRowCount="2" promptText="Optional tag description" styleClass="admin-text-area"/>
                                             <HBox spacing="10" alignment="CENTER_LEFT">
                                                 <Button mnemonicParsing="false" onAction="#handleAddProjectTag" text="Add Tag" styleClass="ghost-button"/>
                                                 <Button mnemonicParsing="false" onAction="#handleRemoveSelectedProjectTag" text="Remove Selected" styleClass="ghost-button"/>
                                             </HBox>
                                             <ListView fx:id="projectTagListView" prefHeight="120"/>
-                                        </VBox>
-
-                                        <Label text="Assign members:" GridPane.rowIndex="4" styleClass="admin-form-label"/>
-                                        <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="4">
-                                            <HBox spacing="10" alignment="CENTER_LEFT">
-                                                <Button fx:id="assignMembersButton" mnemonicParsing="false" onAction="#openProjectMemberPicker" text="Assign Members" styleClass="ghost-button"/>
-                                                <Label fx:id="projectMembersSummaryLabel" text="No members selected yet." wrapText="true" styleClass="landing-copy"/>
-                                            </HBox>
                                         </VBox>
                                     </GridPane>
                                     <Label fx:id="projectFormFeedbackLabel" text="" wrapText="true" styleClass="form-feedback"/>
