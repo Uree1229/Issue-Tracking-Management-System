@@ -16,7 +16,7 @@
 
         <properties>
             <property name="jakarta.persistence.jdbc.driver" value="org.sqlite.JDBC"/>
-            <property name="jakarta.persistence.jdbc.url" value="jdbc:sqlite:database/its.db"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:sqlite:build/test-database/its-test.db"/>
             <property name="hibernate.dialect" value="org.hibernate.community.dialect.SQLiteDialect"/>
             <property name="hibernate.hbm2ddl.auto" value="validate"/>
             <property name="hibernate.show_sql" value="false"/>

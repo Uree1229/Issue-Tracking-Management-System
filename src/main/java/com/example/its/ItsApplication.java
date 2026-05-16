@@ -1,11 +1,14 @@
 package com.example.its;
 
-import com.example.its.ui.javafx.support.UiDatabaseBootstrap;
+import com.example.its.common.util.DatabaseInitializer;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.Parent;
 import javafx.stage.Stage;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class ItsApplication extends Application {
 
@@ -13,12 +16,15 @@ public class ItsApplication extends Application {
     private static final double MAIN_HEIGHT = 780;
     private static final double LOGIN_WIDTH = 1160;
     private static final double LOGIN_HEIGHT = 760;
+    private static final Path DATABASE_PATH = Path.of("database", "its.db");
 
     private static Stage primaryStage;
 
     @Override
     public void start(Stage stage) throws Exception {
-        UiDatabaseBootstrap.ensureInitialized();
+        if (Files.notExists(DATABASE_PATH)) {
+            DatabaseInitializer.resetDatabaseAndSeed();
+        }
         primaryStage = stage;
         primaryStage.setTitle("Issue Tracking System");
         primaryStage.setMinWidth(1050);

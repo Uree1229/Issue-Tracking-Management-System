@@ -163,16 +163,10 @@ public class IssueDelta {
         this.newStatus = newStatus;
     }
 
-    public static IssueDelta create(
-        String oldTitle,
-        String newTitle,
-        String oldContent,
-        String newContent,
-        Priority oldPriority,
-        Priority newPriority,
-        IssueStatus oldStatus,
-        IssueStatus newStatus
-    ) {
+    public static IssueDelta create(String oldTitle, String newTitle,
+                                    String oldContent, String newContent,
+                                    Priority oldPriority, Priority newPriority,
+                                    IssueStatus oldStatus, IssueStatus newStatus) {
         IssueDelta delta = new IssueDelta();
         delta.setOldTitle(oldTitle);
         delta.setNewTitle(newTitle);

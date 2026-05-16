@@ -45,16 +45,20 @@ public class Tag {
     protected Tag() {
     }
 
+    public static Tag create(String name, String description, Project project) {
+        Tag tag = new Tag();
+        tag.name = name;
+        tag.description = description;
+        tag.project = project;
+        return tag;
+    }
+
     public Long getTagId() {
         return tagId != null ? tagId.longValue() : null;
     }
 
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getDescription() {
@@ -75,13 +79,5 @@ public class Tag {
 
     public Set<Issue> getIssues() {
         return issues;
-    }
-
-    public static Tag create(String name, String description, Project project) {
-        Tag tag = new Tag();
-        tag.name = name;
-        tag.description = description;
-        tag.project = project;
-        return tag;
     }
 }

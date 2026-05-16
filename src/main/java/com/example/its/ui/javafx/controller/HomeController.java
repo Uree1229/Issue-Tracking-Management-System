@@ -3,12 +3,12 @@ package com.example.its.ui.javafx.controller;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.session.UserSession;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 
 public class HomeController {
 
@@ -18,7 +18,10 @@ public class HomeController {
     private Label welcomeLabel;
 
     @FXML
-    private Label roleHintLabel;
+    private HBox quickSearchShell;
+
+    @FXML
+    private HBox featureRow;
 
     @FXML
     private Button reportIssueButton;
@@ -33,10 +36,16 @@ public class HomeController {
     private Button adminButton;
 
     @FXML
-    private HBox quickSearchShell;
+    private Label reportIssueTitleLabel;
 
     @FXML
-    private VBox commonQueriesPanel;
+    private Label searchIssuesTitleLabel;
+
+    @FXML
+    private Label analyticsTitleLabel;
+
+    @FXML
+    private Label adminTitleLabel;
 
     @FXML
     private TextField quickSearchField;
@@ -44,65 +53,23 @@ public class HomeController {
     @FXML
     private void initialize() {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
+        welcomeLabel.setText("Welcome to ITS");
 
         if (currentUser == null) {
-            welcomeLabel.setText("Welcome to ITS");
-            roleHintLabel.setText("Sign in to continue.");
+            configureGuestLayout();
             return;
         }
 
-        welcomeLabel.setText("Welcome to ITS");
-        roleHintLabel.setText(buildRoleHint(currentUser));
-
-        UiRole role = currentUser.role();
-        adminButton.setVisible(role.isAdmin());
-        adminButton.setManaged(role.isAdmin());
-
-        boolean canReportIssue = role.canCreateIssue();
-        reportIssueButton.setVisible(canReportIssue);
-        reportIssueButton.setManaged(canReportIssue);
-
-        boolean canSearch = role.canOpenSearch();
-        searchIssuesButton.setVisible(canSearch);
-        searchIssuesButton.setManaged(canSearch);
-        quickSearchShell.setVisible(canSearch);
-        quickSearchShell.setManaged(canSearch);
-
-        boolean canViewAnalytics = role.canViewAnalytics();
-        analyticsButton.setVisible(canViewAnalytics);
-        analyticsButton.setManaged(canViewAnalytics);
-
-        boolean canBrowseIssues = role.canOpenIssueBrowser();
-        commonQueriesPanel.setVisible(canBrowseIssues);
-        commonQueriesPanel.setManaged(canBrowseIssues);
+        switch (currentUser.role()) {
+            case ADMIN -> configureAdminLayout();
+            case DEV -> configureDeveloperLayout();
+            case TESTER -> configureTesterLayout();
+            case PL -> configureProjectLeadLayout();
+        }
     }
 
     public void setMainLayoutController(MainLayoutController mainLayoutController) {
         this.mainLayoutController = mainLayoutController;
-    }
-
-    @FXML
-    private void openHome() {
-        if (mainLayoutController != null) {
-            mainLayoutController.navigateHome();
-        }
-    }
-
-    @FXML
-    private void openTopNew() {
-        openIssueRegistration();
-    }
-
-    @FXML
-    private void openBrowse() {
-        if (mainLayoutController != null) {
-            mainLayoutController.showIssues(null);
-        }
-    }
-
-    @FXML
-    private void openTopSearch() {
-        openSearch();
     }
 
     @FXML
@@ -145,40 +112,115 @@ public class HomeController {
         }
     }
 
-    @FXML
-    private void showNewIssues() {
+    private void configureGuestLayout() {
+        quickSearchShell.setVisible(false);
+        quickSearchShell.setManaged(false);
+        featureRow.setVisible(false);
+        featureRow.setManaged(false);
+    }
+
+    private void configureAdminLayout() {
+        quickSearchShell.setVisible(false);
+        quickSearchShell.setManaged(false);
+
+        reportIssueButton.setVisible(false);
+        reportIssueButton.setManaged(false);
+        searchIssuesButton.setVisible(false);
+        searchIssuesButton.setManaged(false);
+
+        adminTitleLabel.setText("Admin");
+        analyticsTitleLabel.setText("Project");
+
+        adminButton.setOnAction(event -> openAdmin());
+        analyticsButton.setOnAction(this::openProjectManagementHome);
+
+        adminButton.setVisible(true);
+        adminButton.setManaged(true);
+        analyticsButton.setVisible(true);
+        analyticsButton.setManaged(true);
+        featureRow.getChildren().setAll(adminButton, analyticsButton);
+    }
+
+    private void configureDeveloperLayout() {
+        quickSearchShell.setVisible(true);
+        quickSearchShell.setManaged(true);
+
+        reportIssueTitleLabel.setText("Issues");
+        searchIssuesTitleLabel.setText("Search");
+
+        reportIssueButton.setOnAction(this::openIssueBrowser);
+        searchIssuesButton.setOnAction(event -> openSearch());
+
+        reportIssueButton.setVisible(true);
+        reportIssueButton.setManaged(true);
+        searchIssuesButton.setVisible(true);
+        searchIssuesButton.setManaged(true);
+
+        analyticsButton.setVisible(false);
+        analyticsButton.setManaged(false);
+        adminButton.setVisible(false);
+        adminButton.setManaged(false);
+
+        featureRow.getChildren().setAll(reportIssueButton, searchIssuesButton);
+    }
+
+    private void configureTesterLayout() {
+        quickSearchShell.setVisible(true);
+        quickSearchShell.setManaged(true);
+
+        reportIssueTitleLabel.setText("Report Issue");
+        searchIssuesTitleLabel.setText("Search");
+
+        reportIssueButton.setOnAction(event -> openIssueRegistration());
+        searchIssuesButton.setOnAction(event -> openSearch());
+
+        reportIssueButton.setVisible(true);
+        reportIssueButton.setManaged(true);
+        searchIssuesButton.setVisible(true);
+        searchIssuesButton.setManaged(true);
+
+        analyticsButton.setVisible(false);
+        analyticsButton.setManaged(false);
+        adminButton.setVisible(false);
+        adminButton.setManaged(false);
+
+        featureRow.getChildren().setAll(reportIssueButton, searchIssuesButton);
+    }
+
+    private void configureProjectLeadLayout() {
+        quickSearchShell.setVisible(true);
+        quickSearchShell.setManaged(true);
+
+        reportIssueTitleLabel.setText("Report Issue");
+        searchIssuesTitleLabel.setText("Search");
+        analyticsTitleLabel.setText("Analytics");
+
+        reportIssueButton.setOnAction(event -> openIssueRegistration());
+        searchIssuesButton.setOnAction(event -> openSearch());
+        analyticsButton.setOnAction(event -> openAnalytics());
+
+        reportIssueButton.setVisible(true);
+        reportIssueButton.setManaged(true);
+        searchIssuesButton.setVisible(true);
+        searchIssuesButton.setManaged(true);
+        analyticsButton.setVisible(true);
+        analyticsButton.setManaged(true);
+
+        adminButton.setVisible(false);
+        adminButton.setManaged(false);
+
+        featureRow.getChildren().setAll(reportIssueButton, searchIssuesButton, analyticsButton);
+    }
+
+    private void openIssueBrowser(ActionEvent event) {
         if (mainLayoutController != null) {
-            mainLayoutController.showNewIssues();
+            mainLayoutController.showIssues(null);
         }
     }
 
-    @FXML
-    private void showAssignedToMe() {
+    private void openProjectManagementHome(ActionEvent event) {
         if (mainLayoutController != null) {
-            mainLayoutController.showAssignedToCurrentUser();
+            mainLayoutController.showAdminProjectTab();
         }
-    }
-
-    @FXML
-    private void showReportedByMe() {
-        if (mainLayoutController != null) {
-            mainLayoutController.showReportedByCurrentUser();
-        }
-    }
-
-    @FXML
-    private void showRecentlyFixed() {
-        if (mainLayoutController != null) {
-            mainLayoutController.showFixedIssues();
-        }
-    }
-
-    private String buildRoleHint(AuthenticatedUser currentUser) {
-        return switch (currentUser.role()) {
-            case ADMIN -> "Use the admin area to manage accounts and projects.";
-            case PL -> "Search issues, assign developers, and review project analytics.";
-            case DEV -> "Browse the issues assigned to you, then update progress through the workflow.";
-            case TESTER -> "Register issues, review details, add comments, and verify fixes.";
-        };
     }
 }

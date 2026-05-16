@@ -4,7 +4,7 @@ import com.example.its.application.service.ProjectService;
 import com.example.its.application.mapper.ProjectMapper;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
 import com.example.its.shared.dto.project.ProjectResponse;
-import com.example.its.shared.dto.project.ProjectUpdateRequest;
+import com.example.its.shared.dto.project.ProjectTagUpdateRequest;
 
 import java.util.List;
 
@@ -22,8 +22,8 @@ public class ProjectFacade {
         return projectService.createProject(request);
     }
 
-    public ProjectResponse updateProject(Long id, ProjectUpdateRequest request) {
-        return projectService.updateProject(id, request);
+    public ProjectResponse updateProjectTags(ProjectTagUpdateRequest request) {
+        return projectService.updateProjectTags(request);
     }
 
     public ProjectResponse getProject(Long id) {
@@ -32,9 +32,5 @@ public class ProjectFacade {
 
     public List<ProjectResponse> getAllProjects() {
         return projectService.getAllProjects();
-    }
-
-    public List<ProjectResponse> getProjectsByMember(Long accountId) {
-        return projectService.getProjectsByMember(accountId);
     }
 }

@@ -90,6 +90,7 @@ public class IssueHistory {
     public static IssueHistory create(Account changedBy, IssueDelta issueDelta) {
         IssueHistory history = new IssueHistory();
         history.setChangedBy(changedBy);
+        // Setter 대신 private 필드에 직접 접근하여 값 할당
         history.changedAt = LocalDateTime.now().toString();
         history.setIssueDelta(issueDelta);
         return history;

@@ -553,7 +553,7 @@ public class MainLayoutController {
     private void configureSidebarForRole(boolean isAdmin, boolean canOpenIssues, boolean canOpenSearch, boolean canViewAnalytics) {
         if (isAdmin) {
             issuesNavButton.setText("Project");
-            searchNavButton.setText("Account Management");
+            searchNavButton.setText("Admin");
             issuesNavButton.setVisible(true);
             issuesNavButton.setManaged(true);
             searchNavButton.setVisible(true);

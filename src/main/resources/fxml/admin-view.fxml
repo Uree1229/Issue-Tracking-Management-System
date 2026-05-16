@@ -37,7 +37,7 @@
             <Separator orientation="VERTICAL"/>
             <Button mnemonicParsing="false" onAction="#openProjectManagement" text="Project" styleClass="landing-nav-button"/>
             <Separator orientation="VERTICAL"/>
-            <Button mnemonicParsing="false" onAction="#openAccountManagement" text="Account Management" styleClass="landing-nav-button"/>
+            <Button mnemonicParsing="false" onAction="#openAccountManagement" text="Admin" styleClass="landing-nav-button"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label text="ITS User Administration" styleClass="landing-meta"/>
         </HBox>
@@ -51,7 +51,6 @@
 
             <VBox spacing="6">
                 <Label fx:id="adminPageTitleLabel" text="Add User" styleClass="page-title"/>
-                <Label fx:id="adminSubtitleLabel" text="Create ITS accounts for admin, PL, dev, and tester roles." styleClass="landing-copy"/>
                 <Label fx:id="permissionNoticeLabel" text="" wrapText="true" styleClass="admin-warning-label"/>
             </VBox>
 
@@ -85,15 +84,7 @@
 
                                         <Label text="Role:" GridPane.rowIndex="4" styleClass="admin-form-label"/>
                                         <ComboBox fx:id="roleCombo" prefWidth="200" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="admin-input"/>
-
-                                        <Label text="Active account:" GridPane.rowIndex="5" styleClass="admin-form-label"/>
-                                        <CheckBox fx:id="activeCheckBox" mnemonicParsing="false" onAction="#handleActiveToggle" text="Allow this user to log in immediately" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="admin-check"/>
-
-                                        <Label text="Disable text:" GridPane.rowIndex="6" styleClass="admin-form-label"/>
-                                        <TextArea fx:id="disableReasonArea" wrapText="true" prefRowCount="3" promptText="If disabled, explain why this account should stay inactive." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>
                                     </GridPane>
-
-                                    <Label text="Only fields relevant to our project are included here. Email notification and Bugmail options are intentionally omitted." wrapText="true" styleClass="landing-copy"/>
                                     <Label fx:id="formFeedbackLabel" text="" wrapText="true" styleClass="form-feedback"/>
 
                                     <HBox spacing="10" alignment="CENTER_LEFT">
@@ -107,7 +98,6 @@
                                         <Insets top="20" right="20" bottom="20" left="20"/>
                                     </padding>
                                     <Label text="Existing Users" styleClass="section-title"/>
-                                    <Label text="This list is loaded from active accounts in the backend facade." wrapText="true" styleClass="landing-copy"/>
                                     <TableView fx:id="userTable" prefWidth="520" VBox.vgrow="ALWAYS">
                                         <columns>
                                             <TableColumn fx:id="idColumn" text="ID" prefWidth="55"/>
@@ -143,32 +133,23 @@
                                         <Label text="Description:" GridPane.rowIndex="1" styleClass="admin-form-label"/>
                                         <TextArea fx:id="projectDescriptionArea" wrapText="true" prefRowCount="3" promptText="Describe the project's purpose and scope." GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="admin-text-area"/>
 
-                                        <Label text="Open for issue entry:" GridPane.rowIndex="2" styleClass="admin-form-label"/>
-                                        <CheckBox fx:id="openForIssueEntryCheckBox" mnemonicParsing="false" text="Allow new issues to be reported immediately" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="admin-check"/>
+                                        <Label text="Version:" GridPane.rowIndex="2" styleClass="admin-form-label"/>
+                                        <TextField fx:id="versionField" promptText="1.0.0" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="admin-input short-input"/>
 
-                                        <Label text="Create chart datasets:" GridPane.rowIndex="3" styleClass="admin-form-label"/>
-                                        <CheckBox fx:id="analyticsDatasetCheckBox" mnemonicParsing="false" text="Prepare this project for statistics and trend charts" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="admin-check"/>
+                                        <Label text="Default tag:" GridPane.rowIndex="3" styleClass="admin-form-label"/>
+                                        <TextField fx:id="defaultTagField" promptText="e.g. auth, ui, workflow" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="admin-input"/>
 
-                                        <Label text="Version:" GridPane.rowIndex="4" styleClass="admin-form-label"/>
-                                        <TextField fx:id="versionField" promptText="1.0.0" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="admin-input short-input"/>
+                                        <Label text="Tag description:" GridPane.rowIndex="4" styleClass="admin-form-label"/>
+                                        <TextArea fx:id="tagDescriptionArea" wrapText="true" prefRowCount="3" promptText="Initial tag description" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="admin-text-area"/>
 
-                                        <Label text="Default tag:" GridPane.rowIndex="5" styleClass="admin-form-label"/>
-                                        <TextField fx:id="defaultTagField" promptText="e.g. auth, ui, workflow" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="admin-input"/>
-
-                                        <Label text="Tag description:" GridPane.rowIndex="6" styleClass="admin-form-label"/>
-                                        <TextArea fx:id="tagDescriptionArea" wrapText="true" prefRowCount="3" promptText="Explain the initial tag or component this project starts with." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>
-
-                                        <Label text="Assign members:" GridPane.rowIndex="7" styleClass="admin-form-label"/>
-                                        <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="7">
-                                            <Label text="Open the member picker and choose PL, DEV, and TESTER accounts in separate role sections." wrapText="true" styleClass="landing-copy"/>
+                                        <Label text="Assign members:" GridPane.rowIndex="5" styleClass="admin-form-label"/>
+                                        <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="5">
                                             <HBox spacing="10" alignment="CENTER_LEFT">
                                                 <Button fx:id="assignMembersButton" mnemonicParsing="false" onAction="#openProjectMemberPicker" text="Assign Members" styleClass="ghost-button"/>
                                                 <Label fx:id="projectMembersSummaryLabel" text="No members selected yet." wrapText="true" styleClass="landing-copy"/>
                                             </HBox>
                                         </VBox>
                                     </GridPane>
-
-                                    <Label text="Create and manage project records needed for the ITS workflow. Only the fields used in this term project are shown here." wrapText="true" styleClass="landing-copy"/>
                                     <Label fx:id="projectFormFeedbackLabel" text="" wrapText="true" styleClass="form-feedback"/>
 
                                     <HBox spacing="10" alignment="CENTER_LEFT">
@@ -182,7 +163,6 @@
                                         <Insets top="20" right="20" bottom="20" left="20"/>
                                     </padding>
                                     <Label text="Existing Projects" styleClass="section-title"/>
-                                    <Label text="This list is loaded from backend projects. Version remains a planning note, while the default tag is stored with the project." wrapText="true" styleClass="landing-copy"/>
                                     <TableView fx:id="projectTable" prefWidth="520" VBox.vgrow="ALWAYS">
                                         <columns>
                                             <TableColumn fx:id="projectIdColumn" text="ID" prefWidth="55"/>

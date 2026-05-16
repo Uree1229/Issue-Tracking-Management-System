@@ -20,23 +20,7 @@
         </padding>
 
         <Label text="Issue Tracking System" styleClass="login-hero-title"/>
-        <Label text="All features in this ITS require authentication. Before login, users cannot browse issues, create reports, or access admin screens." wrapText="true" styleClass="login-hero-copy"/>
-
-        <VBox spacing="10">
-            <Label text="Access Policy" styleClass="login-hero-section"/>
-            <Label text="- Anonymous access is not supported" styleClass="login-hero-bullet"/>
-            <Label text="- Role is determined only after successful sign-in" styleClass="login-hero-bullet"/>
-            <Label text="- Home, Issues, Analytics, and Admin open after authentication" styleClass="login-hero-bullet"/>
-        </VBox>
-
-        <VBox spacing="10">
-            <Label text="Demo Accounts" styleClass="login-hero-section"/>
-            <Label text="- admin / admin (seeded by default)" styleClass="login-hero-bullet"/>
-            <Label text="- PL / DEV / TESTER accounts can be created from Register or Admin" wrapText="true" styleClass="login-hero-bullet"/>
-        </VBox>
-
         <Region VBox.vgrow="ALWAYS"/>
-        <Label text="Quick role buttons now attempt real login with those credentials. If the account has not been created yet, register it first." wrapText="true" styleClass="login-hero-note"/>
     </VBox>
 
     <VBox styleClass="login-panel-wrap">
@@ -46,7 +30,6 @@
 
         <VBox spacing="18" styleClass="login-panel">
             <Label text="Log In" styleClass="login-title"/>
-            <Label text="Sign in first to open the system. No menus or issue pages are available before authentication." wrapText="true" styleClass="login-subtitle"/>
 
             <VBox spacing="8">
                 <Label text="Login ID" styleClass="field-label"/>

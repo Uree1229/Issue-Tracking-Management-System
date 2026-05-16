@@ -16,7 +16,7 @@ public class IssueDeltaRepository extends JpaRepositorySupport<IssueDelta> {
                 "select d from IssueDelta d where d.issueHistory.historyId = :historyId",
                 IssueDelta.class
             )
-            .setParameter("historyId", historyId)
+            .setParameter("historyId", toJpaId(historyId))
             .getResultStream()
             .findFirst();
     }

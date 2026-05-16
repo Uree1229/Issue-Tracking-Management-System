@@ -162,6 +162,7 @@ public class Account {
         return issueHistories;
     }
 
+    // BE: static factory method 컨벤션 만족 위해 추가
     public static Account create(String loginId, String password, String name, String email, Role role) {
         Account account = new Account();
         account.loginId = loginId;
@@ -169,7 +170,7 @@ public class Account {
         account.name = name;
         account.email = email;
         account.role = role;
-        account.isActive = 1;
+        account.isActive = 1; // 기본 활성 상태
         return account;
     }
 

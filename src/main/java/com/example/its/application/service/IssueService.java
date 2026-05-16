@@ -257,6 +257,36 @@ public class IssueService {
         });
     }
 
+    public IssueDetailResponse updateIssueTags(IssueTagUpdateRequest request) {
+        return TransactionManager.execute(entityManager -> {
+            IssueRepository issueRepository = new IssueRepository(entityManager);
+            TagRepository tagRepository = new TagRepository(entityManager);
+
+            Issue issue = getIssueOrThrow(issueRepository, request.getIssueId());
+
+            // 1) 이슈에서 태그 제거
+            if (request.getTagIdsToRemove() != null) {
+                for (Long tagId : request.getTagIdsToRemove()) {
+                    Tag tag = tagRepository.findById(tagId)
+                            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 태그입니다. ID: " + tagId));
+                    issue.removeTag(tag);
+                }
+            }
+
+            // 2) 이슈에 태그 추가
+            if (request.getTagIdsToAdd() != null) {
+                for (Long tagId : request.getTagIdsToAdd()) {
+                    Tag tag = tagRepository.findById(tagId)
+                            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 태그입니다. ID: " + tagId));
+                    issue.addTag(tag);
+                }
+            }
+
+            // 상태(Status) 변경은 없으므로 스냅샷 이력은 기록하지 않고 바로 저장
+            return issueMapper.toDetailResponse(issueRepository.save(issue));
+        });
+    }
+
     // 3. 조회 및 유틸리티
     public IssueDetailResponse getIssueDetail(Long issueId) {
         return TransactionManager.execute(entityManager -> {

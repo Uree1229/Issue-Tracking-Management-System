@@ -95,6 +95,17 @@ public class Project {
         return tags;
     }
 
+    public void addTag(Tag tag) {
+        tags.add(tag);
+        tag.setProject(this);
+    }
+
+    public void removeTag(Tag tag) {
+        tags.remove(tag);
+        tag.setProject(null);
+    }
+
+    // BE: static factory method 컨벤션 만족 위해 추가
     public static Project create(String name, String description, Account createdBy) {
         Project project = new Project();
         project.name = name;

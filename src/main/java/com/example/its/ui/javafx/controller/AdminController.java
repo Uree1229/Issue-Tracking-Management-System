@@ -60,9 +60,6 @@ public class AdminController {
     private Label adminPageTitleLabel;
 
     @FXML
-    private Label adminSubtitleLabel;
-
-    @FXML
     private Label permissionNoticeLabel;
 
     @FXML
@@ -82,12 +79,6 @@ public class AdminController {
 
     @FXML
     private ComboBox<UiRole> roleCombo;
-
-    @FXML
-    private CheckBox activeCheckBox;
-
-    @FXML
-    private TextArea disableReasonArea;
 
     @FXML
     private Label formFeedbackLabel;
@@ -118,12 +109,6 @@ public class AdminController {
 
     @FXML
     private TextArea projectDescriptionArea;
-
-    @FXML
-    private CheckBox openForIssueEntryCheckBox;
-
-    @FXML
-    private CheckBox analyticsDatasetCheckBox;
 
     @FXML
     private TextField versionField;
@@ -170,9 +155,6 @@ public class AdminController {
 
         roleCombo.setItems(FXCollections.observableArrayList(UiRole.values()));
         roleCombo.setValue(UiRole.DEV);
-        activeCheckBox.setSelected(true);
-        openForIssueEntryCheckBox.setSelected(true);
-        analyticsDatasetCheckBox.setSelected(true);
         versionField.setText("1.0.0");
 
         configureUserTable();
@@ -180,7 +162,6 @@ public class AdminController {
 
         userTable.setItems(users);
         projectTable.setItems(projects);
-        updateDisableReasonState();
         refreshProjectMemberSummary();
         adminTabPane.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> updateAdminPageCopy());
         updateAdminPageCopy();
@@ -201,7 +182,6 @@ public class AdminController {
 
     @FXML
     private void handleActiveToggle() {
-        updateDisableReasonState();
     }
 
     @FXML
@@ -251,23 +231,10 @@ public class AdminController {
         String email = trimmed(emailField.getText());
         String password = passwordField.getText() == null ? "" : passwordField.getText();
         UiRole role = roleCombo.getValue();
-        boolean isActive = activeCheckBox.isSelected();
-        String disableReason = trimmed(disableReasonArea.getText());
 
         if (loginId.isBlank() || realName.isBlank() || email.isBlank() || password.isBlank() || role == null) {
             formFeedbackLabel.getStyleClass().add("form-feedback-error");
             formFeedbackLabel.setText("Login ID, real name, email, password, and role are required.");
-            return;
-        }
-
-        if (!isActive && disableReason.isBlank()) {
-            formFeedbackLabel.getStyleClass().add("form-feedback-error");
-            formFeedbackLabel.setText("If the account starts disabled, add a short reason.");
-            return;
-        }
-        if (!isActive) {
-            formFeedbackLabel.getStyleClass().add("form-feedback-error");
-            formFeedbackLabel.setText("The current backend contract only supports active account creation.");
             return;
         }
 
@@ -325,9 +292,10 @@ public class AdminController {
             request.setName(projectName);
             request.setDescription(description);
             request.setCreatedByAccountId(currentUser.accountId());
-            request.setMemberAccountIds(selectedMemberIds);
+            request.setTagNames(List.of(defaultTag));
 
             ProjectResponse createdProject = backendBridge().createProject(request);
+            backendBridge().assignProjectMembers(createdProject.getProjectId(), selectedMemberIds);
             ProjectTagOption createdTag = backendBridge().ensureProjectTag(
                 createdProject.getProjectId(),
                 defaultTag,
@@ -339,7 +307,7 @@ public class AdminController {
                 createdProject.getName(),
                 createdProject.getDescription(),
                 version,
-                openForIssueEntryCheckBox.isSelected(),
+                true,
                 createdTag.name(),
                 currentUser.loginId()
             ));
@@ -384,17 +352,12 @@ public class AdminController {
         emailField.clear();
         passwordField.clear();
         roleCombo.setValue(UiRole.DEV);
-        activeCheckBox.setSelected(true);
-        disableReasonArea.clear();
-        updateDisableReasonState();
     }
 
     @FXML
     private void clearProjectForm() {
         projectNameField.clear();
         projectDescriptionArea.clear();
-        openForIssueEntryCheckBox.setSelected(true);
-        analyticsDatasetCheckBox.setSelected(true);
         versionField.setText("1.0.0");
         defaultTagField.clear();
         tagDescriptionArea.clear();
@@ -647,19 +610,9 @@ public class AdminController {
     private void updateAdminPageCopy() {
         if (adminTabPane.getSelectionModel().getSelectedIndex() == 1) {
             adminPageTitleLabel.setText("Project Management");
-            adminSubtitleLabel.setText("Create ITS projects and assign PL, DEV, and TESTER members per project.");
             return;
         }
         adminPageTitleLabel.setText("Account Management");
-        adminSubtitleLabel.setText("Create ITS accounts for admin, PL, dev, and tester roles.");
-    }
-
-    private void updateDisableReasonState() {
-        boolean disabled = !activeCheckBox.isSelected();
-        disableReasonArea.setDisable(!disabled);
-        if (!disabled) {
-            disableReasonArea.clear();
-        }
     }
 
     private void disableForms() {
@@ -668,12 +621,8 @@ public class AdminController {
         emailField.setDisable(true);
         passwordField.setDisable(true);
         roleCombo.setDisable(true);
-        activeCheckBox.setDisable(true);
-        disableReasonArea.setDisable(true);
         projectNameField.setDisable(true);
         projectDescriptionArea.setDisable(true);
-        openForIssueEntryCheckBox.setDisable(true);
-        analyticsDatasetCheckBox.setDisable(true);
         versionField.setDisable(true);
         defaultTagField.setDisable(true);
         tagDescriptionArea.setDisable(true);
