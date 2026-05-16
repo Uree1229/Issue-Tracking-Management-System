@@ -662,7 +662,7 @@ public class IssueBrowserController {
 
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
         if (currentUser != null && currentUser.role() == UiRole.DEV) {
-            String option = currentUser.displayName();
+            String option = currentUser.name();
             ensureOptionPresent(assigneeFilterCombo, option);
             assigneeFilterCombo.setValue(option);
             assigneeFilterCombo.setDisable(true);
