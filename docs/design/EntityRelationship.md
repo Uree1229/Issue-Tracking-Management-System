@@ -12,8 +12,8 @@ erDiagram
     ISSUE_HISTORY ||--|| ISSUE_DELTA : details
     ISSUE }o--o{ TAG : classified_by
     ACCOUNT ||--o{ ISSUE : reports
-    ACCOUNT ||--o{ ISSUE : assigned_to
-    ACCOUNT ||--o{ ISSUE : fixes
+    ACCOUNT |o--o{ ISSUE : assigned_to
+    ACCOUNT |o--o{ ISSUE : fixes
     ACCOUNT ||--o{ COMMENT : writes
     ACCOUNT ||--o{ ISSUE_HISTORY : changes
 ```
