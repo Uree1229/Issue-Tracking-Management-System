@@ -5,6 +5,7 @@ import com.example.its.util.TestDatabaseManager;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -20,8 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // TODO: Stub을 만들어서 테스트 DB에 접근하지 않도록 리팩토링 필요
 class TagRepositoryTest {
 
-    private static final EntityManagerFactory ENTITY_MANAGER_FACTORY =
-        Persistence.createEntityManagerFactory("its-persistence-unit");
+    private static EntityManagerFactory entityManagerFactory;
 
     private EntityManager entityManager;
     private TagRepository tagRepository;
@@ -30,11 +30,19 @@ class TagRepositoryTest {
     static void resetDatabaseBeforeAllTests() {
         // 테스트 DB 초기화
         TestDatabaseManager.resetDatabase();
+        entityManagerFactory = Persistence.createEntityManagerFactory("its-persistence-unit");
+    }
+
+    @AfterAll
+    static void closeEntityManagerFactory() {
+        if (entityManagerFactory != null) {
+            entityManagerFactory.close();
+        }
     }
 
     void setUpEntityManagerAndRepository() {
         // EntityManager 생성 및 TagRepository 초기화
-        entityManager = ENTITY_MANAGER_FACTORY.createEntityManager();
+        entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
         tagRepository = new TagRepository(entityManager);
     }
