@@ -90,12 +90,24 @@
                             <Label fx:id="projectValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="field-value"/>
                             <Label text="Reported At" GridPane.rowIndex="4" styleClass="field-label"/>
                             <Label fx:id="reportedAtValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="field-value"/>
+                            <Label text="Tags" GridPane.rowIndex="5" styleClass="field-label"/>
+                            <Label fx:id="tagsValueLabel" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="field-value"/>
                         </GridPane>
 
                         <VBox fx:id="recommendationSection" spacing="8" styleClass="detail-section-card">
-                            <Label text="Recommended Assignees" styleClass="section-title"/>
-                            <ListView fx:id="recommendationListView" prefHeight="120"/>
+                            <Label text="Suggested Developers" styleClass="section-title"/>
+                            <ListView fx:id="recommendationListView" prefHeight="108"/>
                         </VBox>
+
+                        <HBox fx:id="workflowButtonBar" spacing="10" alignment="CENTER_LEFT">
+                            <Button fx:id="assignButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Assign" styleClass="ghost-button"/>
+                            <Button fx:id="markFixedButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Mark Fixed" styleClass="ghost-button"/>
+                            <Button fx:id="resolveButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Resolve" styleClass="ghost-button"/>
+                            <Button fx:id="failButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Fail" styleClass="ghost-button"/>
+                            <Button fx:id="closeButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Close" styleClass="ghost-button"/>
+                            <Button fx:id="reopenButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Reopen" styleClass="ghost-button"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                        </HBox>
 
                         <VBox spacing="8" VBox.vgrow="ALWAYS">
                             <Label text="Description" styleClass="section-title"/>
@@ -116,15 +128,6 @@
                             </HBox>
                         </VBox>
 
-                        <HBox fx:id="workflowButtonBar" spacing="10" alignment="CENTER_LEFT">
-                            <Button fx:id="assignButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Assign" styleClass="ghost-button"/>
-                            <Button fx:id="markFixedButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Mark Fixed" styleClass="ghost-button"/>
-                            <Button fx:id="resolveButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Resolve" styleClass="ghost-button"/>
-                            <Button fx:id="failButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Fail" styleClass="ghost-button"/>
-                            <Button fx:id="closeButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Close" styleClass="ghost-button"/>
-                            <Button fx:id="reopenButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Reopen" styleClass="ghost-button"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                        </HBox>
                     </VBox>
                 </VBox>
             </items>

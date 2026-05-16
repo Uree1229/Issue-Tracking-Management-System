@@ -18,31 +18,24 @@
         <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
 
-    <VBox spacing="6">
-        <Label text="Analytics" styleClass="page-title"/>
-        <Label text="Reporting view for status distribution, issue trends, and current workload." styleClass="landing-copy"/>
-    </VBox>
+    <Label text="Analytics" styleClass="page-title"/>
 
     <HBox spacing="14">
         <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
             <Label text="Total Issues" styleClass="metric-title"/>
             <Label fx:id="totalIssuesValueLabel" text="0" styleClass="metric-value"/>
-            <Label text="Everything currently tracked in the selected project." styleClass="landing-copy"/>
         </VBox>
         <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
             <Label text="Open Queue" styleClass="metric-title"/>
             <Label fx:id="openIssuesValueLabel" text="0" styleClass="metric-value"/>
-            <Label text="New, assigned, or reopened work waiting to move." styleClass="landing-copy"/>
         </VBox>
         <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
             <Label text="Verification" styleClass="metric-title"/>
             <Label fx:id="verificationValueLabel" text="0" styleClass="metric-value"/>
-            <Label text="Issues that are fixed or resolved and near closure." styleClass="landing-copy"/>
         </VBox>
         <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
             <Label text="Closed" styleClass="metric-title"/>
             <Label fx:id="closedIssuesValueLabel" text="0" styleClass="metric-value"/>
-            <Label text="Finished work ready to use in recommendation history." styleClass="landing-copy"/>
         </VBox>
     </HBox>
 

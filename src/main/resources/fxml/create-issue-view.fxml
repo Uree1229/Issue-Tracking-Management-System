@@ -22,7 +22,6 @@
 
     <VBox spacing="6">
         <Label text="Create Issue" styleClass="page-title"/>
-        <Label text="Use this form to create a new issue with the same workflow fields we plan to send through DTOs later." styleClass="landing-copy"/>
     </VBox>
 
     <HBox spacing="18" alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
@@ -68,38 +67,6 @@
                 <Button mnemonicParsing="false" onAction="#handleCreateIssue" text="Create Issue" styleClass="primary-button"/>
                 <Button mnemonicParsing="false" onAction="#handleReset" text="Reset" styleClass="ghost-button"/>
             </HBox>
-        </VBox>
-
-        <VBox spacing="16" styleClass="create-side-card">
-            <padding>
-                <Insets top="22" right="22" bottom="22" left="22"/>
-            </padding>
-
-            <Label text="Live Preview" styleClass="section-title"/>
-            <VBox spacing="8">
-                <Label fx:id="previewTitleLabel" text="Waiting for title..." styleClass="detail-title"/>
-                <HBox spacing="10">
-                    <Label fx:id="previewPriorityLabel" text="MAJOR" styleClass="badge priority-badge priority-major"/>
-                    <Label text="NEW" styleClass="badge status-badge status-new"/>
-                </HBox>
-                <Label fx:id="previewReporterLabel" text="-" styleClass="field-value"/>
-                <Label fx:id="previewDescriptionLabel" text="The issue description will appear here once the reporter adds a reproduction note." wrapText="true" styleClass="landing-copy"/>
-            </VBox>
-
-            <Separator/>
-
-            <Label text="Workflow Reminder" styleClass="section-title"/>
-            <VBox spacing="8">
-                <Label text="1. Reporter creates the issue as NEW." styleClass="landing-list-item"/>
-                <Label text="2. PL assigns the issue to a developer." styleClass="landing-list-item"/>
-                <Label text="3. DEV marks it FIXED after implementation." styleClass="landing-list-item"/>
-                <Label text="4. TESTER resolves or reopens based on verification." styleClass="landing-list-item"/>
-            </VBox>
-
-            <Separator/>
-
-            <Label text="Frontend Contract Hint" styleClass="section-title"/>
-            <Label text="This form sends an IssueCreateRequest to the backend facade. Tags selected here are stored with the issue and can influence assignee recommendations later." wrapText="true" styleClass="landing-copy"/>
         </VBox>
     </HBox>
 </VBox>

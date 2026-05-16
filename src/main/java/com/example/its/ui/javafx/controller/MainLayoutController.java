@@ -417,15 +417,6 @@ public class MainLayoutController {
         }
     }
 
-    private void loadSearchResultsView() {
-        try {
-            FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/search-results-view.fxml"));
-            loader.load();
-        } catch (Exception exception) {
-            UiAlertHelper.showError("View Load Failed", "Search results view could not be opened.", exception);
-        }
-    }
-
     private void loadCreateIssueView() {
         try {
             FXMLLoader loader = new FXMLLoader(ItsApplication.class.getResource("/fxml/create-issue-view.fxml"));

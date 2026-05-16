@@ -122,6 +122,9 @@ public class IssueBrowserController {
     private Label reportedAtValueLabel;
 
     @FXML
+    private Label tagsValueLabel;
+
+    @FXML
     private TextArea descriptionArea;
 
     @FXML
@@ -381,7 +384,7 @@ public class IssueBrowserController {
     }
 
     private void configureSupportPanels() {
-        recommendationListView.setPlaceholder(new Label("Select an issue to see suggested developers."));
+        recommendationListView.setPlaceholder(new Label("Choose an issue to see suggested developers."));
         commentListView.setPlaceholder(new Label("No activity has been recorded for this issue yet."));
         commentFeedbackLabel.getStyleClass().setAll("form-feedback");
         commentFeedbackLabel.setText("");
@@ -701,9 +704,10 @@ public class IssueBrowserController {
             fixerValueLabel.setText("-");
             projectValueLabel.setText("-");
             reportedAtValueLabel.setText("-");
+            tagsValueLabel.setText("-");
             descriptionArea.clear();
             commentListView.setItems(FXCollections.observableArrayList("No issue selected."));
-            recommendationListView.setItems(FXCollections.observableArrayList("Select an issue to see recommendations."));
+            recommendationListView.setItems(FXCollections.observableArrayList("Choose an issue to see suggested developers."));
             commentInputArea.clear();
             commentFeedbackLabel.getStyleClass().setAll("form-feedback");
             commentFeedbackLabel.setText("");
@@ -725,9 +729,10 @@ public class IssueBrowserController {
         fixerValueLabel.setText(issue.getFixerName() == null || issue.getFixerName().isBlank() ? "-" : issue.getFixerName());
         projectValueLabel.setText(issue.getProjectName());
         reportedAtValueLabel.setText(formatDateTime(issue.getReportedAt()));
+        tagsValueLabel.setText(formatTagNames(issue.getTagNames()));
         descriptionArea.setText(issue.getDescription());
         commentListView.setItems(FXCollections.observableArrayList(UiModelMapper.toActivityTimeline(issue)));
-        recommendationListView.setItems(FXCollections.observableArrayList(formatRecommendations(loadRecommendations(issue))));
+        recommendationListView.setItems(FXCollections.observableArrayList(buildRecommendationLines(issue)));
         commentFeedbackLabel.getStyleClass().setAll("form-feedback");
         commentFeedbackLabel.setText("");
 
@@ -772,21 +777,35 @@ public class IssueBrowserController {
             .map(ProjectTagOption::tagId)
             .toList();
 
+        if (tagIds.isEmpty()) {
+            return List.of();
+        }
+
         return recommendationCache.computeIfAbsent(
             issue.getIssueId(),
             ignored -> backendBridge().recommendAssignees(issue.getProjectId(), tagIds)
         );
     }
 
+    private List<String> buildRecommendationLines(IssueDetailResponse issue) {
+        if (issue == null) {
+            return List.of("Choose an issue to see suggested developers.");
+        }
+        if (issue.getTagNames() == null || issue.getTagNames().isEmpty()) {
+            return List.of("Add one or more tags to this issue to unlock tag-based suggestions.");
+        }
+        return formatRecommendations(loadRecommendations(issue));
+    }
+
     private List<String> formatRecommendations(List<RecommendationResponse> recommendations) {
         if (recommendations == null || recommendations.isEmpty()) {
-            return List.of("No recommendation data is available for this issue yet.");
+            return List.of("No suitable developers were ranked for this issue yet.");
         }
 
         return recommendations.stream()
             .map(recommendation -> recommendation.getName()
                 + " (" + recommendation.getLoginId() + ")"
-                + "  • score "
+                + " | score "
                 + String.format(Locale.US, "%.1f", recommendation.getScore()))
             .toList();
     }
@@ -806,6 +825,15 @@ public class IssueBrowserController {
 
     private String formatDateTime(LocalDateTime dateTime) {
         return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMATTER);
+    }
+
+    private String formatTagNames(List<String> tagNames) {
+        if (tagNames == null || tagNames.isEmpty()) {
+            return "-";
+        }
+        return tagNames.stream()
+            .filter(tagName -> tagName != null && !tagName.isBlank())
+            .collect(Collectors.joining(", "));
     }
 
     private JavaFxBackendBridge backendBridge() {
@@ -830,7 +858,7 @@ public class IssueBrowserController {
             if (recommendationScore == null) {
                 return label;
             }
-            return label + "  • recommended " + String.format(Locale.US, "%.1f", recommendationScore);
+            return label + " | suggested " + String.format(Locale.US, "%.1f", recommendationScore);
         }
     }
 }

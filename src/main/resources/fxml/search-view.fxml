@@ -20,17 +20,9 @@
         <Insets top="14" right="18" bottom="18" left="18"/>
     </padding>
 
-    <VBox spacing="8">
-        <Label text="Search" styleClass="page-title"/>
-        <Label text="Combine detail fields and filters, then open a separate results window." styleClass="landing-copy"/>
-    </VBox>
+    <Label text="Search" styleClass="page-title"/>
 
     <VBox spacing="18" styleClass="panel-card search-workspace-card" VBox.vgrow="ALWAYS" maxWidth="940">
-        <VBox spacing="6">
-            <Label text="Search Builder" styleClass="section-title"/>
-            <Label text="Use structured fields for precise issue lookup. Results will open in a dedicated window." styleClass="landing-copy"/>
-        </VBox>
-
         <HBox spacing="18" styleClass="search-form-strip" VBox.vgrow="ALWAYS">
             <VBox spacing="12" styleClass="search-section-shell search-primary-shell" prefWidth="560" maxWidth="560">
                 <Label text="Query Fields" styleClass="search-section-title"/>

@@ -9,6 +9,9 @@ import com.example.its.shared.dto.issue.IssueDeltaResponse;
 import com.example.its.shared.dto.issue.IssueDetailResponse;
 import com.example.its.shared.dto.issue.IssueHistoryResponse;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
+import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.shared.dto.tag.TagResponse;
+import com.example.its.ui.javafx.model.AdminProjectRowModel;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.IssueRowModel;
 import com.example.its.ui.javafx.model.UiIssueStatus;
@@ -25,6 +28,7 @@ class UiModelMapperTest {
 
     @Test
     void toAuthenticatedUserConvertsRoleAndIdentity() {
+        // Given: an authenticated backend response for a PL account
         AccountResponse response = new AccountResponse(
             11L,
             "pl1",
@@ -37,6 +41,7 @@ class UiModelMapperTest {
 
         AuthenticatedUser user = UiModelMapper.toAuthenticatedUser(response);
 
+        // Then: JavaFX session data should keep the identity and role intact
         assertEquals(11L, user.accountId());
         assertEquals("pl1", user.loginId());
         assertEquals("Project Lead (pl1)", user.displayName());
@@ -45,6 +50,7 @@ class UiModelMapperTest {
 
     @Test
     void toIssueRowModelUsesProjectMapAndDefaultAssigneeDisplay() {
+        // Given: a summary row without an assigned developer name
         IssueSummaryResponse response = new IssueSummaryResponse(
             99L,
             "UI bug",
@@ -61,6 +67,7 @@ class UiModelMapperTest {
 
         IssueRowModel row = UiModelMapper.toIssueRowModel(response, Map.of(300L, "Project Alpha"));
 
+        // Then: the row should resolve the project name and show "Unassigned"
         assertEquals("Project Alpha", row.getProjectName());
         assertEquals(UiIssueStatus.NEW, row.getStatus());
         assertEquals(UiPriority.MINOR, row.getPriority());
@@ -69,6 +76,7 @@ class UiModelMapperTest {
 
     @Test
     void toActivityTimelineSortsCommentsAndHistoryChronologically() {
+        // Given: comments and history records arrive out of order
         IssueDetailResponse response = new IssueDetailResponse(
             77L,
             "Search issue",
@@ -112,10 +120,37 @@ class UiModelMapperTest {
 
         List<String> timeline = UiModelMapper.toActivityTimeline(response);
 
+        // Then: the detail timeline should be merged and sorted by time
         assertEquals(4, timeline.size());
         assertEquals("[2026-05-08 09:05] Developer One: comment first", timeline.get(0));
         assertEquals("[2026-05-08 09:10] dev1: created the issue with status NEW.", timeline.get(1));
         assertEquals("[2026-05-08 09:12] dev1: changed status from NEW to ASSIGNED.", timeline.get(2));
         assertEquals("[2026-05-08 09:15] Tester One: comment later", timeline.get(3));
+    }
+
+    @Test
+    void toAdminProjectRowModelSummarizesSortedTagsAndCreator() {
+        // Given: a project response that contains several tag names in mixed order
+        ProjectResponse response = new ProjectResponse(
+            3L,
+            "Proj3",
+            "Tag-ready project",
+            LocalDateTime.of(2026, 5, 16, 10, 0),
+            1L,
+            "admin",
+            List.of(
+                new TagResponse(10L, 3L, "ui", "ui tag"),
+                new TagResponse(11L, 3L, "auth", "auth tag"),
+                new TagResponse(12L, 3L, "api", "api tag")
+            )
+        );
+
+        AdminProjectRowModel row = UiModelMapper.toAdminProjectRowModel(response);
+
+        // Then: the admin table should show a stable tag summary and creator id
+        assertEquals(3L, row.getProjectId());
+        assertEquals("Proj3", row.getName());
+        assertEquals("api, auth, ui", row.getDefaultTag());
+        assertEquals("admin", row.getDefaultAssignee());
     }
 }

@@ -78,7 +78,15 @@
 
                     <Label text="Fixer" GridPane.rowIndex="2" styleClass="field-label"/>
                     <Label fx:id="detailFixerLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="field-value"/>
+                    <Label text="Tags" GridPane.columnIndex="2" GridPane.rowIndex="2" styleClass="field-label"/>
+                    <Label fx:id="detailTagsLabel" text="-" wrapText="true" GridPane.columnIndex="3" GridPane.rowIndex="2" styleClass="field-value"/>
                 </GridPane>
+
+                <VBox fx:id="recommendationSection" spacing="10" styleClass="detail-section-card inquiry-section-card">
+                    <Label text="Suggested Developers" styleClass="section-title"/>
+                    <Label fx:id="recommendationHintLabel" text="" wrapText="true" styleClass="recommendation-hint"/>
+                    <ListView fx:id="recommendationListView" prefHeight="108"/>
+                </VBox>
 
                 <VBox spacing="10" styleClass="detail-section-card inquiry-section-card">
                     <Label text="Description" styleClass="section-title"/>

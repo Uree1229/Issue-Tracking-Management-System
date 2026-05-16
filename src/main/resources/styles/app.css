@@ -733,6 +733,12 @@
     -fx-effect: dropshadow(gaussian, rgba(29, 41, 57, 0.04), 10, 0.08, 0, 2);
 }
 
+.recommendation-hint {
+    -fx-text-fill: #637486;
+    -fx-font-size: 12px;
+    -fx-line-spacing: 2px;
+}
+
 .table-view,
 .list-view,
 .text-field,

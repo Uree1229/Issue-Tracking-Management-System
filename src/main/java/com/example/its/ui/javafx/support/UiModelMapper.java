@@ -60,7 +60,14 @@ public final class UiModelMapper {
             response.getDescription(),
             "-",
             true,
-            "-",
+            response.getTags() == null || response.getTags().isEmpty()
+                ? "-"
+                : response.getTags().stream()
+                    .map(tag -> tag.getName())
+                    .filter(name -> name != null && !name.isBlank())
+                    .sorted(String.CASE_INSENSITIVE_ORDER)
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse("-"),
             response.getCreatedByLoginId() == null || response.getCreatedByLoginId().isBlank()
                 ? "-"
                 : response.getCreatedByLoginId()

@@ -50,18 +50,6 @@ public class CreateIssueController {
     private TextArea noteArea;
 
     @FXML
-    private Label previewTitleLabel;
-
-    @FXML
-    private Label previewPriorityLabel;
-
-    @FXML
-    private Label previewReporterLabel;
-
-    @FXML
-    private Label previewDescriptionLabel;
-
-    @FXML
     private Label formFeedbackLabel;
 
     @FXML
@@ -71,12 +59,7 @@ public class CreateIssueController {
         tagCombo.setItems(tagOptions);
         tagCombo.setValue(NO_TAG_OPTION);
 
-        titleField.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
-        descriptionArea.textProperty().addListener((observable, oldValue, newValue) -> updatePreview());
-        priorityCombo.valueProperty().addListener((observable, oldValue, newValue) -> updatePreview());
-
         refreshContext();
-        updatePreview();
     }
 
     public void setMainLayoutController(MainLayoutController mainLayoutController) {
@@ -87,12 +70,10 @@ public class CreateIssueController {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
         String reporterDisplay = currentUser == null ? "-" : currentUser.displayName();
         reporterValueLabel.setText(reporterDisplay);
-        previewReporterLabel.setText(reporterDisplay);
         String projectName = UserSession.getCurrentProjectName();
         projectValueLabel.setText(projectName == null || projectName.isBlank() ? "No Project Selected" : projectName);
         statusValueLabel.setText("NEW");
         refreshTagOptions();
-        updatePreview();
     }
 
     @FXML
@@ -161,18 +142,6 @@ public class CreateIssueController {
         tagCombo.setValue(NO_TAG_OPTION);
         formFeedbackLabel.getStyleClass().setAll("form-feedback");
         formFeedbackLabel.setText("");
-        updatePreview();
-    }
-
-    private void updatePreview() {
-        String title = trimmed(titleField.getText());
-        String description = trimmed(descriptionArea.getText());
-
-        previewTitleLabel.setText(title.isBlank() ? "Waiting for title..." : title);
-        previewPriorityLabel.setText(priorityCombo.getValue() == null ? "MAJOR" : priorityCombo.getValue().name());
-        previewDescriptionLabel.setText(description.isBlank()
-            ? "The issue description will appear here once the reporter adds a reproduction note."
-            : description);
     }
 
     private String trimmed(String value) {

@@ -4,9 +4,12 @@ import com.example.its.shared.dto.issue.CommentCreateRequest;
 import com.example.its.shared.dto.issue.IssueDetailResponse;
 import com.example.its.shared.dto.issue.IssueSearchCondition;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
+import com.example.its.shared.dto.issue.RecommendationResponse;
 import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.InquiryQueryPayload;
 import com.example.its.ui.javafx.model.IssueRowModel;
+import com.example.its.ui.javafx.model.ProjectTagOption;
+import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
 import com.example.its.ui.javafx.support.UiAlertHelper;
@@ -21,13 +24,16 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class InquiryResultsController {
 
@@ -36,6 +42,7 @@ public class InquiryResultsController {
     private final ObservableList<IssueRowModel> inquiryResults = FXCollections.observableArrayList();
     private final Map<Long, String> projectNameById = new HashMap<>();
     private final Map<Long, IssueDetailResponse> issueDetailCache = new HashMap<>();
+    private final Map<Long, List<RecommendationResponse>> recommendationCache = new HashMap<>();
 
     private MainLayoutController mainLayoutController;
     private Stage windowStage;
@@ -83,6 +90,9 @@ public class InquiryResultsController {
     private Label detailFixerLabel;
 
     @FXML
+    private Label detailTagsLabel;
+
+    @FXML
     private Label detailProjectLabel;
 
     @FXML
@@ -93,6 +103,15 @@ public class InquiryResultsController {
 
     @FXML
     private ListView<String> commentHistoryListView;
+
+    @FXML
+    private VBox recommendationSection;
+
+    @FXML
+    private ListView<String> recommendationListView;
+
+    @FXML
+    private Label recommendationHintLabel;
 
     @FXML
     private TextArea commentInputArea;
@@ -108,8 +127,11 @@ public class InquiryResultsController {
             .selectedItemProperty()
             .addListener((observable, oldValue, newValue) -> loadDetails(newValue));
         commentHistoryListView.setPlaceholder(new Label("No activity has been recorded for this issue yet."));
+        recommendationListView.setPlaceholder(new Label("Choose an issue to see suggested developers."));
+        recommendationHintLabel.setText("Suggestions are ranked using issue tags, recent experience, and current workload.");
         commentFeedbackLabel.getStyleClass().setAll("form-feedback");
         commentFeedbackLabel.setText("");
+        configureRoleScopedSections();
         showDetails(null);
     }
 
@@ -125,6 +147,7 @@ public class InquiryResultsController {
         try {
             refreshProjectNames();
             issueDetailCache.clear();
+            recommendationCache.clear();
 
             if (payload.recentOnly()) {
                 loadRecentIssues();
@@ -282,10 +305,13 @@ public class InquiryResultsController {
             detailReporterLabel.setText("-");
             detailAssigneeLabel.setText("-");
             detailFixerLabel.setText("-");
+            detailTagsLabel.setText("-");
             detailProjectLabel.setText("-");
             detailReportedAtLabel.setText("-");
             detailDescriptionArea.clear();
             commentHistoryListView.setItems(FXCollections.observableArrayList("No inquiry selected."));
+            recommendationListView.setItems(FXCollections.observableArrayList("Choose an issue to see suggested developers."));
+            recommendationHintLabel.setText("Suggestions appear when a PL opens an issue with matching project tags.");
             commentInputArea.clear();
             commentFeedbackLabel.getStyleClass().setAll("form-feedback");
             commentFeedbackLabel.setText("");
@@ -299,10 +325,13 @@ public class InquiryResultsController {
         detailReporterLabel.setText(issue.getReporterName());
         detailAssigneeLabel.setText(issue.getAssigneeName() == null || issue.getAssigneeName().isBlank() ? "Unassigned" : issue.getAssigneeName());
         detailFixerLabel.setText(issue.getFixerName() == null || issue.getFixerName().isBlank() ? "-" : issue.getFixerName());
+        detailTagsLabel.setText(formatTagNames(issue.getTagNames()));
         detailProjectLabel.setText(issue.getProjectName());
         detailReportedAtLabel.setText(formatDateTime(issue.getReportedAt()));
         detailDescriptionArea.setText(issue.getDescription());
         commentHistoryListView.setItems(FXCollections.observableArrayList(UiModelMapper.toActivityTimeline(issue)));
+        recommendationListView.setItems(FXCollections.observableArrayList(buildRecommendationLines(issue)));
+        recommendationHintLabel.setText(buildRecommendationHint(issue));
         commentFeedbackLabel.getStyleClass().setAll("form-feedback");
         commentFeedbackLabel.setText("");
     }
@@ -329,6 +358,72 @@ public class InquiryResultsController {
 
     private String formatDateTime(LocalDateTime dateTime) {
         return dateTime == null ? "-" : dateTime.format(DATE_TIME_FORMATTER);
+    }
+
+    private void configureRoleScopedSections() {
+        boolean isPl = UserSession.getCurrentUser() != null && UserSession.getCurrentUser().role() == UiRole.PL;
+        recommendationSection.setVisible(isPl);
+        recommendationSection.setManaged(isPl);
+    }
+
+    private List<String> buildRecommendationLines(IssueDetailResponse issue) {
+        if (issue == null) {
+            return List.of("Choose an issue to see suggested developers.");
+        }
+        if (issue.getTagNames() == null || issue.getTagNames().isEmpty()) {
+            return List.of("Add one or more tags to this issue to unlock tag-based suggestions.");
+        }
+
+        List<RecommendationResponse> recommendations = loadRecommendations(issue);
+        if (recommendations.isEmpty()) {
+            return List.of("No suitable developers were ranked for this issue yet.");
+        }
+
+        return recommendations.stream()
+            .map(recommendation -> recommendation.getName()
+                + " (" + recommendation.getLoginId() + ")"
+                + " | score "
+                + String.format(Locale.US, "%.1f", recommendation.getScore()))
+            .toList();
+    }
+
+    private String buildRecommendationHint(IssueDetailResponse issue) {
+        if (issue == null) {
+            return "Suggestions appear when a PL opens an issue with matching project tags.";
+        }
+        if (issue.getTagNames() == null || issue.getTagNames().isEmpty()) {
+            return "This issue does not have any tags yet, so the recommendation engine has nothing to compare.";
+        }
+        return "Suggestions are ranked using matching tags, recent issue history, and current developer workload.";
+    }
+
+    private List<RecommendationResponse> loadRecommendations(IssueDetailResponse issue) {
+        if (issue == null || issue.getProjectId() == null) {
+            return List.of();
+        }
+
+        List<Long> tagIds = backendBridge().getProjectTags(issue.getProjectId()).stream()
+            .filter(tag -> issue.getTagNames() != null && issue.getTagNames().contains(tag.name()))
+            .map(ProjectTagOption::tagId)
+            .toList();
+
+        if (tagIds.isEmpty()) {
+            return List.of();
+        }
+
+        return recommendationCache.computeIfAbsent(
+            issue.getIssueId(),
+            ignored -> backendBridge().recommendAssignees(issue.getProjectId(), tagIds)
+        );
+    }
+
+    private String formatTagNames(List<String> tagNames) {
+        if (tagNames == null || tagNames.isEmpty()) {
+            return "-";
+        }
+        return tagNames.stream()
+            .filter(tagName -> tagName != null && !tagName.isBlank())
+            .collect(Collectors.joining(", "));
     }
 
     private JavaFxBackendBridge backendBridge() {

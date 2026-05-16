@@ -31,6 +31,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
@@ -52,6 +53,7 @@ public class AdminController {
     private final ObservableList<AdminUserRowModel> users = FXCollections.observableArrayList();
     private final ObservableList<AdminProjectRowModel> projects = FXCollections.observableArrayList();
     private final ObservableList<AdminUserRowModel> assignableProjectMembers = FXCollections.observableArrayList();
+    private final ObservableList<String> draftProjectTags = FXCollections.observableArrayList();
     private final Set<Long> selectedProjectMemberIds = new LinkedHashSet<>();
 
     private MainLayoutController mainLayoutController;
@@ -114,10 +116,13 @@ public class AdminController {
     private TextField versionField;
 
     @FXML
-    private TextField defaultTagField;
+    private TextField tagNameField;
 
     @FXML
     private TextArea tagDescriptionArea;
+
+    @FXML
+    private ListView<String> projectTagListView;
 
     @FXML
     private Button assignMembersButton;
@@ -159,6 +164,7 @@ public class AdminController {
 
         configureUserTable();
         configureProjectTable();
+        projectTagListView.setItems(draftProjectTags);
 
         userTable.setItems(users);
         projectTable.setItems(projects);
@@ -266,13 +272,17 @@ public class AdminController {
         String projectName = trimmed(projectNameField.getText());
         String description = trimmed(projectDescriptionArea.getText());
         String version = trimmed(versionField.getText());
-        String defaultTag = trimmed(defaultTagField.getText());
-        String tagDescription = trimmed(tagDescriptionArea.getText());
+        List<ProjectTagDraft> projectTags = getDraftProjectTags();
         List<Long> selectedMemberIds = getCheckedProjectMemberIds();
 
-        if (projectName.isBlank() || description.isBlank() || version.isBlank() || defaultTag.isBlank()) {
+        if (projectName.isBlank() || description.isBlank() || version.isBlank()) {
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
-            projectFormFeedbackLabel.setText("Project name, description, version, and at least one default tag are required.");
+            projectFormFeedbackLabel.setText("Project name, description, and version are required.");
+            return;
+        }
+        if (projectTags.isEmpty()) {
+            projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
+            projectFormFeedbackLabel.setText("Add at least one project tag before creating the project.");
             return;
         }
         if (selectedMemberIds.isEmpty()) {
@@ -292,15 +302,13 @@ public class AdminController {
             request.setName(projectName);
             request.setDescription(description);
             request.setCreatedByAccountId(currentUser.accountId());
-            request.setTagNames(List.of(defaultTag));
+            request.setTagNames(projectTags.stream().map(ProjectTagDraft::name).toList());
 
             ProjectResponse createdProject = backendBridge().createProject(request);
             backendBridge().assignProjectMembers(createdProject.getProjectId(), selectedMemberIds);
-            ProjectTagOption createdTag = backendBridge().ensureProjectTag(
-                createdProject.getProjectId(),
-                defaultTag,
-                tagDescription
-            );
+            List<ProjectTagOption> createdTags = projectTags.stream()
+                .map(tag -> backendBridge().ensureProjectTag(createdProject.getProjectId(), tag.name(), tag.description()))
+                .toList();
 
             upsertProjectRow(new AdminProjectRowModel(
                 createdProject.getProjectId(),
@@ -308,7 +316,7 @@ public class AdminController {
                 createdProject.getDescription(),
                 version,
                 true,
-                createdTag.name(),
+                summarizeTags(createdTags.stream().map(ProjectTagOption::name).toList()),
                 currentUser.loginId()
             ));
 
@@ -330,12 +338,12 @@ public class AdminController {
             clearProjectForm();
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-success");
             projectFormFeedbackLabel.setText(
-                "Project '" + createdProject.getName() + "' was created, members were assigned, and default tag '" + createdTag.name() + "' was registered."
+                "Project '" + createdProject.getName() + "' was created, members were assigned, and " + createdTags.size() + " tag(s) were registered."
             );
             UiAlertHelper.showInfo(
                 "Project Created",
                 "Project registration completed.",
-                "Project '" + createdProject.getName() + "' was created, members were assigned, and the default tag was registered."
+                "Project '" + createdProject.getName() + "' was created, members were assigned, and project tags were registered."
             );
         } catch (Exception exception) {
             String detailedMessage = UiAlertHelper.extractRootCauseMessage(exception, "Project creation failed.");
@@ -359,8 +367,9 @@ public class AdminController {
         projectNameField.clear();
         projectDescriptionArea.clear();
         versionField.setText("1.0.0");
-        defaultTagField.clear();
+        tagNameField.clear();
         tagDescriptionArea.clear();
+        draftProjectTags.clear();
         clearProjectMemberSelections();
     }
 
@@ -615,6 +624,40 @@ public class AdminController {
         adminPageTitleLabel.setText("Account Management");
     }
 
+    @FXML
+    private void handleAddProjectTag() {
+        String name = trimmed(tagNameField.getText());
+        String description = trimmed(tagDescriptionArea.getText());
+
+        projectFormFeedbackLabel.getStyleClass().setAll("form-feedback");
+
+        if (name.isBlank()) {
+            projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
+            projectFormFeedbackLabel.setText("Enter a tag name before adding it to the project.");
+            return;
+        }
+        boolean duplicate = getDraftProjectTags().stream()
+            .anyMatch(tag -> tag.name().equalsIgnoreCase(name));
+        if (duplicate) {
+            projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
+            projectFormFeedbackLabel.setText("The tag '" + name + "' is already in the project tag list.");
+            return;
+        }
+
+        draftProjectTags.add(formatDraftTag(new ProjectTagDraft(name, description)));
+        tagNameField.clear();
+        tagDescriptionArea.clear();
+        projectFormFeedbackLabel.setText("");
+    }
+
+    @FXML
+    private void handleRemoveSelectedProjectTag() {
+        int selectedIndex = projectTagListView.getSelectionModel().getSelectedIndex();
+        if (selectedIndex >= 0) {
+            draftProjectTags.remove(selectedIndex);
+        }
+    }
+
     private void disableForms() {
         loginIdField.setDisable(true);
         realNameField.setDisable(true);
@@ -624,8 +667,9 @@ public class AdminController {
         projectNameField.setDisable(true);
         projectDescriptionArea.setDisable(true);
         versionField.setDisable(true);
-        defaultTagField.setDisable(true);
+        tagNameField.setDisable(true);
         tagDescriptionArea.setDisable(true);
+        projectTagListView.setDisable(true);
         assignMembersButton.setDisable(true);
     }
 
@@ -706,6 +750,35 @@ public class AdminController {
         refreshProjectMemberSummary();
     }
 
+    private List<ProjectTagDraft> getDraftProjectTags() {
+        return draftProjectTags.stream()
+            .map(this::parseDraftTag)
+            .toList();
+    }
+
+    private String formatDraftTag(ProjectTagDraft tag) {
+        if (tag.description().isBlank()) {
+            return tag.name();
+        }
+        return tag.name() + " :: " + tag.description();
+    }
+
+    private ProjectTagDraft parseDraftTag(String value) {
+        String[] parts = value.split(" :: ", 2);
+        String name = parts.length > 0 ? parts[0].trim() : "";
+        String description = parts.length > 1 ? parts[1].trim() : "";
+        return new ProjectTagDraft(name, description);
+    }
+
+    private String summarizeTags(List<String> tagNames) {
+        if (tagNames == null || tagNames.isEmpty()) {
+            return "-";
+        }
+        return tagNames.stream()
+            .filter(tagName -> tagName != null && !tagName.isBlank())
+            .collect(Collectors.joining(", "));
+    }
+
     public void selectUserTab() {
         adminTabPane.getSelectionModel().select(0);
     }
@@ -720,5 +793,8 @@ public class AdminController {
 
     private JavaFxBackendBridge backendBridge() {
         return JavaFxBackendBridge.getInstance();
+    }
+
+    private record ProjectTagDraft(String name, String description) {
     }
 }
