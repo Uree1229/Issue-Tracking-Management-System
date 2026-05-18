@@ -5,6 +5,7 @@ import com.example.its.application.service.*;
 import com.example.its.shared.dto.issue.*;
 
 import java.util.List;
+import java.util.Map;
 
 // Fix: 5/4 피드백 반영
 public class IssueFacade {
@@ -36,6 +37,14 @@ public class IssueFacade {
 
     public StatisticsResponse getStatistics(Long projectId) {
         return issueStatisticsService.getProjectStatistics(projectId);
+    }
+
+    public Map<String, Long> getDailyIssueStatistics(DailyIssueStatisticsRequest request) {
+        return issueStatisticsService.getDailyIssueStatistics(request);
+    }
+
+    public Map<String, Long> getMonthlyIssueStatistics(MonthlyIssueStatisticsRequest request) {
+        return issueStatisticsService.getMonthlyIssueStatistics(request);
     }
 
     public List<RecommendationResponse> recommendAssignees(Long projectId, List<Long> tagIds) {
