@@ -51,8 +51,13 @@
                 <Label text="Priority" GridPane.rowIndex="4" styleClass="admin-form-label"/>
                 <ComboBox fx:id="priorityCombo" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="admin-input"/>
 
-                <Label text="Tag" GridPane.rowIndex="5" styleClass="admin-form-label"/>
-                <ComboBox fx:id="tagCombo" prefWidth="260" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="admin-input"/>
+                <Label text="Tags" GridPane.rowIndex="5" styleClass="admin-form-label"/>
+                <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#handleEditTags" text="Edit Tags" styleClass="ghost-button"/>
+                        <Label fx:id="selectedTagsLabel" text="No tags selected" wrapText="true" styleClass="field-value" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                </VBox>
 
                 <Label text="Description" GridPane.rowIndex="6" styleClass="admin-form-label"/>
                 <TextArea fx:id="descriptionArea" wrapText="true" prefRowCount="9" promptText="Add reproduction steps, observed behavior, and expected behavior." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>

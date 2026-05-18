@@ -211,6 +211,7 @@ public class MainLayoutController {
         }
         contentContainer.getChildren().setAll(adminView);
         if (adminController != null) {
+            adminController.refreshData();
             adminController.selectUserTab();
         }
     }
@@ -226,6 +227,7 @@ public class MainLayoutController {
         }
         contentContainer.getChildren().setAll(adminView);
         if (adminController != null) {
+            adminController.refreshData();
             adminController.selectProjectTab();
         }
     }
@@ -328,6 +330,9 @@ public class MainLayoutController {
     public void reloadProjectOptions() {
         loadAccessibleProjects();
         refreshCurrentContext();
+        if (adminController != null) {
+            adminController.refreshData();
+        }
     }
 
     private void loadIssueBrowserView() {

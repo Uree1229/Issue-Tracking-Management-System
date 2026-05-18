@@ -79,7 +79,11 @@
                     <Label text="Fixer" GridPane.rowIndex="2" styleClass="field-label"/>
                     <Label fx:id="detailFixerLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="field-value"/>
                     <Label text="Tags" GridPane.columnIndex="2" GridPane.rowIndex="2" styleClass="field-label"/>
-                    <Label fx:id="detailTagsLabel" text="-" wrapText="true" GridPane.columnIndex="3" GridPane.rowIndex="2" styleClass="field-value"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="3" GridPane.rowIndex="2">
+                        <Label fx:id="detailTagsLabel" text="-" wrapText="true" styleClass="field-value" HBox.hgrow="ALWAYS"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="editTagsButton" mnemonicParsing="false" onAction="#handleEditTags" text="Edit Tags" styleClass="ghost-button compact-button"/>
+                    </HBox>
                 </GridPane>
 
                 <VBox fx:id="recommendationSection" spacing="10" styleClass="detail-section-card inquiry-section-card">

@@ -120,12 +120,12 @@
                                         <Label text="Version:" GridPane.rowIndex="2" styleClass="admin-form-label"/>
                                         <TextField fx:id="versionField" promptText="1.0.0" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="admin-input short-input"/>
 
-                                        <Label text="Project tags:" GridPane.rowIndex="3" styleClass="admin-form-label"/>
+                                        <Label text="Available tags:" GridPane.rowIndex="3" styleClass="admin-form-label"/>
                                         <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="3">
                                             <TextField fx:id="tagNameField" promptText="Tag name (e.g. auth, ui, workflow)" styleClass="admin-input"/>
                                             <HBox spacing="10" alignment="CENTER_LEFT">
                                                 <Button mnemonicParsing="false" onAction="#handleAddProjectTag" text="Add Tag" styleClass="ghost-button"/>
-                                                <Button mnemonicParsing="false" onAction="#handleRemoveSelectedProjectTag" text="Remove Selected" styleClass="ghost-button"/>
+                                                <Button mnemonicParsing="false" onAction="#handleRemoveSelectedProjectTag" text="Delete Selected" styleClass="ghost-button"/>
                                             </HBox>
                                             <ListView fx:id="projectTagListView" prefHeight="120"/>
                                         </VBox>
@@ -153,6 +153,15 @@
                                             <TableColumn fx:id="assigneeColumn" text="Created By" prefWidth="105"/>
                                         </columns>
                                     </TableView>
+                                    <VBox spacing="10">
+                                        <Label text="Available Tags" styleClass="field-label"/>
+                                        <HBox spacing="10" alignment="CENTER_LEFT">
+                                            <TextField fx:id="existingProjectTagField" promptText="New tag name" HBox.hgrow="ALWAYS" styleClass="admin-input"/>
+                                            <Button mnemonicParsing="false" onAction="#handleAddSelectedProjectTag" text="Add" styleClass="ghost-button"/>
+                                            <Button mnemonicParsing="false" onAction="#handleDeleteSelectedProjectTag" text="Delete" styleClass="ghost-button"/>
+                                        </HBox>
+                                        <ListView fx:id="existingProjectTagsListView" prefHeight="150" styleClass="tag-editor-list"/>
+                                    </VBox>
                                 </VBox>
                             </HBox>
                         </content>

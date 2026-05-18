@@ -8,20 +8,22 @@ import com.example.its.ui.javafx.model.UiPriority;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
 import com.example.its.ui.javafx.support.UiAlertHelper;
+import com.example.its.ui.javafx.support.TagEditorDialog;
 import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
-public class CreateIssueController {
-    private static final String NO_TAG_OPTION = "No Tag";
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-    private final ObservableList<String> tagOptions = FXCollections.observableArrayList(NO_TAG_OPTION);
-    private final java.util.Map<String, Long> tagIdByOption = new java.util.HashMap<>();
+public class CreateIssueController {
+    private final ObservableList<String> draftIssueTags = FXCollections.observableArrayList();
 
     private MainLayoutController mainLayoutController;
 
@@ -38,10 +40,10 @@ public class CreateIssueController {
     private TextField titleField;
 
     @FXML
-    private ComboBox<UiPriority> priorityCombo;
+    private javafx.scene.control.ComboBox<UiPriority> priorityCombo;
 
     @FXML
-    private ComboBox<String> tagCombo;
+    private Label selectedTagsLabel;
 
     @FXML
     private TextArea descriptionArea;
@@ -56,9 +58,6 @@ public class CreateIssueController {
     private void initialize() {
         priorityCombo.setItems(FXCollections.observableArrayList(UiPriority.values()));
         priorityCombo.setValue(UiPriority.MAJOR);
-        tagCombo.setItems(tagOptions);
-        tagCombo.setValue(NO_TAG_OPTION);
-
         refreshContext();
     }
 
@@ -73,7 +72,7 @@ public class CreateIssueController {
         String projectName = UserSession.getCurrentProjectName();
         projectValueLabel.setText(projectName == null || projectName.isBlank() ? "No Project Selected" : projectName);
         statusValueLabel.setText("NEW");
-        refreshTagOptions();
+        refreshSelectedTagsLabel();
     }
 
     @FXML
@@ -104,15 +103,16 @@ public class CreateIssueController {
         }
 
         try {
+            List<String> issueTagNames = List.copyOf(draftIssueTags);
             IssueCreateRequest request = new IssueCreateRequest();
             request.setTitle(title);
             request.setDescription(buildEffectiveDescription(description, note));
             request.setPriority(UiModelMapper.toBackendPriority(priorityCombo.getValue()));
             request.setReporterAccountId(currentUser.accountId());
             request.setProjectId(projectId);
-            Long selectedTagId = tagIdByOption.get(tagCombo.getValue());
-            if (selectedTagId != null) {
-                request.setTagIds(java.util.List.of(selectedTagId));
+            List<Long> tagIds = resolveTagIds(projectId, issueTagNames);
+            if (!tagIds.isEmpty()) {
+                request.setTagIds(tagIds);
             }
 
             IssueDetailResponse createdIssue = backendBridge().createIssue(request);
@@ -134,12 +134,38 @@ public class CreateIssueController {
         resetForm();
     }
 
+    @FXML
+    private void handleEditTags() {
+        Long projectId = UserSession.getCurrentProjectId();
+        if (projectId == null) {
+            formFeedbackLabel.getStyleClass().setAll("form-feedback", "form-feedback-error");
+            formFeedbackLabel.setText("Select a project before editing tags.");
+            return;
+        }
+
+        List<String> availableTags = backendBridge().getProjectTags(projectId).stream()
+            .map(ProjectTagOption::name)
+            .toList();
+
+        TagEditorDialog.show(
+            "Tags",
+            "Choose the tags that should be attached when this issue is created.",
+            draftIssueTags,
+            availableTags,
+            TagEditorDialog.issueLabels()
+        ).ifPresent(updatedTags -> {
+            draftIssueTags.setAll(updatedTags);
+            refreshSelectedTagsLabel();
+        });
+    }
+
     private void resetForm() {
         titleField.clear();
         descriptionArea.clear();
         noteArea.clear();
         priorityCombo.setValue(UiPriority.MAJOR);
-        tagCombo.setValue(NO_TAG_OPTION);
+        draftIssueTags.clear();
+        refreshSelectedTagsLabel();
         formFeedbackLabel.getStyleClass().setAll("form-feedback");
         formFeedbackLabel.setText("");
     }
@@ -155,28 +181,58 @@ public class CreateIssueController {
         return description + System.lineSeparator() + System.lineSeparator() + "[Initial Note]" + System.lineSeparator() + note;
     }
 
-    private void refreshTagOptions() {
-        tagIdByOption.clear();
-        tagOptions.setAll(NO_TAG_OPTION);
-
-        Long projectId = UserSession.getCurrentProjectId();
-        if (projectId == null) {
-            tagCombo.setValue(NO_TAG_OPTION);
+    private void refreshSelectedTagsLabel() {
+        if (draftIssueTags.isEmpty()) {
+            selectedTagsLabel.setText("No tags selected");
             return;
         }
+        selectedTagsLabel.setText(String.join(", ", draftIssueTags));
+    }
 
-        try {
-            for (ProjectTagOption tag : backendBridge().getProjectTags(projectId)) {
-                tagOptions.add(tag.name());
-                tagIdByOption.put(tag.name(), tag.tagId());
+    private List<Long> resolveTagIds(Long projectId, List<String> requestedTagNames) {
+        if (requestedTagNames == null || requestedTagNames.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, ProjectTagOption> existingTags = backendBridge().getProjectTags(projectId).stream()
+            .collect(Collectors.toMap(tag -> normalizeTag(tag.name()), tag -> tag, (left, right) -> left));
+
+        Map<String, ProjectTagOption> initialExistingTags = existingTags;
+        List<String> newProjectTags = requestedTagNames.stream()
+            .map(this::trimmed)
+            .filter(name -> !name.isBlank())
+            .filter(name -> !initialExistingTags.containsKey(normalizeTag(name)))
+            .distinct()
+            .toList();
+
+        if (!newProjectTags.isEmpty()) {
+            backendBridge().updateProjectTags(projectId, newProjectTags, List.of());
+            existingTags = backendBridge().getProjectTags(projectId).stream()
+                .collect(Collectors.toMap(tag -> normalizeTag(tag.name()), tag -> tag, (left, right) -> left));
+            if (mainLayoutController != null) {
+                mainLayoutController.reloadProjectOptions();
             }
-        } catch (Exception ignored) {
-            // Keep issue creation available even if tag data cannot be loaded.
         }
 
-        if (tagCombo.getValue() == null || !tagOptions.contains(tagCombo.getValue())) {
-            tagCombo.setValue(NO_TAG_OPTION);
+        Map<String, ProjectTagOption> resolvedTags = existingTags;
+        List<Long> tagIds = requestedTagNames.stream()
+            .map(this::trimmed)
+            .filter(name -> !name.isBlank())
+            .map(name -> resolvedTags.get(normalizeTag(name)))
+            .filter(java.util.Objects::nonNull)
+            .map(ProjectTagOption::tagId)
+            .distinct()
+            .toList();
+
+        if (tagIds.size() != requestedTagNames.stream().map(this::trimmed).filter(name -> !name.isBlank()).map(this::normalizeTag).distinct().count()) {
+            throw new IllegalStateException("One or more tags could not be resolved.");
         }
+
+        return tagIds;
+    }
+
+    private String normalizeTag(String tagName) {
+        return trimmed(tagName).toLowerCase(Locale.ROOT);
     }
 
     private JavaFxBackendBridge backendBridge() {

@@ -13,6 +13,7 @@ import com.example.its.shared.dto.issue.IssueSearchCondition;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
 import com.example.its.shared.dto.issue.RecommendationResponse;
 import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.shared.dto.tag.TagResponse;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.IssueRowModel;
 import com.example.its.ui.javafx.model.ProjectTagOption;
@@ -21,6 +22,7 @@ import com.example.its.ui.javafx.model.UiPriority;
 import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
+import com.example.its.ui.javafx.support.TagEditorDialog;
 import com.example.its.ui.javafx.support.UiAlertHelper;
 import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -48,6 +50,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -123,6 +126,9 @@ public class IssueBrowserController {
 
     @FXML
     private Label tagsValueLabel;
+
+    @FXML
+    private Button editTagsButton;
 
     @FXML
     private TextArea descriptionArea;
@@ -270,6 +276,33 @@ public class IssueBrowserController {
         }
     }
 
+    @FXML
+    private void handleEditTags() {
+        IssueRowModel selectedIssue = issueTable.getSelectionModel().getSelectedItem();
+        if (selectedIssue == null) {
+            UiAlertHelper.showInfo("No Issue Selected", "Choose an issue first.", "Select an issue from the list before editing tags.");
+            return;
+        }
+
+        try {
+            IssueDetailResponse detail = issueDetailCache.computeIfAbsent(selectedIssue.getIssueId(), id -> backendBridge().getIssue(id));
+            List<String> initialTagNames = detail.getTagNames() == null ? List.of() : detail.getTagNames();
+            List<String> projectTagNames = backendBridge().getProjectTags(detail.getProjectId()).stream()
+                .map(ProjectTagOption::name)
+                .toList();
+
+            TagEditorDialog.show(
+                "Tags",
+                "Edit the tags attached to issue #" + detail.getIssueId() + ".",
+                initialTagNames,
+                projectTagNames,
+                TagEditorDialog.issueLabels()
+            ).ifPresent(updatedTagNames -> applyIssueTagChanges(detail, updatedTagNames));
+        } catch (Exception exception) {
+            UiAlertHelper.showError("Issue Tag Update Failed", "Could not open issue tag editor.", exception);
+        }
+    }
+
     private IssueDetailResponse handleAssign(IssueRowModel selectedIssue) {
         IssueDetailResponse detail = issueDetailCache.computeIfAbsent(selectedIssue.getIssueId(), id -> backendBridge().getIssue(id));
         Map<Long, Double> recommendationScores = loadRecommendations(detail).stream()
@@ -398,6 +431,7 @@ public class IssueBrowserController {
         boolean isDev = role == UiRole.DEV;
         boolean isTester = role == UiRole.TESTER;
         boolean canComment = role == UiRole.PL || role == UiRole.DEV || role == UiRole.TESTER;
+        boolean canEditTags = canComment;
         boolean canCreateIssue = role != null && role.canCreateIssue();
 
         setActionVisibility(assignButton, isPl);
@@ -411,6 +445,8 @@ public class IssueBrowserController {
         recommendationSection.setManaged(isPl);
         workflowButtonBar.setVisible(isPl || isDev || isTester);
         workflowButtonBar.setManaged(isPl || isDev || isTester);
+        editTagsButton.setVisible(canEditTags);
+        editTagsButton.setManaged(canEditTags);
         commentSection.setVisible(canComment);
         commentSection.setManaged(canComment);
         saveCommentButton.setDisable(!canComment);
@@ -753,6 +789,7 @@ public class IssueBrowserController {
             && issue.getAssigneeAccountId().equals(currentUser.accountId());
 
         boolean canActAsPl = role == UiRole.PL;
+        boolean canEditTags = role == UiRole.PL || role == UiRole.DEV || role == UiRole.TESTER;
 
         assignButton.setDisable(!hasIssue || !canActAsPl || (status != UiIssueStatus.NEW && status != UiIssueStatus.REOPENED));
         closeButton.setDisable(!hasIssue || !canActAsPl || status != UiIssueStatus.RESOLVED);
@@ -760,6 +797,7 @@ public class IssueBrowserController {
         reopenButton.setDisable(!hasIssue || role != UiRole.DEV || status != UiIssueStatus.CLOSED);
         resolveButton.setDisable(!hasIssue || role != UiRole.TESTER || status != UiIssueStatus.FIXED);
         failButton.setDisable(!hasIssue || role != UiRole.TESTER || status != UiIssueStatus.FIXED);
+        editTagsButton.setDisable(!hasIssue || !canEditTags);
     }
 
     private void setActionVisibility(Button button, boolean visible) {
@@ -792,7 +830,7 @@ public class IssueBrowserController {
             return List.of("Choose an issue to see suggested developers.");
         }
         if (issue.getTagNames() == null || issue.getTagNames().isEmpty()) {
-            return List.of("Add one or more tags to this issue to unlock tag-based suggestions.");
+            return List.of("Add one or more tags to this issue to unlock suggestions.");
         }
         return formatRecommendations(loadRecommendations(issue));
     }
@@ -834,6 +872,73 @@ public class IssueBrowserController {
         return tagNames.stream()
             .filter(tagName -> tagName != null && !tagName.isBlank())
             .collect(Collectors.joining(", "));
+    }
+
+    private void applyIssueTagChanges(IssueDetailResponse issue, List<String> updatedTagNames) {
+        if (issue == null || issue.getProjectId() == null) {
+            return;
+        }
+
+        Map<String, ProjectTagOption> currentProjectTags = projectTagMap(issue.getProjectId());
+        List<String> initialTagNames = issue.getTagNames() == null ? List.of() : issue.getTagNames();
+
+        Map<String, ProjectTagOption> initialProjectTags = currentProjectTags;
+        List<String> newProjectTagNames = updatedTagNames.stream()
+            .map(this::trimmed)
+            .filter(name -> !name.isBlank())
+            .filter(name -> !initialProjectTags.containsKey(normalizeTag(name)))
+            .distinct()
+            .toList();
+
+        if (!newProjectTagNames.isEmpty()) {
+            backendBridge().updateProjectTags(issue.getProjectId(), newProjectTagNames, List.of());
+            currentProjectTags = projectTagMap(issue.getProjectId());
+        }
+
+        Map<String, ProjectTagOption> finalProjectTags = currentProjectTags;
+        List<Long> tagIdsToAdd = updatedTagNames.stream()
+            .filter(name -> initialTagNames.stream().noneMatch(existing -> normalizeTag(existing).equals(normalizeTag(name))))
+            .map(this::normalizeTag)
+            .map(finalProjectTags::get)
+            .filter(java.util.Objects::nonNull)
+            .map(ProjectTagOption::tagId)
+            .distinct()
+            .toList();
+
+        List<Long> tagIdsToRemove = initialTagNames.stream()
+            .filter(name -> updatedTagNames.stream().noneMatch(updated -> normalizeTag(updated).equals(normalizeTag(name))))
+            .map(this::normalizeTag)
+            .map(finalProjectTags::get)
+            .filter(java.util.Objects::nonNull)
+            .map(ProjectTagOption::tagId)
+            .distinct()
+            .toList();
+
+        if (tagIdsToAdd.isEmpty() && tagIdsToRemove.isEmpty()) {
+            return;
+        }
+
+        IssueDetailResponse updatedIssue = backendBridge().updateIssueTags(issue.getIssueId(), tagIdsToAdd, tagIdsToRemove);
+        issueDetailCache.put(updatedIssue.getIssueId(), updatedIssue);
+        recommendationCache.remove(updatedIssue.getIssueId());
+        refreshRowFromDetail(updatedIssue);
+        showIssueDetails(updatedIssue);
+    }
+
+    private Map<String, ProjectTagOption> projectTagMap(Long projectId) {
+        Map<String, ProjectTagOption> tagByName = new LinkedHashMap<>();
+        for (ProjectTagOption tag : backendBridge().getProjectTags(projectId)) {
+            tagByName.putIfAbsent(normalizeTag(tag.name()), tag);
+        }
+        return tagByName;
+    }
+
+    private String normalizeTag(String tagName) {
+        return trimmed(tagName).toLowerCase(Locale.ROOT);
+    }
+
+    private String trimmed(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private JavaFxBackendBridge backendBridge() {

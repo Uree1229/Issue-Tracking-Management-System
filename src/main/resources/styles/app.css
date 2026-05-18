@@ -944,6 +944,63 @@
     -fx-border-color: #1f3a5f;
 }
 
+.tag-editor-dialog {
+    -fx-background-color: #f6f8fb;
+}
+
+.tag-editor-dialog > *.header-panel {
+    -fx-background-color: white;
+    -fx-padding: 18 20 14 20;
+    -fx-border-color: transparent transparent #e2e8f0 transparent;
+}
+
+.tag-editor-dialog > *.header-panel .label {
+    -fx-text-fill: #1f2d3d;
+}
+
+.tag-editor-dialog > *.header-panel .header-text {
+    -fx-font-size: 17px;
+    -fx-font-weight: 800;
+}
+
+.tag-editor-dialog > *.button-bar > *.container {
+    -fx-padding: 12 18 16 18;
+    -fx-background-color: white;
+    -fx-border-color: #e2e8f0 transparent transparent transparent;
+}
+
+.tag-editor-dialog-content {
+    -fx-padding: 2 4 4 4;
+}
+
+.tag-editor-card {
+    -fx-background-color: white;
+    -fx-background-radius: 14;
+    -fx-border-color: #dde5ee;
+    -fx-border-radius: 14;
+    -fx-padding: 14;
+}
+
+.tag-editor-list {
+    -fx-background-color: #fbfdff;
+    -fx-border-color: #d7e0eb;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+}
+
+.tag-editor-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 8 10;
+    -fx-text-fill: #203248;
+    -fx-font-weight: 700;
+}
+
+.tag-editor-list .list-cell:selected {
+    -fx-background-color: #dcecff;
+    -fx-background-radius: 8;
+    -fx-text-fill: #173762;
+}
+
 .chart {
     -fx-background-color: transparent;
     -fx-padding: 8 0 0 0;

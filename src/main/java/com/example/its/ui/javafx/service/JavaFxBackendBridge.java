@@ -18,11 +18,13 @@ import com.example.its.shared.dto.issue.IssueReopenRequest;
 import com.example.its.shared.dto.issue.IssueResolveRequest;
 import com.example.its.shared.dto.issue.IssueSearchCondition;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
+import com.example.its.shared.dto.issue.IssueTagUpdateRequest;
 import com.example.its.shared.dto.issue.MonthlyIssueStatisticsRequest;
 import com.example.its.shared.dto.issue.RecommendationResponse;
 import com.example.its.shared.dto.issue.StatisticsResponse;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
 import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.shared.dto.project.ProjectTagUpdateRequest;
 import com.example.its.shared.dto.tag.TagResponse;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
 import com.example.its.ui.javafx.model.ProjectTagOption;
@@ -73,8 +75,18 @@ public final class JavaFxBackendBridge {
         return projectFacade.createProject(request);
     }
 
+    public ProjectResponse getProject(Long projectId) {
+        return projectFacade.getProject(projectId);
+    }
+
+    public ProjectResponse updateProjectTags(Long projectId, List<String> tagNamesToAdd, List<Long> tagIdsToRemove) {
+        ProjectTagUpdateRequest request = new ProjectTagUpdateRequest(projectId, tagNamesToAdd, tagIdsToRemove);
+        return projectFacade.updateProjectTags(request);
+    }
+
     public List<ProjectResponse> getProjects() {
         return projectFacade.getAllProjects().stream()
+            .map(project -> project.getProjectId() == null ? project : projectFacade.getProject(project.getProjectId()))
             .sorted(Comparator.comparing(ProjectResponse::getName, String.CASE_INSENSITIVE_ORDER))
             .toList();
     }
@@ -108,6 +120,11 @@ public final class JavaFxBackendBridge {
 
     public IssueDetailResponse createIssue(IssueCreateRequest request) {
         return issueFacade.registerIssue(request);
+    }
+
+    public IssueDetailResponse updateIssueTags(Long issueId, List<Long> tagIdsToAdd, List<Long> tagIdsToRemove) {
+        IssueTagUpdateRequest request = new IssueTagUpdateRequest(issueId, tagIdsToAdd, tagIdsToRemove);
+        return issueFacade.updateIssueTags(request);
     }
 
     public IssueDetailResponse addComment(CommentCreateRequest request) {

@@ -4,6 +4,7 @@ import com.example.its.shared.dto.account.AccountCreateRequest;
 import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
 import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.shared.dto.tag.TagResponse;
 import com.example.its.ui.javafx.model.AdminProjectRowModel;
 import com.example.its.ui.javafx.model.AdminUserRowModel;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
@@ -29,6 +30,7 @@ import javafx.scene.control.TextField;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class AdminController {
@@ -106,6 +108,12 @@ public class AdminController {
     private Label projectFormFeedbackLabel;
 
     @FXML
+    private TextField existingProjectTagField;
+
+    @FXML
+    private ListView<String> existingProjectTagsListView;
+
+    @FXML
     private TableView<AdminProjectRowModel> projectTable;
 
     @FXML
@@ -137,9 +145,11 @@ public class AdminController {
         configureUserTable();
         configureProjectTable();
         projectTagListView.setItems(draftProjectTags);
+        existingProjectTagsListView.setItems(FXCollections.observableArrayList());
 
         userTable.setItems(users);
         projectTable.setItems(projects);
+        projectTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> loadSelectedProjectTags(newValue));
         adminTabPane.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> updateAdminPageCopy());
         updateAdminPageCopy();
 
@@ -229,9 +239,12 @@ public class AdminController {
             request.setName(projectName);
             request.setDescription(description);
             request.setCreatedByAccountId(currentUser.accountId());
-            request.setTagNames(projectTags);
+            request.setTagNames(List.of());
 
             ProjectResponse createdProject = backendBridge().createProject(request);
+            for (String projectTag : projectTags) {
+                createdProject = backendBridge().updateProjectTags(createdProject.getProjectId(), List.of(projectTag), List.of());
+            }
 
             upsertProjectRow(new AdminProjectRowModel(
                 createdProject.getProjectId(),
@@ -261,12 +274,12 @@ public class AdminController {
             clearProjectForm();
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-success");
             projectFormFeedbackLabel.setText(
-                "Project '" + createdProject.getName() + "' was created and " + projectTags.size() + " tag(s) were registered."
+                "Project '" + createdProject.getName() + "' was created and " + projectTags.size() + " tag(s) were saved."
             );
             UiAlertHelper.showInfo(
                 "Project Created",
                 "Project registration completed.",
-                "Project '" + createdProject.getName() + "' was created and its tags were saved."
+                "Project '" + createdProject.getName() + "' was created and its tags are now available for issues."
             );
         } catch (Exception exception) {
             String detailedMessage = UiAlertHelper.extractRootCauseMessage(exception, "Project creation failed.");
@@ -335,7 +348,7 @@ public class AdminController {
             .anyMatch(tag -> tag.equalsIgnoreCase(name));
         if (duplicate) {
             projectFormFeedbackLabel.getStyleClass().add("form-feedback-error");
-            projectFormFeedbackLabel.setText("The tag '" + name + "' is already in the project tag list.");
+            projectFormFeedbackLabel.setText("The tag '" + name + "' is already in the tag list.");
             return;
         }
 
@@ -353,6 +366,80 @@ public class AdminController {
         }
     }
 
+    @FXML
+    private void handleAddSelectedProjectTag() {
+        AdminProjectRowModel selectedProject = projectTable.getSelectionModel().getSelectedItem();
+        if (selectedProject == null) {
+            UiAlertHelper.showInfo("No Project Selected", "Choose a project first.", "Select a project from the table before adding tags.");
+            return;
+        }
+
+        String newTagName = trimmed(existingProjectTagField.getText());
+        if (newTagName.isBlank()) {
+            projectFormFeedbackLabel.getStyleClass().setAll("form-feedback", "form-feedback-error");
+            projectFormFeedbackLabel.setText("Enter a tag name before adding it to the selected project.");
+            return;
+        }
+
+        try {
+            ProjectResponse project = backendBridge().getProject(selectedProject.getProjectId());
+            boolean duplicate = project.getTags() != null && project.getTags().stream()
+                .map(TagResponse::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .anyMatch(name -> name.equalsIgnoreCase(newTagName));
+            if (duplicate) {
+                projectFormFeedbackLabel.getStyleClass().setAll("form-feedback", "form-feedback-error");
+                projectFormFeedbackLabel.setText("The selected project already contains the tag '" + newTagName + "'.");
+                return;
+            }
+
+            ProjectResponse updatedProject = backendBridge().updateProjectTags(project.getProjectId(), List.of(newTagName), List.of());
+            existingProjectTagField.clear();
+            refreshProjectRows(updatedProject);
+            projectFormFeedbackLabel.getStyleClass().setAll("form-feedback", "form-feedback-success");
+            projectFormFeedbackLabel.setText("The tag '" + newTagName + "' was added to project '" + updatedProject.getName() + "'.");
+        } catch (Exception exception) {
+            projectFormFeedbackLabel.getStyleClass().setAll("form-feedback", "form-feedback-error");
+            projectFormFeedbackLabel.setText(UiAlertHelper.extractMessage(exception, "Could not add the tag to the selected project."));
+        }
+    }
+
+    @FXML
+    private void handleDeleteSelectedProjectTag() {
+        AdminProjectRowModel selectedProject = projectTable.getSelectionModel().getSelectedItem();
+        String selectedTagName = existingProjectTagsListView.getSelectionModel().getSelectedItem();
+        if (selectedProject == null) {
+            UiAlertHelper.showInfo("No Project Selected", "Choose a project first.", "Select a project from the table before deleting tags.");
+            return;
+        }
+        if (selectedTagName == null || selectedTagName.isBlank()) {
+            UiAlertHelper.showInfo("No Tag Selected", "Choose a tag first.", "Select a tag from the Available Tags list before deleting it.");
+            return;
+        }
+
+        try {
+            ProjectResponse project = backendBridge().getProject(selectedProject.getProjectId());
+            List<Long> tagIdsToRemove = project.getTags() == null ? List.of() : project.getTags().stream()
+                .filter(tag -> selectedTagName.equalsIgnoreCase(tag.getName()))
+                .map(TagResponse::getTagId)
+                .toList();
+
+            if (tagIdsToRemove.isEmpty()) {
+                projectFormFeedbackLabel.getStyleClass().setAll("form-feedback", "form-feedback-error");
+                projectFormFeedbackLabel.setText("The selected tag could not be found in the latest project data.");
+                return;
+            }
+
+            ProjectResponse updatedProject = backendBridge().updateProjectTags(project.getProjectId(), List.of(), tagIdsToRemove);
+            refreshProjectRows(updatedProject);
+            projectFormFeedbackLabel.getStyleClass().setAll("form-feedback", "form-feedback-success");
+            projectFormFeedbackLabel.setText("The tag '" + selectedTagName + "' was deleted from project '" + updatedProject.getName() + "'.");
+        } catch (Exception exception) {
+            projectFormFeedbackLabel.getStyleClass().setAll("form-feedback", "form-feedback-error");
+            projectFormFeedbackLabel.setText(UiAlertHelper.extractMessage(exception, "Could not delete the selected tag."));
+        }
+    }
+
     private void disableForms() {
         loginIdField.setDisable(true);
         realNameField.setDisable(true);
@@ -364,6 +451,8 @@ public class AdminController {
         versionField.setDisable(true);
         tagNameField.setDisable(true);
         projectTagListView.setDisable(true);
+        existingProjectTagField.setDisable(true);
+        existingProjectTagsListView.setDisable(true);
     }
 
     private String trimmed(String value) {
@@ -384,6 +473,7 @@ public class AdminController {
                 .map(UiModelMapper::toAdminProjectRowModel)
                 .toList()
         );
+        syncProjectTagSelection();
     }
 
     private void loadAdminData() {
@@ -433,6 +523,47 @@ public class AdminController {
             .collect(Collectors.joining(", "));
     }
 
+    private String normalizeTag(String tagName) {
+        return trimmed(tagName).toLowerCase(Locale.ROOT);
+    }
+
+    private void loadSelectedProjectTags(AdminProjectRowModel selectedProject) {
+        if (selectedProject == null) {
+            existingProjectTagsListView.getItems().setAll(List.of());
+            return;
+        }
+        try {
+            ProjectResponse project = backendBridge().getProject(selectedProject.getProjectId());
+            existingProjectTagsListView.getItems().setAll(
+                project.getTags() == null
+                    ? List.of()
+                    : project.getTags().stream()
+                        .map(TagResponse::getName)
+                        .filter(name -> name != null && !name.isBlank())
+                        .sorted(String.CASE_INSENSITIVE_ORDER)
+                        .toList()
+            );
+        } catch (Exception exception) {
+            existingProjectTagsListView.getItems().setAll(List.of());
+        }
+    }
+
+    private void refreshProjectRows(ProjectResponse updatedProject) {
+        Long selectedProjectId = updatedProject.getProjectId();
+        upsertProjectRow(UiModelMapper.toAdminProjectRowModel(updatedProject));
+        projectTable.refresh();
+        AdminProjectRowModel matchingProject = projects.stream()
+            .filter(project -> java.util.Objects.equals(project.getProjectId(), selectedProjectId))
+            .findFirst()
+            .orElse(null);
+        projectTable.getSelectionModel().select(matchingProject);
+        loadSelectedProjectTags(matchingProject);
+    }
+
+    private void syncProjectTagSelection() {
+        loadSelectedProjectTags(projectTable.getSelectionModel().getSelectedItem());
+    }
+
     public void selectUserTab() {
         adminTabPane.getSelectionModel().select(0);
     }
@@ -443,6 +574,10 @@ public class AdminController {
 
     public void setMainLayoutController(MainLayoutController mainLayoutController) {
         this.mainLayoutController = mainLayoutController;
+    }
+
+    public void refreshData() {
+        loadAdminData();
     }
 
     private JavaFxBackendBridge backendBridge() {

@@ -91,7 +91,11 @@
                             <Label text="Reported At" GridPane.rowIndex="4" styleClass="field-label"/>
                             <Label fx:id="reportedAtValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="field-value"/>
                             <Label text="Tags" GridPane.rowIndex="5" styleClass="field-label"/>
-                            <Label fx:id="tagsValueLabel" text="-" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="5" styleClass="field-value"/>
+                            <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                                <Label fx:id="tagsValueLabel" text="-" wrapText="true" styleClass="field-value" HBox.hgrow="ALWAYS"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Button fx:id="editTagsButton" mnemonicParsing="false" onAction="#handleEditTags" text="Edit Tags" styleClass="ghost-button compact-button"/>
+                            </HBox>
                         </GridPane>
 
                         <VBox fx:id="recommendationSection" spacing="8" styleClass="detail-section-card">
