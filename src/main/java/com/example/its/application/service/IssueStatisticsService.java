@@ -4,8 +4,12 @@ import com.example.its.persistence.entity.IssueStatus;
 import com.example.its.persistence.entity.Priority;
 import com.example.its.persistence.query.StatisticsQueryRepository;
 import com.example.its.persistence.transaction.TransactionManager;
+import com.example.its.shared.dto.issue.DailyIssueStatisticsRequest;
+import com.example.its.shared.dto.issue.MonthlyIssueStatisticsRequest;
 import com.example.its.shared.dto.issue.StatisticsResponse;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,5 +60,83 @@ public class IssueStatisticsService {
             // 4. DTO 포장 및 리턴
             return new StatisticsResponse(totalCount, statusCounts, priorityCounts);
         });
+    }
+
+    // 2. 최근 N일간 일별 이슈 발생 현황 조회
+    public Map<String, Long> getDailyIssueStatistics(DailyIssueStatisticsRequest request) {
+        validateDailyRequest(request);
+
+        return TransactionManager.execute(entityManager -> {
+            StatisticsQueryRepository statisticsQueryRepository = new StatisticsQueryRepository(entityManager);
+
+            Map<String, Long> dailyCounts = new LinkedHashMap<>();
+            LocalDate startDate = LocalDate.now().minusDays(request.getDays() - 1L);
+            for (int i = 0; i < request.getDays(); i++) {
+                dailyCounts.put(startDate.plusDays(i).toString(), 0L);
+            }
+
+            List<Object[]> results = statisticsQueryRepository.countDailyIssues(
+                request.getProjectId(),
+                request.getDays()
+            );
+            for (Object[] row : results) {
+                String date = (String) row[0];
+                Long count = ((Number) row[1]).longValue();
+                dailyCounts.put(date, count);
+            }
+
+            return dailyCounts;
+        });
+    }
+
+    // 3. 최근 N개월간 월별 이슈 발생 현황 조회
+    public Map<String, Long> getMonthlyIssueStatistics(MonthlyIssueStatisticsRequest request) {
+        validateMonthlyRequest(request);
+
+        return TransactionManager.execute(entityManager -> {
+            StatisticsQueryRepository statisticsQueryRepository = new StatisticsQueryRepository(entityManager);
+
+            Map<String, Long> monthlyCounts = new LinkedHashMap<>();
+            YearMonth startMonth = YearMonth.now().minusMonths(request.getMonths() - 1L);
+            for (int i = 0; i < request.getMonths(); i++) {
+                monthlyCounts.put(startMonth.plusMonths(i).toString(), 0L);
+            }
+
+            List<Object[]> results = statisticsQueryRepository.countMonthlyIssues(
+                request.getProjectId(),
+                request.getMonths()
+            );
+            for (Object[] row : results) {
+                String month = (String) row[0];
+                Long count = ((Number) row[1]).longValue();
+                monthlyCounts.put(month, count);
+            }
+
+            return monthlyCounts;
+        });
+    }
+
+    private void validateDailyRequest(DailyIssueStatisticsRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("일별 이슈 통계 요청 정보가 필요합니다.");
+        }
+        if (request.getProjectId() == null) {
+            throw new IllegalArgumentException("프로젝트 ID가 필요합니다.");
+        }
+        if (request.getDays() <= 0) {
+            throw new IllegalArgumentException("조회할 일 수는 1 이상이어야 합니다.");
+        }
+    }
+
+    private void validateMonthlyRequest(MonthlyIssueStatisticsRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("월별 이슈 통계 요청 정보가 필요합니다.");
+        }
+        if (request.getProjectId() == null) {
+            throw new IllegalArgumentException("프로젝트 ID가 필요합니다.");
+        }
+        if (request.getMonths() <= 0) {
+            throw new IllegalArgumentException("조회할 월 수는 1 이상이어야 합니다.");
+        }
     }
 }
