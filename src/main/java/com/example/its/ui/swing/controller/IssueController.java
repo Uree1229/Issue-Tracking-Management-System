@@ -10,6 +10,7 @@ import com.example.its.shared.dto.account.AccountResponse;
 
 import com.example.its.shared.dto.issue.*;
 import com.example.its.shared.dto.project.ProjectResponse;
+import com.example.its.shared.dto.project.ProjectTagUpdateRequest;
 import com.example.its.shared.dto.tag.TagResponse;
 import com.example.its.ui.swing.SessionContext;
 import com.example.its.ui.swing.view.*;
@@ -17,9 +18,11 @@ import com.example.its.ui.swing.view.dialog.AssigneeDialog;
 import com.example.its.ui.swing.view.dialog.TagEditDialog;
 
 import javax.swing.JOptionPane;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -298,8 +301,20 @@ public class IssueController {
             dialog.setVisible(true);
             if (!dialog.isConfirmed()) return;
 
-            List<Long> toAdd    = dialog.getTagIdsToAdd();
-            List<Long> toRemove = dialog.getTagIdsToRemove();
+            List<Long>   toAdd        = new ArrayList<>(dialog.getTagIdsToAdd());
+            List<Long>   toRemove     = dialog.getTagIdsToRemove();
+            List<String> newTagNames  = dialog.getNewTagNamesToCreate();
+
+            if (!newTagNames.isEmpty()) {
+                projectFacade.updateProjectTags(
+                        new ProjectTagUpdateRequest(currentProjectId, newTagNames, Collections.emptyList()));
+                ProjectResponse refreshed = projectFacade.getProject(currentProjectId);
+                Set<String> wanted = new HashSet<>(newTagNames);
+                for (TagResponse t : refreshed.getTags()) {
+                    if (wanted.contains(t.getName())) toAdd.add(t.getTagId());
+                }
+            }
+
             if (!toAdd.isEmpty() || !toRemove.isEmpty()) {
                 issueFacade.updateIssueTags(new IssueTagUpdateRequest(currentIssueId, toAdd, toRemove));
                 refreshDetail();
@@ -379,17 +394,28 @@ public class IssueController {
         try {
             StatisticsResponse stats = issueFacade.getStatistics(currentProjectId);
 
-            StringBuilder statusSb = new StringBuilder("전체: ").append(stats.getTotalIssueCount()).append("건\n\n");
+            StringBuilder statusSb = new StringBuilder("[ 상태별 집계 ]\n전체: ")
+                    .append(stats.getTotalIssueCount()).append("건\n\n");
             stats.getStatusCounts().forEach((s, c) -> statusSb.append(s.name()).append(": ").append(c).append("건\n"));
+            statusSb.append("\n[ 우선순위별 집계 ]\n");
+            stats.getPriorityCounts().forEach((p, c) -> statusSb.append(p.name()).append(": ").append(c).append("건\n"));
             statsView.setStatusStats(statusSb.toString());
 
-            StringBuilder prioritySb = new StringBuilder("[ 우선순위별 집계 ]\n\n");
-            stats.getPriorityCounts().forEach((p, c) -> prioritySb.append(p.name()).append(": ").append(c).append("건\n"));
-            statsView.setDailyStats(prioritySb.toString());
+            Map<String, Long> daily = issueFacade.getDailyIssueStatistics(
+                    new DailyIssueStatisticsRequest(currentProjectId, 30));
+            StringBuilder dailySb = new StringBuilder("[ 최근 30일 ]\n\n");
+            daily.forEach((date, count) -> dailySb.append(date).append(": ").append(count).append("건\n"));
+            statsView.setDailyStats(dailySb.toString());
 
-            statsView.setMonthlyStats("일별/월별 이슈 추이\n데이터 미제공");
+            Map<String, Long> monthly = issueFacade.getMonthlyIssueStatistics(
+                    new MonthlyIssueStatisticsRequest(currentProjectId, 12));
+            StringBuilder monthlySb = new StringBuilder("[ 최근 12개월 ]\n\n");
+            monthly.forEach((month, count) -> monthlySb.append(month).append(": ").append(count).append("건\n"));
+            statsView.setMonthlyStats(monthlySb.toString());
         } catch (Exception ex) {
             statsView.setStatusStats("통계 조회 실패: " + ex.getMessage());
+            statsView.setDailyStats("");
+            statsView.setMonthlyStats("");
         }
     }
 }
