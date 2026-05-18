@@ -7,6 +7,7 @@ import com.example.its.persistence.entity.IssueStatus;
 import com.example.its.persistence.entity.Priority;
 import com.example.its.persistence.entity.Role;
 import com.example.its.shared.dto.account.AccountResponse;
+
 import com.example.its.shared.dto.issue.*;
 import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.shared.dto.tag.TagResponse;
@@ -65,6 +66,7 @@ public class IssueController {
         detailView.getEditTagsButton().addActionListener(e -> handleEditIssueTags());
         detailView.getAssignButton().addActionListener(e -> handleAssign());
         detailView.getFixButton().addActionListener(e -> handleFix());
+        detailView.getFailButton().addActionListener(e -> handleFail());
         detailView.getResolveButton().addActionListener(e -> handleResolve());
         detailView.getReopenButton().addActionListener(e -> handleReopen());
         detailView.getCloseButton().addActionListener(e -> handleClose());
@@ -155,7 +157,7 @@ public class IssueController {
         try {
             currentDetail = issueFacade.getIssue(currentIssueId);
             bindDetailView(currentDetail);
-            configureActionButtons(currentDetail.getStatus(), SessionContext.getCurrentAccount());
+            loadRecommendations();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(mainFrame, "이슈 조회 실패: " + ex.getMessage());
             return;
@@ -184,40 +186,6 @@ public class IssueController {
         }
     }
 
-    private void configureActionButtons(IssueStatus status, AccountResponse me) {
-        detailView.hideAllActionButtons();
-        detailView.setRecommendationVisible(false);
-        if (me == null || status == null) return;
-
-        Role role = me.getRole();
-
-        switch (status) {
-            case NEW, REOPENED -> {
-                if (role == Role.PL) {
-                    detailView.setAssignButtonVisible(true);
-                    loadRecommendations();
-                }
-            }
-            case ASSIGNED -> {
-                if (role == Role.DEV && me.getAccountId().equals(currentDetail.getAssigneeAccountId())) {
-                    detailView.setFixButtonVisible(true);
-                }
-            }
-            case FIXED -> {
-                if (role == Role.TESTER) {
-                    detailView.setResolveButtonVisible(true);
-                    detailView.setReopenButtonVisible(true);
-                }
-            }
-            case RESOLVED -> {
-                if (role == Role.PL) detailView.setCloseButtonVisible(true);
-            }
-            case CLOSED -> {
-                if (role == Role.PL || role == Role.TESTER) detailView.setReopenButtonVisible(true);
-            }
-        }
-    }
-
     private void loadRecommendations() {
         try {
             List<RecommendationResponse> recs = issueFacade.recommendAssignees(currentProjectId, Collections.emptyList());
@@ -226,10 +194,11 @@ public class IssueController {
                     .map(r -> r.getName() + " [" + String.format("%.1f", r.getScore()) + "점]")
                     .collect(Collectors.joining(", "));
                 detailView.setRecommendations(text);
-                detailView.setRecommendationVisible(true);
+            } else {
+                detailView.setRecommendations(" ");
             }
         } catch (Exception ex) {
-            detailView.setRecommendationVisible(false);
+            detailView.setRecommendations(" ");
         }
     }
 
@@ -280,28 +249,25 @@ public class IssueController {
         }
     }
 
-    private void handleReopen() {
-        IssueStatus status = currentDetail != null ? currentDetail.getStatus() : null;
-        Long accountId = SessionContext.getCurrentAccount().getAccountId();
+    private void handleFail() {
+        String reason = JOptionPane.showInputDialog(mainFrame, "반려 사유를 입력하세요:", "검증 실패", JOptionPane.PLAIN_MESSAGE);
+        if (reason == null || reason.trim().isEmpty()) return;
+        try {
+            Long accountId = SessionContext.getCurrentAccount().getAccountId();
+            issueFacade.fail(new IssueFailRequest(currentIssueId, accountId, reason.trim()));
+            refreshDetail();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "검증 실패 처리 오류: " + ex.getMessage());
+        }
+    }
 
-        if (status == IssueStatus.FIXED) {
-            // TESTER가 검증 실패 처리 (FIXED → REOPENED)
-            String reason = JOptionPane.showInputDialog(mainFrame, "반려 사유를 입력하세요:", "검증 실패", JOptionPane.PLAIN_MESSAGE);
-            if (reason == null || reason.trim().isEmpty()) return;
-            try {
-                issueFacade.fail(new IssueFailRequest(currentIssueId, accountId, reason.trim()));
-                refreshDetail();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, "검증 실패 처리 오류: " + ex.getMessage());
-            }
-        } else {
-            // CLOSED → REOPENED (PL 또는 TESTER)
-            try {
-                issueFacade.reopen(new IssueReopenRequest(currentIssueId, accountId, null));
-                refreshDetail();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(mainFrame, "Reopen 실패: " + ex.getMessage());
-            }
+    private void handleReopen() {
+        try {
+            Long accountId = SessionContext.getCurrentAccount().getAccountId();
+            issueFacade.reopen(new IssueReopenRequest(currentIssueId, accountId, null));
+            refreshDetail();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(mainFrame, "Reopen 실패: " + ex.getMessage());
         }
     }
 
@@ -360,7 +326,7 @@ public class IssueController {
         try {
             currentDetail = issueFacade.getIssue(currentIssueId);
             bindDetailView(currentDetail);
-            configureActionButtons(currentDetail.getStatus(), SessionContext.getCurrentAccount());
+            loadRecommendations();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(mainFrame, "새로고침 실패: " + ex.getMessage());
         }

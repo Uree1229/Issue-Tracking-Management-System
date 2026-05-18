@@ -2,6 +2,7 @@ package com.example.its.ui.swing.view;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -9,6 +10,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Font;
 
 public class ProjectListView extends JPanel {
 
@@ -31,6 +33,11 @@ public class ProjectListView extends JPanel {
     }
 
     private void initComponents() {
+        JLabel title = new JLabel("프로젝트 목록", JLabel.CENTER);
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
+        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        add(title, BorderLayout.NORTH);
+
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowHeight(24);
         add(new JScrollPane(table), BorderLayout.CENTER);

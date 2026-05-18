@@ -3,14 +3,21 @@ package com.example.its.ui.swing.view;
 import com.example.its.application.facade.AccountFacade;
 import com.example.its.application.facade.IssueFacade;
 import com.example.its.application.facade.ProjectFacade;
+import com.example.its.shared.dto.account.AccountResponse;
+import com.example.its.ui.swing.SessionContext;
 import com.example.its.ui.swing.controller.AccountController;
 import com.example.its.ui.swing.controller.IssueController;
 import com.example.its.ui.swing.controller.LoginController;
 import com.example.its.ui.swing.controller.ProjectController;
 
+import javax.swing.BorderFactory;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
 
 public class MainFrame extends JFrame {
 
@@ -24,6 +31,7 @@ public class MainFrame extends JFrame {
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cardPanel = new JPanel(cardLayout);
+    private final JLabel statusBar = new JLabel("  로그인되지 않음");
 
     private final LoginView loginView             = new LoginView();
     private final ProjectListView projectListView = new ProjectListView();
@@ -50,7 +58,12 @@ public class MainFrame extends JFrame {
         cardPanel.add(statisticsView,    STATISTICS);
         cardPanel.add(accountManageView, ACCOUNT_MANAGE);
 
-        add(cardPanel);
+        add(cardPanel, BorderLayout.CENTER);
+
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        statusPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
+        statusPanel.add(statusBar);
+        add(statusPanel, BorderLayout.SOUTH);
         initControllers();
     }
 
@@ -73,19 +86,38 @@ public class MainFrame extends JFrame {
         accountController.loadAccounts();
     }
 
-    public void showLogin()       { cardLayout.show(cardPanel, LOGIN); }
-    public void showIssueList()   { cardLayout.show(cardPanel, ISSUE_LIST); }
+    public void showLogin() {
+        statusBar.setText("  로그인되지 않음");
+        cardLayout.show(cardPanel, LOGIN);
+    }
+
+    public void showIssueList() {
+        issueListView.clearSelection();
+        cardLayout.show(cardPanel, ISSUE_LIST);
+    }
+
     public void showIssueDetail() { cardLayout.show(cardPanel, ISSUE_DETAIL); }
     public void showIssueCreate() { cardLayout.show(cardPanel, ISSUE_CREATE); }
     public void showStatistics()  { cardLayout.show(cardPanel, STATISTICS); }
+
     public void showAccountManage() {
         if (accountController != null) accountController.loadAccounts();
         cardLayout.show(cardPanel, ACCOUNT_MANAGE);
     }
 
     public void showProjectList() {
+        updateStatusBar();
         if (projectController != null) projectController.loadProjects();
         cardLayout.show(cardPanel, PROJECT_LIST);
+    }
+
+    private void updateStatusBar() {
+        AccountResponse acc = SessionContext.getCurrentAccount();
+        if (acc != null) {
+            statusBar.setText("  " + acc.getName() + "  [" + acc.getRole().name() + "]");
+        } else {
+            statusBar.setText("  로그인되지 않음");
+        }
     }
 
     public LoginView getLoginView()               { return loginView; }

@@ -13,6 +13,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -46,7 +47,14 @@ public class IssueListView extends JPanel {
     }
 
     private void initComponents() {
-        add(buildFilterPanel(), BorderLayout.NORTH);
+        JLabel title = new JLabel("이슈 목록", JLabel.CENTER);
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
+        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+
+        JPanel northPanel = new JPanel(new BorderLayout());
+        northPanel.add(title, BorderLayout.NORTH);
+        northPanel.add(buildFilterPanel(), BorderLayout.CENTER);
+        add(northPanel, BorderLayout.NORTH);
 
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowHeight(24);
@@ -104,6 +112,8 @@ public class IssueListView extends JPanel {
     public IssueTableModel getIssueTableModel() { return issueTableModel; }
     public JTable getTable() { return table; }
     public int getSelectedRow() { return table.getSelectedRow(); }
+
+    public void clearSelection() { table.clearSelection(); }
 
     public JButton getSearchButton()     { return searchButton; }
     public JButton getResetButton()      { return resetButton; }

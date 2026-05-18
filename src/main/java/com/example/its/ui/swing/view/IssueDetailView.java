@@ -9,6 +9,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -32,18 +33,19 @@ public class IssueDetailView extends JPanel {
     private final JTextArea commentInputArea   = new JTextArea(3, 40);
     private final JButton addCommentButton     = new JButton("코멘트 추가");
 
-    // 상태 변경 버튼 (역할 + 현재 상태에 따라 표시/숨김)
+    // 상태 변경 버튼 (항상 표시, 잘못된 전이는 BE에서 처리)
     private final JButton assignButton  = new JButton("Assignee 지정");
     private final JButton fixButton     = new JButton("Fixed 처리");
+    private final JButton failButton    = new JButton("검증 실패");
     private final JButton resolveButton = new JButton("Resolved 처리");
     private final JButton reopenButton  = new JButton("Reopen");
     private final JButton closeButton   = new JButton("Close");
 
-    // 추천 영역 (PL 전용)
+    // 추천 영역
     private final JLabel recommendationLabel = new JLabel(" ");
 
     private final JButton editTagsButton = new JButton("태그 편집");
-    private final JButton backButton = new JButton("← 이슈 목록");
+    private final JButton backButton     = new JButton("← 이슈 목록");
 
     public IssueDetailView() {
         setLayout(new BorderLayout(8, 8));
@@ -52,7 +54,15 @@ public class IssueDetailView extends JPanel {
     }
 
     private void initComponents() {
-        add(buildInfoPanel(), BorderLayout.NORTH);
+        JLabel title = new JLabel("이슈 상세", JLabel.CENTER);
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
+        title.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(title, BorderLayout.NORTH);
+        topPanel.add(buildInfoPanel(), BorderLayout.CENTER);
+
+        add(topPanel, BorderLayout.NORTH);
         add(buildCommentPanel(), BorderLayout.CENTER);
         add(buildActionPanel(), BorderLayout.SOUTH);
     }
@@ -85,7 +95,7 @@ public class IssueDetailView extends JPanel {
         panel.add(new JScrollPane(descriptionArea), gbc);
 
         gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 2;
-        recommendationLabel.setBorder(BorderFactory.createTitledBorder("Assignee 추천 (PL 전용)"));
+        recommendationLabel.setBorder(BorderFactory.createTitledBorder("Assignee 추천"));
         panel.add(recommendationLabel, gbc);
 
         return panel;
@@ -121,13 +131,13 @@ public class IssueDetailView extends JPanel {
         panel.add(editTagsButton);
         panel.add(assignButton);
         panel.add(fixButton);
+        panel.add(failButton);
         panel.add(resolveButton);
         panel.add(reopenButton);
         panel.add(closeButton);
         return panel;
     }
 
-    // 데이터 바인딩 — TODO: IssueDetailResponse로 교체
     public void setTitle(String title)               { titleField.setText(title); }
     public void setStatus(String status)             { statusLabel.setText(status); }
     public void setPriority(String priority)         { priorityLabel.setText(priority); }
@@ -144,24 +154,9 @@ public class IssueDetailView extends JPanel {
     public String getCommentInput() { return commentInputArea.getText().trim(); }
     public void clearCommentInput() { commentInputArea.setText(""); }
 
-    // 상태 버튼 가시성 제어 (Controller에서 역할+상태 보고 호출)
-    public void hideAllActionButtons() {
-        assignButton.setVisible(false);
-        fixButton.setVisible(false);
-        resolveButton.setVisible(false);
-        reopenButton.setVisible(false);
-        closeButton.setVisible(false);
-    }
-
-    public void setAssignButtonVisible(boolean v)  { assignButton.setVisible(v); }
-    public void setFixButtonVisible(boolean v)     { fixButton.setVisible(v); }
-    public void setResolveButtonVisible(boolean v) { resolveButton.setVisible(v); }
-    public void setReopenButtonVisible(boolean v)  { reopenButton.setVisible(v); }
-    public void setCloseButtonVisible(boolean v)   { closeButton.setVisible(v); }
-    public void setRecommendationVisible(boolean v){ recommendationLabel.setVisible(v); }
-
     public JButton getAssignButton()     { return assignButton; }
     public JButton getFixButton()        { return fixButton; }
+    public JButton getFailButton()       { return failButton; }
     public JButton getResolveButton()    { return resolveButton; }
     public JButton getReopenButton()     { return reopenButton; }
     public JButton getCloseButton()      { return closeButton; }
