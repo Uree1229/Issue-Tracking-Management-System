@@ -102,7 +102,7 @@ public class Project {
 
     public void removeTag(Tag tag) {
         tags.remove(tag);
-        tag.setProject(null);
+        // tag.setProject(null);
     }
 
     // BE: static factory method 컨벤션 만족 위해 추가
