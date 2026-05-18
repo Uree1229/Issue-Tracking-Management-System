@@ -9,22 +9,29 @@ import com.example.its.ui.javafx.session.UserSession;
 import com.example.its.ui.javafx.support.UiAlertHelper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.layout.Region;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AnalyticsController {
+    private static final int DAY_WINDOW = 7;
+    private static final int MONTH_WINDOW = 6;
+    private static final String ACTIVE_TREND_BUTTON_STYLE = "analytics-toggle-button-active";
 
-    private static final DateTimeFormatter DAY_FORMATTER = DateTimeFormatter.ofPattern("MM/dd");
+    private final Map<String, Long> dailyTrendData = new LinkedHashMap<>();
+    private final Map<String, Long> monthlyTrendData = new LinkedHashMap<>();
+    private boolean showingMonthlyTrend;
 
     @FXML
     private Label totalIssuesValueLabel;
@@ -45,6 +52,12 @@ public class AnalyticsController {
     private LineChart<String, Number> trendChart;
 
     @FXML
+    private Button dailyTrendButton;
+
+    @FXML
+    private Button monthlyTrendButton;
+
+    @FXML
     private BarChart<String, Number> workloadChart;
 
     @FXML
@@ -55,6 +68,8 @@ public class AnalyticsController {
         statusChart.setAnimated(false);
         trendChart.setAnimated(false);
         workloadChart.setAnimated(false);
+        showingMonthlyTrend = false;
+        updateTrendToggleButtons();
         refreshMetrics();
     }
 
@@ -67,6 +82,10 @@ public class AnalyticsController {
 
         try {
             StatisticsResponse statistics = backendBridge().getStatistics(projectId);
+            dailyTrendData.clear();
+            dailyTrendData.putAll(backendBridge().getDailyIssueStatistics(projectId, DAY_WINDOW));
+            monthlyTrendData.clear();
+            monthlyTrendData.putAll(backendBridge().getMonthlyIssueStatistics(projectId, MONTH_WINDOW));
             IssueSearchCondition condition = new IssueSearchCondition();
             condition.setProjectId(projectId);
             List<IssueSummaryResponse> issues = backendBridge().searchIssues(condition);
@@ -81,7 +100,7 @@ public class AnalyticsController {
             closedIssuesValueLabel.setText(String.valueOf(closedCount));
 
             populateStatusChart(statistics);
-            populateTrendChart(issues);
+            populateCurrentTrendChart();
             populateWorkloadChart(issues);
             populateInsights(issues, openCount, verificationCount, closedCount);
         } catch (Exception exception) {
@@ -102,21 +121,11 @@ public class AnalyticsController {
         statusChart.getData().setAll(series);
     }
 
-    private void populateTrendChart(List<IssueSummaryResponse> issues) {
+    private void populateTrendChart(String seriesName, Map<String, Long> issueCounts) {
         XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName("Reported");
+        series.setName(seriesName);
 
-        LocalDate today = LocalDate.now();
-        Map<LocalDate, Long> counts = new LinkedHashMap<>();
-        for (int index = 6; index >= 0; index--) {
-            LocalDate day = today.minusDays(index);
-            long count = issues.stream()
-                .filter(issue -> issue.getReportedAt() != null && issue.getReportedAt().toLocalDate().equals(day))
-                .count();
-            counts.put(day, count);
-        }
-
-        counts.forEach((day, count) -> series.getData().add(new XYChart.Data<>(day.format(DAY_FORMATTER), count)));
+        issueCounts.forEach((bucket, count) -> series.getData().add(new XYChart.Data<>(bucket, count)));
         trendChart.getData().setAll(series);
     }
 
@@ -133,6 +142,7 @@ public class AnalyticsController {
             .forEach(entry -> series.getData().add(new XYChart.Data<>(entry.getKey(), entry.getValue())));
 
         workloadChart.getData().setAll(series);
+        applyWorkloadBarWidthLimit();
     }
 
     private void populateInsights(List<IssueSummaryResponse> issues, long openCount, long verificationCount, long closedCount) {
@@ -186,9 +196,61 @@ public class AnalyticsController {
         trendChart.getData().clear();
         workloadChart.getData().clear();
         insightListView.setItems(FXCollections.observableArrayList(message));
+        dailyTrendData.clear();
+        monthlyTrendData.clear();
     }
 
     private JavaFxBackendBridge backendBridge() {
         return JavaFxBackendBridge.getInstance();
+    }
+
+    private void applyWorkloadBarWidthLimit() {
+        Platform.runLater(() -> Platform.runLater(() -> {
+            double maxVisualWidth = 44;
+            for (Node node : workloadChart.lookupAll(".chart-bar")) {
+                if (node instanceof Region region) {
+                    double currentWidth = region.getLayoutBounds().getWidth();
+                    if (currentWidth > maxVisualWidth) {
+                        double inset = (currentWidth - maxVisualWidth) / 2.0;
+                        region.setStyle(String.format("-fx-background-insets: 0 %.1f 0 %.1f;", inset, inset));
+                    } else {
+                        region.setStyle("");
+                    }
+                }
+            }
+        }));
+    }
+
+    @FXML
+    private void handleShowDailyTrend() {
+        showingMonthlyTrend = false;
+        updateTrendToggleButtons();
+        populateCurrentTrendChart();
+    }
+
+    @FXML
+    private void handleShowMonthlyTrend() {
+        showingMonthlyTrend = true;
+        updateTrendToggleButtons();
+        populateCurrentTrendChart();
+    }
+
+    private void populateCurrentTrendChart() {
+        if (showingMonthlyTrend) {
+            populateTrendChart("Monthly Issues", monthlyTrendData);
+            return;
+        }
+        populateTrendChart("Recent Daily Issues", dailyTrendData);
+    }
+
+    private void updateTrendToggleButtons() {
+        dailyTrendButton.getStyleClass().remove(ACTIVE_TREND_BUTTON_STYLE);
+        monthlyTrendButton.getStyleClass().remove(ACTIVE_TREND_BUTTON_STYLE);
+
+        if (showingMonthlyTrend) {
+            monthlyTrendButton.getStyleClass().add(ACTIVE_TREND_BUTTON_STYLE);
+        } else {
+            dailyTrendButton.getStyleClass().add(ACTIVE_TREND_BUTTON_STYLE);
+        }
     }
 }

@@ -7,6 +7,7 @@ import com.example.its.persistence.entity.Role;
 import com.example.its.shared.dto.account.AccountCreateRequest;
 import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.shared.dto.issue.CommentCreateRequest;
+import com.example.its.shared.dto.issue.DailyIssueStatisticsRequest;
 import com.example.its.shared.dto.issue.IssueAssignRequest;
 import com.example.its.shared.dto.issue.IssueCloseRequest;
 import com.example.its.shared.dto.issue.IssueCreateRequest;
@@ -17,6 +18,7 @@ import com.example.its.shared.dto.issue.IssueReopenRequest;
 import com.example.its.shared.dto.issue.IssueResolveRequest;
 import com.example.its.shared.dto.issue.IssueSearchCondition;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
+import com.example.its.shared.dto.issue.MonthlyIssueStatisticsRequest;
 import com.example.its.shared.dto.issue.RecommendationResponse;
 import com.example.its.shared.dto.issue.StatisticsResponse;
 import com.example.its.shared.dto.project.ProjectCreateRequest;
@@ -27,6 +29,7 @@ import com.example.its.ui.javafx.model.ProjectTagOption;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public final class JavaFxBackendBridge {
@@ -121,6 +124,20 @@ public final class JavaFxBackendBridge {
 
     public StatisticsResponse getStatistics(Long projectId) {
         return issueFacade.getStatistics(projectId);
+    }
+
+    public Map<String, Long> getDailyIssueStatistics(Long projectId, int days) {
+        if (projectId == null || days <= 0) {
+            return Map.of();
+        }
+        return issueFacade.getDailyIssueStatistics(new DailyIssueStatisticsRequest(projectId, days));
+    }
+
+    public Map<String, Long> getMonthlyIssueStatistics(Long projectId, int months) {
+        if (projectId == null || months <= 0) {
+            return Map.of();
+        }
+        return issueFacade.getMonthlyIssueStatistics(new MonthlyIssueStatisticsRequest(projectId, months));
     }
 
     public List<RecommendationResponse> recommendAssignees(Long projectId, List<Long> tagIds) {
