@@ -371,8 +371,22 @@ public class IssueController {
         try {
             Long reporterId = SessionContext.getCurrentAccount().getAccountId();
             Priority priority = Priority.valueOf(createView.getPriority());
+
+            List<Long>   tagIds       = new ArrayList<>(createView.getSelectedExistingTagIds());
+            List<String> newTagNames  = createView.getNewTagNamesToCreate();
+
+            if (!newTagNames.isEmpty()) {
+                projectFacade.updateProjectTags(
+                        new ProjectTagUpdateRequest(currentProjectId, newTagNames, Collections.emptyList()));
+                ProjectResponse refreshed = projectFacade.getProject(currentProjectId);
+                Set<String> wanted = new HashSet<>(newTagNames);
+                for (TagResponse t : refreshed.getTags()) {
+                    if (wanted.contains(t.getName())) tagIds.add(t.getTagId());
+                }
+            }
+
             issueFacade.registerIssue(new IssueCreateRequest(
-                title, desc, priority, reporterId, null, currentProjectId, createView.getSelectedTagIds()
+                title, desc, priority, reporterId, null, currentProjectId, tagIds
             ));
             createView.clearForm();
             loadIssues();

@@ -41,6 +41,12 @@ public class ProjectController {
     }
 
     private void handleSelectProject() {
+        if (SessionContext.getCurrentAccount() != null
+                && SessionContext.getCurrentAccount().getRole() == Role.ADMIN) {
+            JOptionPane.showMessageDialog(mainFrame, "ADMIN 계정은 이슈를 조회/등록할 수 없습니다.");
+            return;
+        }
+
         int row = view.getSelectedRow();
         if (row < 0) return;
 
@@ -117,6 +123,7 @@ public class ProjectController {
         if (SessionContext.getCurrentAccount() != null) {
             boolean isAdmin = SessionContext.getCurrentAccount().getRole() == Role.ADMIN;
             view.setAdminButtonsVisible(isAdmin);
+            view.setSelectButtonVisible(!isAdmin);
         }
     }
 }

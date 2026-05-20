@@ -71,4 +71,8 @@ public class ProjectListView extends JPanel {
         tagButton.setVisible(visible);
         accountButton.setVisible(visible);
     }
+
+    public void setSelectButtonVisible(boolean visible) {
+        selectButton.setVisible(visible);
+    }
 }
