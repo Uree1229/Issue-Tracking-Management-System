@@ -151,6 +151,8 @@ public class IssueCreateView extends JPanel {
 
     public void setReporter(String name)   { reporterLabel.setText(name); }
     public void setReportedAt(String date) { reportedAtLabel.setText(date); }
+    public String getReporterText()   { return reporterLabel.getText(); }
+    public String getReportedAtText() { return reportedAtLabel.getText(); }
 
     public void setAvailableTags(List<TagResponse> tags) {
         existingTagBoxes.clear();
