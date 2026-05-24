@@ -76,3 +76,11 @@ tasks.register('renderSnapshots', JavaExec) {
         systemProperties(runTask.systemProperties)
     }
 }
+
+
+tasks.register('runSwing', JavaExec) {
+    group = 'application'
+    description = 'Run Swing UI'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.its.ui.swing.SwingApp'
+}
