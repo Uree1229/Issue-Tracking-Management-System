@@ -1,0 +1,870 @@
+classDiagram
+direction TB
+
+class ItsApplication {
+  -MAIN_WIDTH : double
+  -MAIN_HEIGHT : double
+  -LOGIN_WIDTH : double
+  -LOGIN_HEIGHT : double
+  -DATABASE_PATH : Path
+  -primaryStage : Stage
+  +start(stage)
+  +main(args)
+  +showLoginView()
+  +showRegisterView()
+  +showMainView()
+  +getPrimaryStage()
+  -showView(resourcePath, width, height)
+}
+
+class MainLayoutController {
+  -projectSwitcherCombo : ComboBox
+  -currentUserLabel : Label
+  -currentRoleLabel : Label
+  -contentContainer : StackPane
+  -homeNavButton : Button
+  -issuesNavButton : Button
+  -searchNavButton : Button
+  -createIssueNavButton : Button
+  -analyticsNavButton : Button
+  -adminNavButton : Button
+  -homeView : Node
+  -issueBrowserView : Node
+  -searchView : Node
+  -createIssueView : Node
+  -analyticsView : Node
+  -adminView : Node
+  -issueBrowserController : IssueBrowserController
+  -searchController : SearchController
+  -createIssueController : CreateIssueController
+  -analyticsController : AnalyticsController
+  -adminController : AdminController
+  -searchResultsStage : Stage
+  -inquiryResultsStage : Stage
+  -suppressProjectSwitch : boolean
+  -initialize()
+  +refreshCurrentContext()
+  +navigateHome()
+  +showIssues(event)
+  +showSearch(event)
+  +showSearchResults(payload)
+  +showCreateIssue(event)
+  +showAnalytics(event)
+  +showAdmin(event)
+  +showAdminProjectTab()
+  +showIssuesWithKeyword(keyword)
+  +showSearchWithKeyword(keyword)
+  +showNewIssues()
+  +showAssignedToCurrentUser()
+  +showReportedByCurrentUser()
+  +showFixedIssues()
+  +showIssue(issueId)
+  +showInquiry(issueId)
+  +reloadProjectOptions()
+  -handleLogout()
+  -handleProjectSwitch()
+  -showIssueBrowser()
+  -loadHomeView()
+  -loadIssueBrowserView()
+  -loadSearchView()
+  -loadCreateIssueView()
+  -loadAnalyticsView()
+  -loadAdminView()
+  -showSearchResultsWindow(payload)
+  -showInquiryResultsWindow(payload)
+  -activateNav(activeButton)
+  -configureProjectSwitcher()
+  -loadAccessibleProjects()
+  -syncProjectSwitcherSelection()
+  -refreshActiveViewForProjectChange()
+  -backendBridge()
+  -configureSidebarForRole(isAdmin, canOpenIssues, canOpenSearch, canViewAnalytics)
+}
+
+class LoginController {
+  -loginIdField : TextField
+  -passwordField : PasswordField
+  -errorLabel : Label
+  -initialize()
+  -handleLogin()
+  -openRegister()
+  -loginAsAdmin()
+  -loginAsPl()
+  -loginAsDev()
+  -loginAsTester()
+  -loginWithSeededCredentials(loginId, password)
+  -performLogin(loginId, password)
+  -initializeProjectContext()
+  -showNeutralFeedback(message)
+  -showErrorFeedback(message)
+  -showSuccessFeedback(message)
+  -backendBridge()
+}
+
+class RegisterController {
+  -loginIdField : TextField
+  -realNameField : TextField
+  -emailField : TextField
+  -roleCombo : ComboBox
+  -passwordField : PasswordField
+  -confirmPasswordField : PasswordField
+  -feedbackLabel : Label
+  -initialize()
+  -handleRegister()
+  -goBackToLogin()
+  -showNeutralFeedback(message)
+  -showErrorFeedback(message)
+  -trimmed(value)
+  -backendBridge()
+}
+
+class HomeController {
+  -mainLayoutController : MainLayoutController
+  -welcomeLabel : Label
+  -quickSearchShell : HBox
+  -featureRow : HBox
+  -reportIssueButton : Button
+  -searchIssuesButton : Button
+  -analyticsButton : Button
+  -adminButton : Button
+  -reportIssueTitleLabel : Label
+  -searchIssuesTitleLabel : Label
+  -analyticsTitleLabel : Label
+  -adminTitleLabel : Label
+  -quickSearchField : TextField
+  -initialize()
+  +setMainLayoutController(controller)
+  -openIssueRegistration()
+  -openSearch()
+  -openAnalytics()
+  -openAdmin()
+  -quickSearch()
+  -configureGuestLayout()
+  -configureAdminLayout()
+  -configureDeveloperLayout()
+  -configureTesterLayout()
+  -configureProjectLeadLayout()
+  -openIssueBrowser(event)
+  -openProjectManagementHome(event)
+}
+
+class CreateIssueController {
+  -NO_TAG_OPTION : String
+  -tagOptions : ObservableList
+  -tagIdByOption : Map
+  -mainLayoutController : MainLayoutController
+  -reporterValueLabel : Label
+  -projectValueLabel : Label
+  -statusValueLabel : Label
+  -titleField : TextField
+  -priorityCombo : ComboBox
+  -tagCombo : ComboBox
+  -descriptionArea : TextArea
+  -noteArea : TextArea
+  -formFeedbackLabel : Label
+  -initialize()
+  +setMainLayoutController(controller)
+  +refreshContext()
+  -handleCreateIssue()
+  -handleReset()
+  -resetForm()
+  -trimmed(value)
+  -buildEffectiveDescription(description, note)
+  -refreshTagOptions()
+  -backendBridge()
+}
+
+class IssueBrowserController {
+  -ALL_OPTION : String
+  -UNASSIGNED_OPTION : String
+  -DATE_TIME_FORMATTER : DateTimeFormatter
+  -issues : ObservableList
+  -filteredIssues : FilteredList
+  -projectNameById : Map
+  -issueDetailCache : Map
+  -recommendationCache : Map
+  -mainLayoutController : MainLayoutController
+  -keywordField : TextField
+  -statusFilterCombo : ComboBox
+  -priorityFilterCombo : ComboBox
+  -reporterFilterCombo : ComboBox
+  -assigneeFilterCombo : ComboBox
+  -createIssueButton : Button
+  -issueTable : TableView
+  -idColumn : TableColumn
+  -titleColumn : TableColumn
+  -issueIdLabel : Label
+  -issueTitleLabel : Label
+  -statusBadgeLabel : Label
+  -priorityBadgeLabel : Label
+  -reporterValueLabel : Label
+  -assigneeValueLabel : Label
+  -fixerValueLabel : Label
+  -projectValueLabel : Label
+  -reportedAtValueLabel : Label
+  -tagsValueLabel : Label
+  -descriptionArea : TextArea
+  -commentListView : ListView
+  -recommendationListView : ListView
+  -recommendationSection : VBox
+  -commentSection : VBox
+  -commentInputArea : TextArea
+  -commentFeedbackLabel : Label
+  -saveCommentButton : Button
+  -workflowButtonBar : HBox
+  -assignButton : Button
+  -markFixedButton : Button
+  -resolveButton : Button
+  -failButton : Button
+  -closeButton : Button
+  -reopenButton : Button
+  -initialize()
+  +setMainLayoutController(controller)
+  +refreshData()
+  +applyKeywordSearch(keyword)
+  +showNewIssues()
+  +showAssignedTo(name)
+  +showReportedBy(name)
+  +showFixedIssues()
+  +showIssueById(issueId)
+  -resetFilters()
+  -openCreateIssue()
+  -handleWorkflowAction(event)
+  -handleAddComment()
+  -handleAssign(selectedIssue)
+  -handleMarkFixed(selectedIssue)
+  -handleResolve(selectedIssue)
+  -handleFail(selectedIssue)
+  -handleClose(selectedIssue)
+  -handleReopen(selectedIssue)
+  -configureTable()
+  -configureSupportPanels()
+  -configureRoleScopedActions()
+  -configureFilters()
+  -bindTableData()
+  -loadIssueAcrossProjects(issueId)
+  -applyFilters()
+  -matchesFilters(issue, keyword, selectedStatus, selectedPriority, selectedReporter, selectedAssignee)
+  -resetFiltersInternal()
+  -ensureOptionPresent(comboBox, value)
+  -refreshFilterOptions()
+  -refreshProjectNames()
+  -loadDetails(issue)
+  -showIssueDetails(issue)
+  -updateWorkflowAvailability(issue)
+  -setActionVisibility(button, visible)
+  -loadRecommendations(issue)
+  -buildRecommendationLines(issue)
+  -formatRecommendations(recommendations)
+  -refreshRowFromDetail(detail)
+  -formatDateTime(dateTime)
+  -formatTagNames(tagNames)
+  -backendBridge()
+}
+
+class SearchController {
+  -ALL_OPTION : String
+  -reporterIdByOption : Map
+  -assigneeIdByOption : Map
+  -projectIdByOption : Map
+  -mainLayoutController : MainLayoutController
+  -keywordField : TextField
+  -statusCombo : ComboBox
+  -reporterCombo : ComboBox
+  -priorityCombo : ComboBox
+  -issueIdField : TextField
+  -assigneeCombo : ComboBox
+  -projectCombo : ComboBox
+  -activeOnlyCheckBox : CheckBox
+  -descriptionCheckBox : CheckBox
+  -initialize()
+  +setMainLayoutController(controller)
+  +refreshData()
+  +applyKeywordSearch(keyword)
+  -handleSearch()
+  -handleReset()
+  -submitSearch()
+  -buildPayload()
+  -populateStaticOptions()
+  -initializeFallbackOptions()
+  -safeRefreshData()
+  -populateProjectOptions()
+  -populateAccountOptions()
+  -parseIssueId()
+  -buildAccountOption(account)
+  -trimmed(value)
+  -backendBridge()
+}
+
+class SearchResultsController {
+  -DATE_TIME_FORMATTER : DateTimeFormatter
+  -searchResults : ObservableList
+  -projectNameById : Map
+  -issueDetailCache : Map
+  -mainLayoutController : MainLayoutController
+  -windowStage : Stage
+  -resultHeaderLabel : Label
+  -resultSummaryLabel : Label
+  -resultTable : TableView
+  -idColumn : TableColumn
+  -titleColumn : TableColumn
+  -statusColumn : TableColumn
+  -priorityColumn : TableColumn
+  -reporterColumn : TableColumn
+  -assigneeColumn : TableColumn
+  -reportedAtColumn : TableColumn
+  -initialize()
+  +setMainLayoutController(controller)
+  +setWindowStage(stage)
+  +applySearch(payload)
+  -backToSearch()
+  -openSelectedInInquiry()
+  -openSelectedInBrowser()
+  -performSearch(payload)
+  -searchByCriteria(payload)
+  -matchesClientSideFilters(summary, payload, keyword)
+  -matchesClientSideFilters(detail, payload, keyword)
+  -configureTable()
+  -refreshProjectNames()
+  -isMissingIssueError(exception)
+  -buildHeader(payload)
+  -formatDateTime(dateTime)
+  -backendBridge()
+}
+
+class InquiryResultsController {
+  -DATE_TIME_FORMATTER : DateTimeFormatter
+  -inquiryResults : ObservableList
+  -projectNameById : Map
+  -issueDetailCache : Map
+  -recommendationCache : Map
+  -mainLayoutController : MainLayoutController
+  -windowStage : Stage
+  -resultHeaderLabel : Label
+  -inquirySummaryLabel : Label
+  -inquiryTable : TableView
+  -idColumn : TableColumn
+  -titleColumn : TableColumn
+  -statusColumn : TableColumn
+  -reporterColumn : TableColumn
+  -detailIssueIdLabel : Label
+  -detailTitleLabel : Label
+  -detailStatusLabel : Label
+  -detailPriorityLabel : Label
+  -detailReporterLabel : Label
+  -detailAssigneeLabel : Label
+  -detailFixerLabel : Label
+  -detailTagsLabel : Label
+  -detailProjectLabel : Label
+  -detailReportedAtLabel : Label
+  -detailDescriptionArea : TextArea
+  -commentHistoryListView : ListView
+  -recommendationSection : VBox
+  -recommendationListView : ListView
+  -recommendationHintLabel : Label
+  -commentInputArea : TextArea
+  -commentFeedbackLabel : Label
+  -initialize()
+  +setMainLayoutController(controller)
+  +setWindowStage(stage)
+  +applyQuery(payload)
+  -backToInquiry()
+  -openCurrentIssueInBrowser()
+  -openCurrentIssueInSearch()
+  -handleAddComment()
+  -loadRecentIssues()
+  -configureTable()
+  -loadDetails(issue)
+  -showDetails(issue)
+  -refreshRowFromDetail(detail)
+  -refreshProjectNames()
+  -formatDateTime(dateTime)
+  -configureRoleScopedSections()
+  -buildRecommendationLines(issue)
+  -buildRecommendationHint(issue)
+  -loadRecommendations(issue)
+  -formatTagNames(tagNames)
+  -backendBridge()
+}
+
+class AnalyticsController {
+  -DAY_FORMATTER : DateTimeFormatter
+  -totalIssuesValueLabel : Label
+  -openIssuesValueLabel : Label
+  -verificationValueLabel : Label
+  -closedIssuesValueLabel : Label
+  -statusChart : BarChart
+  -trendChart : LineChart
+  -workloadChart : BarChart
+  -insightListView : ListView
+  -initialize()
+  +refreshMetrics()
+  -populateStatusChart(statistics)
+  -populateTrendChart(issues)
+  -populateWorkloadChart(issues)
+  -populateInsights(issues, openCount, verificationCount, closedCount)
+  -countStatuses(statistics, statuses)
+  -showEmptyState(message)
+  -backendBridge()
+}
+
+class AdminController {
+  -users : ObservableList
+  -projects : ObservableList
+  -draftProjectTags : ObservableList
+  -mainLayoutController : MainLayoutController
+  -adminPageTitleLabel : Label
+  -permissionNoticeLabel : Label
+  -adminTabPane : TabPane
+  -loginIdField : TextField
+  -realNameField : TextField
+  -emailField : TextField
+  -passwordField : PasswordField
+  -roleCombo : ComboBox
+  -formFeedbackLabel : Label
+  -userTable : TableView
+  -idColumn : TableColumn
+  -loginIdColumn : TableColumn
+  -realNameColumn : TableColumn
+  -emailColumn : TableColumn
+  -roleColumn : TableColumn
+  -activeColumn : TableColumn
+  -projectNameField : TextField
+  -projectDescriptionArea : TextArea
+  -versionField : TextField
+  -tagNameField : TextField
+  -projectTagListView : ListView
+  -projectFormFeedbackLabel : Label
+  -projectTable : TableView
+  -projectIdColumn : TableColumn
+  -projectNameColumn : TableColumn
+  -versionColumn : TableColumn
+  -entryColumn : TableColumn
+  -tagColumn : TableColumn
+  -assigneeColumn : TableColumn
+  -initialize()
+  -handleAddUser()
+  -handleAddProject()
+  -clearForm()
+  -clearProjectForm()
+  -configureUserTable()
+  -configureProjectTable()
+  -updateAdminPageCopy()
+  -handleAddProjectTag()
+  -handleRemoveSelectedProjectTag()
+  -disableForms()
+  -trimmed(value)
+  -refreshUsersFromBackend()
+  -refreshProjectsFromBackend()
+  -loadAdminData()
+  -upsertProjectRow(row)
+  -summarizeTags(tagNames)
+  +selectUserTab()
+  +selectProjectTab()
+  +setMainLayoutController(controller)
+  -backendBridge()
+}
+
+class JavaFxBackendBridge {
+  -INSTANCE : JavaFxBackendBridge
+  -accountFacade : AccountFacade
+  -issueFacade : IssueFacade
+  -projectFacade : ProjectFacade
+  -JavaFxBackendBridge()
+  +getInstance()
+  +login(loginId, password)
+  +register(request)
+  +getActiveAccounts()
+  +getDeveloperAccounts()
+  +createProject(request)
+  +getProjects()
+  +getAccessibleProjects(currentUser)
+  +findPreferredProject(currentUser)
+  +getProjectTags(projectId)
+  +createIssue(request)
+  +addComment(request)
+  +searchIssues(condition)
+  +getIssue(issueId)
+  +getStatistics(projectId)
+  +recommendAssignees(projectId, tagIds)
+  +assign(request)
+  +fix(request)
+  +resolve(request)
+  +fail(request)
+  +close(request)
+  +reopen(request)
+  -toProjectTagOption(tag)
+}
+
+class UserSession {
+  -currentUser : AuthenticatedUser
+  -currentProjectId : Long
+  -currentProjectName : String
+  +getCurrentUser()
+  +setCurrentUser(authenticatedUser)
+  +getCurrentProjectId()
+  +getCurrentProjectName()
+  +setCurrentProject(projectId, projectName)
+  +clear()
+}
+
+class AuthNavigationState {
+  -pendingLoginId : String
+  -pendingMessage : String
+  +prepareLoginPrefill(loginId, message)
+  +consumePendingLoginId()
+  +consumePendingMessage()
+}
+
+class UiModelMapper {
+  -DATE_TIME_FORMATTER : DateTimeFormatter
+  +toAuthenticatedUser(response)
+  +toAdminUserRowModel(response)
+  +toAdminProjectRowModel(response)
+  +toIssueRowModel(response, projectNames)
+  +toIssueRowModel(response)
+  +toCommentItems(comments)
+  +toActivityTimeline(response)
+  +toUiRole(role)
+  +toBackendRole(role)
+  +toUiPriority(priority)
+  +toBackendPriority(priority)
+  +toUiIssueStatus(status)
+  +toBackendStatus(status)
+  -resolveProjectName(projectId, projectNames)
+  -formatHistory(history)
+  -defaultText(value, fallback)
+}
+
+class UiAlertHelper {
+  +showError(title, header, throwable)
+  +showError(title, header, message)
+  +showInfo(title, header, message)
+  +extractMessage(throwable, fallback)
+  +extractRootCauseMessage(throwable, fallback)
+}
+
+class TagMapper {
+  -TagMapper()
+  +toOption(tag)
+}
+
+class AuthenticatedUser {
+  -accountId : Long
+  -loginId : String
+  -name : String
+  -role : UiRole
+  +displayName()
+}
+
+class IssueRowModel {
+  -issueId : Long
+  -title : String
+  -description : String
+  -status : UiIssueStatus
+  -priority : UiPriority
+  -reporterName : String
+  -assigneeName : String
+  -fixerName : String
+  -reportedAt : LocalDateTime
+  -projectName : String
+  -comments : List
+  +getIssueId()
+  +getTitle()
+  +getDescription()
+  +getStatus()
+  +getPriority()
+  +getReporterName()
+  +getAssigneeName()
+  +getFixerName()
+  +getReportedAt()
+  +getProjectName()
+  +getComments()
+  +getAssigneeDisplayName()
+  +getFixerDisplayName()
+  +getStatusDisplayName()
+  +getPriorityDisplayName()
+}
+
+class CommentItemModel {
+  -DATE_TIME_FORMATTER : DateTimeFormatter
+  -authorName : String
+  -createdAt : LocalDateTime
+  -content : String
+  +getAuthorName()
+  +getCreatedAt()
+  +getContent()
+  +toTimelineText()
+}
+
+class SearchQueryPayload {
+  -issueId : Long
+  -keyword : String
+  -status : UiIssueStatus
+  -priority : UiPriority
+  -reporterAccountId : Long
+  -assigneeAccountId : Long
+  -projectId : Long
+  -activeOnly : boolean
+  -includeDescription : boolean
+  +keywordOnly(keyword)
+}
+
+class InquiryQueryPayload {
+  -issueId : Long
+  -keyword : String
+  -recentOnly : boolean
+  +recent()
+}
+
+class AdminUserRowModel {
+  -accountId : Long
+  -loginId : String
+  -realName : String
+  -email : String
+  -role : UiRole
+  -active : boolean
+  -disableReason : String
+  +getAccountId()
+  +getLoginId()
+  +getRealName()
+  +getEmail()
+  +getRole()
+  +isActive()
+  +getDisableReason()
+}
+
+class AdminProjectRowModel {
+  -projectId : Long
+  -name : String
+  -description : String
+  -version : String
+  -openForIssueEntry : boolean
+  -defaultTag : String
+  -defaultAssignee : String
+  +getProjectId()
+  +getName()
+  +getDescription()
+  +getVersion()
+  +isOpenForIssueEntry()
+  +getDefaultTag()
+  +getDefaultAssignee()
+}
+
+class ProjectTagOption {
+  -tagId : Long
+  -name : String
+  -description : String
+  +toString()
+}
+
+class UiRole {
+  <<enumeration>>
+  ADMIN
+  PL
+  DEV
+  TESTER
+  +canCreateIssue()
+  +canViewAnalytics()
+  +canOpenIssueBrowser()
+  +canOpenSearch()
+  +isAdmin()
+}
+
+class UiPriority {
+  <<enumeration>>
+  BLOCKER
+  CRITICAL
+  MAJOR
+  MINOR
+  TRIVIAL
+  -displayName : String
+  +displayName()
+  +fromDisplayName(value)
+}
+
+class UiIssueStatus {
+  <<enumeration>>
+  NEW
+  ASSIGNED
+  FIXED
+  RESOLVED
+  CLOSED
+  REOPENED
+  -displayName : String
+  +displayName()
+  +isActiveWorkflowStatus()
+  +isVerificationStatus()
+  +fromDisplayName(value)
+}
+
+class LoginView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class RegisterView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class MainLayoutView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class HomeView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class IssueBrowserView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class SearchView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class SearchResultsView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class InquiryResultsView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class CreateIssueView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class AnalyticsView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class AdminView {
+  <<FXML>>
+  -fxmlPath : String
+}
+
+class AccountFacade {
+  <<backend facade>>
+}
+
+class IssueFacade {
+  <<backend facade>>
+}
+
+class ProjectFacade {
+  <<backend facade>>
+}
+
+ItsApplication ..> LoginView : initializes
+ItsApplication ..> RegisterView : initializes
+ItsApplication ..> MainLayoutView : initializes
+
+LoginView ..> LoginController : hosts
+RegisterView ..> RegisterController : hosts
+MainLayoutView ..> MainLayoutController : hosts
+HomeView ..> HomeController : hosts
+IssueBrowserView ..> IssueBrowserController : hosts
+SearchView ..> SearchController : hosts
+SearchResultsView ..> SearchResultsController : hosts
+InquiryResultsView ..> InquiryResultsController : hosts
+CreateIssueView ..> CreateIssueController : hosts
+AnalyticsView ..> AnalyticsController : hosts
+AdminView ..> AdminController : hosts
+
+MainLayoutController o-- HomeController : hosts
+MainLayoutController o-- IssueBrowserController : hosts
+MainLayoutController o-- SearchController : hosts
+MainLayoutController o-- CreateIssueController : hosts
+MainLayoutController o-- AnalyticsController : hosts
+MainLayoutController o-- AdminController : hosts
+MainLayoutController ..> SearchResultsController : opens
+MainLayoutController ..> InquiryResultsController : opens
+
+HomeController --> MainLayoutController : requests navigation
+CreateIssueController --> MainLayoutController : requests navigation
+IssueBrowserController --> MainLayoutController : requests navigation
+SearchController --> MainLayoutController : submits search
+SearchResultsController --> MainLayoutController : opens issue/detail
+InquiryResultsController --> MainLayoutController : opens issue/search
+AdminController --> MainLayoutController : requests navigation
+
+SearchController --> SearchQueryPayload : creates
+MainLayoutController --> SearchQueryPayload : passes
+SearchResultsController --> SearchQueryPayload : uses
+MainLayoutController --> InquiryQueryPayload : creates
+InquiryResultsController --> InquiryQueryPayload : uses
+
+LoginController --> JavaFxBackendBridge : uses
+RegisterController --> JavaFxBackendBridge : uses
+MainLayoutController --> JavaFxBackendBridge : uses
+CreateIssueController --> JavaFxBackendBridge : uses
+IssueBrowserController --> JavaFxBackendBridge : uses
+SearchController --> JavaFxBackendBridge : uses
+SearchResultsController --> JavaFxBackendBridge : uses
+InquiryResultsController --> JavaFxBackendBridge : uses
+AnalyticsController --> JavaFxBackendBridge : uses
+AdminController --> JavaFxBackendBridge : uses
+
+LoginController --> UserSession : sets context
+MainLayoutController --> UserSession : reads or updates
+HomeController --> UserSession : reads role
+CreateIssueController --> UserSession : reads reporter/project
+IssueBrowserController --> UserSession : reads role/project
+SearchController --> UserSession : reads user/project
+InquiryResultsController --> UserSession : reads role/user
+AnalyticsController --> UserSession : reads current project
+AdminController --> UserSession : reads admin context
+
+LoginController --> AuthNavigationState : consumes prefill
+RegisterController --> AuthNavigationState : prepares prefill
+
+LoginController --> UiModelMapper : maps account
+RegisterController --> UiModelMapper : maps role
+CreateIssueController --> UiModelMapper : maps priority
+IssueBrowserController --> UiModelMapper : maps issues
+SearchResultsController --> UiModelMapper : maps issues
+InquiryResultsController --> UiModelMapper : maps issues
+AdminController --> UiModelMapper : maps admin rows
+
+LoginController --> UiAlertHelper : shows feedback
+RegisterController --> UiAlertHelper : shows feedback
+MainLayoutController --> UiAlertHelper : shows alerts
+CreateIssueController --> UiAlertHelper : shows alerts
+IssueBrowserController --> UiAlertHelper : shows alerts
+SearchResultsController --> UiAlertHelper : shows alerts
+InquiryResultsController --> UiAlertHelper : shows alerts
+AnalyticsController --> UiAlertHelper : shows alerts
+AdminController --> UiAlertHelper : shows alerts
+
+JavaFxBackendBridge --> AccountFacade : delegates
+JavaFxBackendBridge --> IssueFacade : delegates
+JavaFxBackendBridge --> ProjectFacade : delegates
+
+UserSession --> AuthenticatedUser : stores
+AuthenticatedUser --> UiRole : has
+AdminUserRowModel --> UiRole : has
+IssueRowModel --> UiIssueStatus : has
+IssueRowModel --> UiPriority : has
+IssueRowModel o-- CommentItemModel : contains
+SearchQueryPayload --> UiIssueStatus : filters by
+SearchQueryPayload --> UiPriority : filters by
+
+CreateIssueController --> ProjectTagOption : uses
+IssueBrowserController --> ProjectTagOption : uses
+InquiryResultsController --> ProjectTagOption : uses
+AdminController --> AdminUserRowModel : displays
+AdminController --> AdminProjectRowModel : displays
+AdminController --> ProjectTagOption : manages tags
+IssueBrowserController --> IssueRowModel : displays
+SearchResultsController --> IssueRowModel : displays
+InquiryResultsController --> IssueRowModel : displays
