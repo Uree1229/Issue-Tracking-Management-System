@@ -92,6 +92,7 @@ public class IssueController {
         Role role = me.getRole();
 
         listView.setStatisticsButtonVisible(role == Role.PL);
+        listView.setCreateButtonVisible(role != Role.DEV);
 
         if (role == Role.DEV) {
             listView.setAssigneeFilterText(me.getLoginId());
@@ -351,6 +352,11 @@ public class IssueController {
 
     private void showCreateView() {
         AccountResponse me = SessionContext.getCurrentAccount();
+        if (me != null && me.getRole() == Role.DEV) {
+            JOptionPane.showMessageDialog(mainFrame, "DEV 계정은 이슈를 등록할 수 없습니다.");
+            return;
+        }
+
         createView.clearForm();
         createView.setReporter(me != null ? me.getName() : "");
         createView.setReportedAt(java.time.LocalDate.now().toString());
@@ -364,12 +370,24 @@ public class IssueController {
     }
 
     private void handleCreateIssue() {
+        AccountResponse me = SessionContext.getCurrentAccount();
+        if (me == null) {
+            JOptionPane.showMessageDialog(mainFrame, "로그인 정보가 없어 이슈를 등록할 수 없습니다.");
+            mainFrame.showIssueList();
+            return;
+        }
+        if (me.getRole() == Role.DEV) {
+            JOptionPane.showMessageDialog(mainFrame, "DEV 계정은 이슈를 등록할 수 없습니다.");
+            mainFrame.showIssueList();
+            return;
+        }
+
         String title = createView.getTitle();
         String desc  = createView.getDescription();
         if (title.isEmpty() || desc.isEmpty()) return;
 
         try {
-            Long reporterId = SessionContext.getCurrentAccount().getAccountId();
+            Long reporterId = me.getAccountId();
             Priority priority = Priority.valueOf(createView.getPriority());
 
             List<Long>   tagIds       = new ArrayList<>(createView.getSelectedExistingTagIds());

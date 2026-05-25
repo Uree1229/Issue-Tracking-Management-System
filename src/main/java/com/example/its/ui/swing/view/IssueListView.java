@@ -125,6 +125,10 @@ public class IssueListView extends JPanel {
         statisticsButton.setVisible(visible);
     }
 
+    public void setCreateButtonVisible(boolean visible) {
+        createButton.setVisible(visible);
+    }
+
     public void setAssigneeFilterText(String text) {
         assigneeFilter.setText(text);
     }
