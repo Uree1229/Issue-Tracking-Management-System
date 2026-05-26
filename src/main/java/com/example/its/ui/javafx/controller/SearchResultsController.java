@@ -8,7 +8,6 @@ import com.example.its.ui.javafx.model.IssueRowModel;
 import com.example.its.ui.javafx.model.SearchQueryPayload;
 import com.example.its.ui.javafx.model.UiIssueStatus;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
-import com.example.its.ui.javafx.session.UserSession;
 import com.example.its.ui.javafx.support.UiAlertHelper;
 import com.example.its.ui.javafx.support.UiModelMapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -152,7 +151,7 @@ public class SearchResultsController {
 
     private List<IssueRowModel> searchByCriteria(SearchQueryPayload payload) {
         String keyword = payload.keyword() == null ? "" : payload.keyword().trim();
-        Long effectiveProjectId = payload.projectId() != null ? payload.projectId() : UserSession.getCurrentProjectId();
+        Long effectiveProjectId = payload.projectId();
 
         if (payload.issueId() != null) {
             IssueDetailResponse detail = backendBridge().getIssue(payload.issueId());
@@ -271,6 +270,9 @@ public class SearchResultsController {
         }
         if (payload.priority() != null) {
             chips.add("Priority: " + payload.priority().displayName());
+        }
+        if (payload.projectId() != null) {
+            chips.add("Project: " + projectNameById.getOrDefault(payload.projectId(), "#" + payload.projectId()));
         }
         if (payload.activeOnly()) {
             chips.add("Active only");
