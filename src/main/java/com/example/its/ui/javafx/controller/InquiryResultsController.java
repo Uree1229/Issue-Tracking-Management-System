@@ -2,6 +2,7 @@ package com.example.its.ui.javafx.controller;
 
 import com.example.its.shared.dto.issue.CommentCreateRequest;
 import com.example.its.shared.dto.issue.IssueDetailResponse;
+import com.example.its.shared.dto.issue.IssueReopenRequest;
 import com.example.its.shared.dto.issue.IssueSearchCondition;
 import com.example.its.shared.dto.issue.IssueSummaryResponse;
 import com.example.its.shared.dto.issue.RecommendationResponse;
@@ -9,6 +10,7 @@ import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.InquiryQueryPayload;
 import com.example.its.ui.javafx.model.IssueRowModel;
 import com.example.its.ui.javafx.model.ProjectTagOption;
+import com.example.its.ui.javafx.model.UiIssueStatus;
 import com.example.its.ui.javafx.model.UiRole;
 import com.example.its.ui.javafx.service.JavaFxBackendBridge;
 import com.example.its.ui.javafx.session.UserSession;
@@ -82,6 +84,9 @@ public class InquiryResultsController {
 
     @FXML
     private Label detailPriorityLabel;
+
+    @FXML
+    private Button reopenButton;
 
     @FXML
     private Label detailReporterLabel;
@@ -288,6 +293,29 @@ public class InquiryResultsController {
         }
     }
 
+    @FXML
+    private void handleReopen() {
+        IssueRowModel selectedIssue = inquiryTable.getSelectionModel().getSelectedItem();
+        if (selectedIssue == null) {
+            UiAlertHelper.showInfo("No Issue Selected", "Choose an issue first.", "Select an issue from the list before reopening it.");
+            return;
+        }
+
+        try {
+            IssueReopenRequest request = new IssueReopenRequest();
+            request.setIssueId(selectedIssue.getIssueId());
+            request.setReopenAccountId(UserSession.getCurrentUser().accountId());
+            request.setReason("Reopened from inquiry view");
+
+            IssueDetailResponse updatedIssue = backendBridge().reopen(request);
+            issueDetailCache.put(updatedIssue.getIssueId(), updatedIssue);
+            refreshRowFromDetail(updatedIssue);
+            showDetails(updatedIssue);
+        } catch (Exception exception) {
+            UiAlertHelper.showError("Issue Reopen Failed", "The selected issue could not be reopened.", exception);
+        }
+    }
+
     private void loadRecentIssues() {
         IssueSearchCondition condition = new IssueSearchCondition();
         List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
@@ -399,10 +427,13 @@ public class InquiryResultsController {
         UiRole role = UserSession.getCurrentUser() == null ? null : UserSession.getCurrentUser().role();
         boolean isPl = role == UiRole.PL;
         boolean canEditTags = role == UiRole.PL || role == UiRole.DEV || role == UiRole.TESTER;
+        boolean canReopenClosedIssue = role == UiRole.PL || role == UiRole.TESTER;
         recommendationSection.setVisible(isPl);
         recommendationSection.setManaged(isPl);
         editTagsButton.setVisible(canEditTags);
         editTagsButton.setManaged(canEditTags);
+        reopenButton.setVisible(canReopenClosedIssue);
+        reopenButton.setManaged(canReopenClosedIssue);
     }
 
     private List<String> buildRecommendationLines(IssueDetailResponse issue) {
@@ -459,7 +490,9 @@ public class InquiryResultsController {
     private void updateDetailActionAvailability(IssueDetailResponse issue) {
         UiRole role = UserSession.getCurrentUser() == null ? null : UserSession.getCurrentUser().role();
         boolean canEditTags = role == UiRole.PL || role == UiRole.DEV || role == UiRole.TESTER;
+        boolean canReopenClosedIssue = role == UiRole.PL || role == UiRole.TESTER;
         editTagsButton.setDisable(issue == null || !canEditTags);
+        reopenButton.setDisable(issue == null || !canReopenClosedIssue || UiModelMapper.toUiIssueStatus(issue.getStatus()) != UiIssueStatus.CLOSED);
     }
 
     private void applyIssueTagChanges(IssueDetailResponse issue, List<String> updatedTagNames) {

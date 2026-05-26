@@ -430,6 +430,7 @@ public class IssueBrowserController {
         boolean isPl = role == UiRole.PL;
         boolean isDev = role == UiRole.DEV;
         boolean isTester = role == UiRole.TESTER;
+        boolean canReopenClosedIssue = isPl || isTester;
         boolean canComment = role == UiRole.PL || role == UiRole.DEV || role == UiRole.TESTER;
         boolean canEditTags = canComment;
         boolean canCreateIssue = role != null && role.canCreateIssue();
@@ -437,7 +438,7 @@ public class IssueBrowserController {
         setActionVisibility(assignButton, isPl);
         setActionVisibility(closeButton, isPl);
         setActionVisibility(markFixedButton, isDev);
-        setActionVisibility(reopenButton, isDev);
+        setActionVisibility(reopenButton, canReopenClosedIssue);
         setActionVisibility(resolveButton, isTester);
         setActionVisibility(failButton, isTester);
 
@@ -794,7 +795,7 @@ public class IssueBrowserController {
         assignButton.setDisable(!hasIssue || !canActAsPl || (status != UiIssueStatus.NEW && status != UiIssueStatus.REOPENED));
         closeButton.setDisable(!hasIssue || !canActAsPl || status != UiIssueStatus.RESOLVED);
         markFixedButton.setDisable(!hasIssue || role != UiRole.DEV || status != UiIssueStatus.ASSIGNED || !assignedToCurrentDev);
-        reopenButton.setDisable(!hasIssue || role != UiRole.DEV || status != UiIssueStatus.CLOSED);
+        reopenButton.setDisable(!hasIssue || (role != UiRole.PL && role != UiRole.TESTER) || status != UiIssueStatus.CLOSED);
         resolveButton.setDisable(!hasIssue || role != UiRole.TESTER || status != UiIssueStatus.FIXED);
         failButton.setDisable(!hasIssue || role != UiRole.TESTER || status != UiIssueStatus.FIXED);
         editTagsButton.setDisable(!hasIssue || !canEditTags);

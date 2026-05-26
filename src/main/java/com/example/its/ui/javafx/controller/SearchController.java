@@ -90,7 +90,7 @@ public class SearchController {
         reporterCombo.setValue(ALL_OPTION);
         priorityCombo.setValue(ALL_OPTION);
         assigneeCombo.setValue(ALL_OPTION);
-        projectCombo.setValue(ALL_OPTION);
+        applyDefaultProjectSelection();
         activeOnlyCheckBox.setSelected(false);
         descriptionCheckBox.setSelected(true);
     }
@@ -166,12 +166,28 @@ public class SearchController {
         projectIdByOption.clear();
 
         ObservableList<String> options = FXCollections.observableArrayList();
-        options.add(ALL_OPTION);
         for (ProjectResponse project : projects) {
             options.add(project.getName());
             projectIdByOption.put(project.getName(), project.getProjectId());
         }
         projectCombo.setItems(options);
+        applyDefaultProjectSelection();
+    }
+
+    private void applyDefaultProjectSelection() {
+        String currentProjectName = UserSession.getCurrentProjectName();
+        ObservableList<String> options = projectCombo.getItems();
+
+        if (currentProjectName != null && options.contains(currentProjectName)) {
+            projectCombo.setValue(currentProjectName);
+            return;
+        }
+
+        if (!options.isEmpty()) {
+            projectCombo.setValue(options.getFirst());
+            return;
+        }
+
         if (projectCombo.getValue() == null || !options.contains(projectCombo.getValue())) {
             projectCombo.setValue(ALL_OPTION);
         }
