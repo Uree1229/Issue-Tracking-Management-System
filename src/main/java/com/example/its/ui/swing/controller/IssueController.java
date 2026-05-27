@@ -64,7 +64,7 @@ public class IssueController {
             if (!e.getValueIsAdjusting()) showIssueDetail();
         });
 
-        detailView.getBackButton().addActionListener(e -> mainFrame.showIssueList());
+        detailView.getBackButton().addActionListener(e -> { loadIssues(); mainFrame.showIssueList(); });
         detailView.getAddCommentButton().addActionListener(e -> handleAddComment());
         detailView.getEditTagsButton().addActionListener(e -> handleEditIssueTags());
         detailView.getAssignButton().addActionListener(e -> handleAssign());
@@ -75,9 +75,9 @@ public class IssueController {
         detailView.getCloseButton().addActionListener(e -> handleClose());
 
         createView.getSubmitButton().addActionListener(e -> handleCreateIssue());
-        createView.getCancelButton().addActionListener(e -> mainFrame.showIssueList());
+        createView.getCancelButton().addActionListener(e -> { loadIssues(); mainFrame.showIssueList(); });
 
-        mainFrame.getStatisticsView().getBackButton().addActionListener(e -> mainFrame.showIssueList());
+        mainFrame.getStatisticsView().getBackButton().addActionListener(e -> { loadIssues(); mainFrame.showIssueList(); });
         mainFrame.getStatisticsView().getRefreshButton().addActionListener(e -> loadStatistics());
     }
 
