@@ -14,6 +14,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
+import javafx.util.StringConverter;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,7 +26,6 @@ public class SearchController {
 
     private final Map<String, Long> reporterIdByOption = new HashMap<>();
     private final Map<String, Long> assigneeIdByOption = new HashMap<>();
-    private final Map<String, Long> projectIdByOption = new HashMap<>();
 
     private MainLayoutController mainLayoutController;
 
@@ -48,7 +48,7 @@ public class SearchController {
     private ComboBox<String> assigneeCombo;
 
     @FXML
-    private ComboBox<String> projectCombo;
+    private ComboBox<ProjectOption> projectCombo;
 
     @FXML
     private CheckBox activeOnlyCheckBox;
@@ -90,7 +90,7 @@ public class SearchController {
         reporterCombo.setValue(ALL_OPTION);
         priorityCombo.setValue(ALL_OPTION);
         assigneeCombo.setValue(ALL_OPTION);
-        projectCombo.setValue(ALL_OPTION);
+        applyDefaultProjectSelection();
         activeOnlyCheckBox.setSelected(false);
         descriptionCheckBox.setSelected(true);
     }
@@ -112,13 +112,14 @@ public class SearchController {
             UiPriority.fromDisplayName(priorityCombo.getValue()),
             reporterIdByOption.get(reporterCombo.getValue()),
             assigneeIdByOption.get(assigneeCombo.getValue()),
-            projectIdByOption.get(projectCombo.getValue()),
+            selectedProjectId(),
             activeOnlyCheckBox.isSelected(),
             descriptionCheckBox.isSelected()
         );
     }
 
     private void populateStaticOptions() {
+        configureProjectCombo();
         statusCombo.setItems(FXCollections.observableArrayList(
             ALL_OPTION,
             UiIssueStatus.NEW.displayName(),
@@ -141,10 +142,26 @@ public class SearchController {
         descriptionCheckBox.setSelected(true);
     }
 
+    private void configureProjectCombo() {
+        projectCombo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ProjectOption option) {
+                return option == null ? "" : option.displayName();
+            }
+
+            @Override
+            public ProjectOption fromString(String value) {
+                return projectCombo.getItems().stream()
+                    .filter(option -> option.displayName().equals(value))
+                    .findFirst()
+                    .orElse(null);
+            }
+        });
+    }
+
     private void initializeFallbackOptions() {
-        ObservableList<String> allOnly = FXCollections.observableArrayList(ALL_OPTION);
-        projectCombo.setItems(allOnly);
-        projectCombo.setValue(ALL_OPTION);
+        projectCombo.setItems(FXCollections.observableArrayList());
+        projectCombo.setValue(null);
         reporterCombo.setItems(FXCollections.observableArrayList(ALL_OPTION));
         reporterCombo.setValue(ALL_OPTION);
         assigneeCombo.setItems(FXCollections.observableArrayList(ALL_OPTION));
@@ -163,18 +180,42 @@ public class SearchController {
     private void populateProjectOptions() {
         AuthenticatedUser currentUser = UserSession.getCurrentUser();
         List<ProjectResponse> projects = backendBridge().getAccessibleProjects(currentUser);
-        projectIdByOption.clear();
 
-        ObservableList<String> options = FXCollections.observableArrayList();
-        options.add(ALL_OPTION);
+        ObservableList<ProjectOption> options = FXCollections.observableArrayList();
         for (ProjectResponse project : projects) {
-            options.add(project.getName());
-            projectIdByOption.put(project.getName(), project.getProjectId());
+            options.add(new ProjectOption(project.getProjectId(), project.getName()));
         }
         projectCombo.setItems(options);
-        if (projectCombo.getValue() == null || !options.contains(projectCombo.getValue())) {
-            projectCombo.setValue(ALL_OPTION);
+        applyDefaultProjectSelection();
+    }
+
+    private void applyDefaultProjectSelection() {
+        Long currentProjectId = UserSession.getCurrentProjectId();
+        ProjectOption currentValue = projectCombo.getValue();
+        ObservableList<ProjectOption> options = projectCombo.getItems();
+
+        if (currentProjectId != null) {
+            ProjectOption sessionProject = findProjectOptionById(options, currentProjectId);
+            if (sessionProject != null) {
+                projectCombo.setValue(sessionProject);
+                return;
+            }
         }
+
+        if (currentValue != null && currentValue.projectId() != null) {
+            ProjectOption sameProject = findProjectOptionById(options, currentValue.projectId());
+            if (sameProject != null) {
+                projectCombo.setValue(sameProject);
+                return;
+            }
+        }
+
+        if (!options.isEmpty()) {
+            projectCombo.setValue(options.getFirst());
+            return;
+        }
+
+        projectCombo.setValue(null);
     }
 
     private void populateAccountOptions() {
@@ -223,11 +264,26 @@ public class SearchController {
         return account.getName() + " (" + account.getLoginId() + ")";
     }
 
+    private Long selectedProjectId() {
+        ProjectOption selectedProject = projectCombo.getValue();
+        return selectedProject == null ? null : selectedProject.projectId();
+    }
+
+    private ProjectOption findProjectOptionById(List<ProjectOption> options, Long projectId) {
+        return options.stream()
+            .filter(option -> java.util.Objects.equals(option.projectId(), projectId))
+            .findFirst()
+            .orElse(null);
+    }
+
     private String trimmed(String value) {
         return value == null ? "" : value.trim();
     }
 
     private JavaFxBackendBridge backendBridge() {
         return JavaFxBackendBridge.getInstance();
+    }
+
+    private record ProjectOption(Long projectId, String displayName) {
     }
 }

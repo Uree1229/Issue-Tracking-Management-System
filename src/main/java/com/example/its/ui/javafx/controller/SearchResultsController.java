@@ -151,10 +151,11 @@ public class SearchResultsController {
 
     private List<IssueRowModel> searchByCriteria(SearchQueryPayload payload) {
         String keyword = payload.keyword() == null ? "" : payload.keyword().trim();
+        Long effectiveProjectId = payload.projectId();
 
         if (payload.issueId() != null) {
             IssueDetailResponse detail = backendBridge().getIssue(payload.issueId());
-            if (!matchesClientSideFilters(detail, payload, keyword)) {
+            if (!matchesClientSideFilters(detail, payload, effectiveProjectId, keyword)) {
                 return List.of();
             }
             issueDetailCache.put(detail.getIssueId(), detail);
@@ -162,7 +163,7 @@ public class SearchResultsController {
         }
 
         IssueSearchCondition condition = new IssueSearchCondition();
-        condition.setProjectId(payload.projectId());
+        condition.setProjectId(effectiveProjectId);
         condition.setStatus(UiModelMapper.toBackendStatus(payload.status()));
         condition.setPriority(UiModelMapper.toBackendPriority(payload.priority()));
         condition.setReporterAccountId(payload.reporterAccountId());
@@ -172,7 +173,7 @@ public class SearchResultsController {
         List<IssueSummaryResponse> summaries = backendBridge().searchIssues(condition);
         List<IssueRowModel> rows = new ArrayList<>();
         for (IssueSummaryResponse summary : summaries) {
-            if (!matchesClientSideFilters(summary, payload, keyword)) {
+            if (!matchesClientSideFilters(summary, payload, effectiveProjectId, keyword)) {
                 continue;
             }
             rows.add(UiModelMapper.toIssueRowModel(summary, projectNameById));
@@ -180,7 +181,10 @@ public class SearchResultsController {
         return rows;
     }
 
-    private boolean matchesClientSideFilters(IssueSummaryResponse summary, SearchQueryPayload payload, String keyword) {
+    private boolean matchesClientSideFilters(IssueSummaryResponse summary, SearchQueryPayload payload, Long effectiveProjectId, String keyword) {
+        if (effectiveProjectId != null && !effectiveProjectId.equals(summary.getProjectId())) {
+            return false;
+        }
         if (payload.activeOnly()) {
             UiIssueStatus status = UiModelMapper.toUiIssueStatus(summary.getStatus());
             if (!status.isActiveWorkflowStatus()) {
@@ -195,14 +199,14 @@ public class SearchResultsController {
         return true;
     }
 
-    private boolean matchesClientSideFilters(IssueDetailResponse detail, SearchQueryPayload payload, String keyword) {
+    private boolean matchesClientSideFilters(IssueDetailResponse detail, SearchQueryPayload payload, Long effectiveProjectId, String keyword) {
         if (payload.status() != null && (detail.getStatus() == null || !payload.status().name().equals(detail.getStatus().name()))) {
             return false;
         }
         if (payload.priority() != null && (detail.getPriority() == null || !payload.priority().name().equals(detail.getPriority().name()))) {
             return false;
         }
-        if (payload.projectId() != null && !payload.projectId().equals(detail.getProjectId())) {
+        if (effectiveProjectId != null && !effectiveProjectId.equals(detail.getProjectId())) {
             return false;
         }
         if (payload.reporterAccountId() != null && !payload.reporterAccountId().equals(detail.getReporterAccountId())) {
@@ -266,6 +270,9 @@ public class SearchResultsController {
         }
         if (payload.priority() != null) {
             chips.add("Priority: " + payload.priority().displayName());
+        }
+        if (payload.projectId() != null) {
+            chips.add("Project: " + projectNameById.getOrDefault(payload.projectId(), "#" + payload.projectId()));
         }
         if (payload.activeOnly()) {
             chips.add("Active only");

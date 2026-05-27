@@ -54,6 +54,7 @@
                     </VBox>
                     <Button mnemonicParsing="false" onAction="#openCurrentIssueInSearch" text="Open Search" styleClass="ghost-button inquiry-inline-button"/>
                     <Button mnemonicParsing="false" onAction="#openCurrentIssueInBrowser" text="Open Browser" styleClass="ghost-button inquiry-inline-button"/>
+                    <Button fx:id="reopenButton" mnemonicParsing="false" onAction="#handleReopen" text="Reopen" styleClass="ghost-button inquiry-inline-button"/>
                     <Label fx:id="detailStatusLabel" text="-" styleClass="badge status-badge"/>
                     <Label fx:id="detailPriorityLabel" text="-" styleClass="badge priority-badge"/>
                 </HBox>

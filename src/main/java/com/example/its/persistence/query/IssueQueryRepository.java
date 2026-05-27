@@ -22,7 +22,7 @@ public class IssueQueryRepository extends JpaRepositorySupport<Issue> {
 
         if (condition.getProjectId() != null) {
             jpql.append(" and i.project.projectId = :projectId");
-            parameters.put("projectId", condition.getProjectId());
+            parameters.put("projectId", toJpaId(condition.getProjectId()));
         }
         if (condition.getStatus() != null) {
             jpql.append(" and i.status = :status");
@@ -34,11 +34,11 @@ public class IssueQueryRepository extends JpaRepositorySupport<Issue> {
         }
         if (condition.getReporterAccountId() != null) {
             jpql.append(" and i.reporter.accountId = :reporterId");
-            parameters.put("reporterId", condition.getReporterAccountId());
+            parameters.put("reporterId", toJpaId(condition.getReporterAccountId()));
         }
         if (condition.getAssigneeAccountId() != null) {
             jpql.append(" and i.assignee.accountId = :assigneeId");
-            parameters.put("assigneeId", condition.getAssigneeAccountId());
+            parameters.put("assigneeId", toJpaId(condition.getAssigneeAccountId()));
         }
         // 키워드 검색 (제목 또는 내용에 포함)
         if (condition.getKeyword() != null && !condition.getKeyword().trim().isEmpty()) {
