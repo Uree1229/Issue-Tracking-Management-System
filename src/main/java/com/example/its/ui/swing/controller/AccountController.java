@@ -30,7 +30,6 @@ public class AccountController {
     private void initListeners() {
         view.getCreateButton().addActionListener(e -> handleCreateAccount());
         view.getUpdateButton().addActionListener(e -> handleUpdateAccount());
-        view.getDeactivateButton().addActionListener(e -> handleDeactivate());
         view.getBackButton().addActionListener(e -> mainFrame.showProjectList());
     }
 
@@ -106,7 +105,4 @@ public class AccountController {
         dialog.setVisible(true);
     }
 
-    private void handleDeactivate() {
-        // TODO: AccountFacade에 deactivateAccount 메서드 노출 필요
-    }
 }

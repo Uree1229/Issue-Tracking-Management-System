@@ -64,7 +64,7 @@ public class IssueController {
             if (!e.getValueIsAdjusting()) showIssueDetail();
         });
 
-        detailView.getBackButton().addActionListener(e -> mainFrame.showIssueList());
+        detailView.getBackButton().addActionListener(e -> { loadIssues(); mainFrame.showIssueList(); });
         detailView.getAddCommentButton().addActionListener(e -> handleAddComment());
         detailView.getEditTagsButton().addActionListener(e -> handleEditIssueTags());
         detailView.getAssignButton().addActionListener(e -> handleAssign());
@@ -75,9 +75,9 @@ public class IssueController {
         detailView.getCloseButton().addActionListener(e -> handleClose());
 
         createView.getSubmitButton().addActionListener(e -> handleCreateIssue());
-        createView.getCancelButton().addActionListener(e -> mainFrame.showIssueList());
+        createView.getCancelButton().addActionListener(e -> { loadIssues(); mainFrame.showIssueList(); });
 
-        mainFrame.getStatisticsView().getBackButton().addActionListener(e -> mainFrame.showIssueList());
+        mainFrame.getStatisticsView().getBackButton().addActionListener(e -> { loadIssues(); mainFrame.showIssueList(); });
         mainFrame.getStatisticsView().getRefreshButton().addActionListener(e -> loadStatistics());
     }
 
@@ -190,9 +190,26 @@ public class IssueController {
         }
     }
 
+    private List<Long> resolveCurrentIssueTagIds() {
+        if (currentDetail == null || currentDetail.getTagNames() == null || currentDetail.getTagNames().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            ProjectResponse project = projectFacade.getProject(currentProjectId);
+            if (project.getTags() == null) return Collections.emptyList();
+            Set<String> issueTagNames = new HashSet<>(currentDetail.getTagNames());
+            return project.getTags().stream()
+                .filter(t -> issueTagNames.contains(t.getName()))
+                .map(TagResponse::getTagId)
+                .collect(Collectors.toList());
+        } catch (Exception ex) {
+            return Collections.emptyList();
+        }
+    }
+
     private void loadRecommendations() {
         try {
-            List<RecommendationResponse> recs = issueFacade.recommendAssignees(currentProjectId, Collections.emptyList());
+            List<RecommendationResponse> recs = issueFacade.recommendAssignees(currentProjectId, resolveCurrentIssueTagIds());
             if (!recs.isEmpty()) {
                 String text = recs.stream()
                     .map(r -> r.getName() + " [" + String.format("%.1f", r.getScore()) + "점]")
@@ -210,7 +227,7 @@ public class IssueController {
 
     private void handleAssign() {
         try {
-            List<RecommendationResponse> recs = issueFacade.recommendAssignees(currentProjectId, Collections.emptyList());
+            List<RecommendationResponse> recs = issueFacade.recommendAssignees(currentProjectId, resolveCurrentIssueTagIds());
             AssigneeDialog dialog = new AssigneeDialog(mainFrame);
             dialog.setRecommendations(recs);
             dialog.getConfirmButton().addActionListener(e -> {
@@ -266,9 +283,11 @@ public class IssueController {
     }
 
     private void handleReopen() {
+        String reason = JOptionPane.showInputDialog(mainFrame, "Reopen 사유를 입력하세요:", "Reopen", JOptionPane.PLAIN_MESSAGE);
+        if (reason == null || reason.trim().isEmpty()) return;
         try {
             Long accountId = SessionContext.getCurrentAccount().getAccountId();
-            issueFacade.reopen(new IssueReopenRequest(currentIssueId, accountId, null));
+            issueFacade.reopen(new IssueReopenRequest(currentIssueId, accountId, reason.trim()));
             refreshDetail();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(mainFrame, "Reopen 실패: " + ex.getMessage());
