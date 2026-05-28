@@ -17,8 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// 유닛 테스트인데 EntityManager를 직접 생성하면 안됨.
-// TODO: Stub을 만들어서 테스트 DB에 접근하지 않도록 리팩토링 필요
 class TagRepositoryTest {
 
     private static EntityManagerFactory entityManagerFactory;

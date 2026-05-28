@@ -6,7 +6,8 @@ import com.example.its.shared.dto.issue.IssueTagUpdateRequest;
 import com.example.its.util.TestDatabaseManager;
 
 import org.junit.jupiter.api.BeforeAll;
-// import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -19,15 +20,14 @@ class IssueServiceTest {
 
     @BeforeAll
     static void setUp() {
-        TestDatabaseManager.resetDatabase();
         issueService = new IssueService();
     }
 
-    // Fix: 윈도우 환경에 대응하기 위해 임시로 삭제합니다.
-    // @BeforeEach
-    // void resetDatabaseBeforeEachTest() {
-    //     TestDatabaseManager.resetDatabase();
-    // }
+    
+    @BeforeEach
+    void resetDatabaseBeforeEachTest() {
+        TestDatabaseManager.resetDatabase();
+    }
 
     @Test
     void testAddComment_Success() {
@@ -74,5 +74,6 @@ class IssueServiceTest {
         // Then: 오류 없이 잘 수행되었는지 확인
         assertNotNull(response);
         assertEquals(1L, response.getIssueId());
+        assertEquals("ui", response.getTagNames().get(0));
     }
 }

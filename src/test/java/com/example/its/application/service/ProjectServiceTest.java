@@ -7,6 +7,7 @@ import com.example.its.shared.dto.project.ProjectTagUpdateRequest;
 import com.example.its.util.TestDatabaseManager;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 // import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -20,16 +21,16 @@ class ProjectServiceTest {
 
     @BeforeAll
     static void setUp() {
-        TestDatabaseManager.resetDatabase();
+        
         // ProjectService는 IssueService와 달리 내부에 기본 생성자가 없으므로, Mapper를 직접 삽입
         projectService = new ProjectService(new ProjectMapper());
     }
 
     // Fix: 윈도우 환경에 대응하기 위해 임시로 삭제합니다.
-    // @BeforeEach
-    // void resetDatabaseBeforeEachTest() {
-    //     TestDatabaseManager.resetDatabase();
-    // }
+    @BeforeEach
+    void resetDatabaseBeforeEachTest() {
+        TestDatabaseManager.resetDatabase();
+    }
 
     @Test
     void testCreateProjectWithTags_Success() {
