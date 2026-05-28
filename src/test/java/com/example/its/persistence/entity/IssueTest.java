@@ -11,10 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class IssueTest {
 
-    @BeforeEach
-    void resetDatabaseBeforeEachTest() {
-        TestDatabaseManager.resetDatabase();
-    }
 
     @Test
     void testCreateInitializesRequiredFieldsAndDefaults() {
