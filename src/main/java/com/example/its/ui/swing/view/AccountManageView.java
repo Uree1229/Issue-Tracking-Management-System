@@ -22,7 +22,6 @@ public class AccountManageView extends JPanel {
 
     private final JButton createButton     = new JButton("계정 추가");
     private final JButton updateButton     = new JButton("수정");
-    private final JButton deactivateButton = new JButton("비활성화");
     private final JButton backButton       = new JButton("← 프로젝트 목록");
 
     public AccountManageView() {
@@ -45,7 +44,6 @@ public class AccountManageView extends JPanel {
         btnPanel.add(backButton);
         btnPanel.add(createButton);
         btnPanel.add(updateButton);
-        btnPanel.add(deactivateButton);
         add(btnPanel, BorderLayout.SOUTH);
     }
 
@@ -58,8 +56,7 @@ public class AccountManageView extends JPanel {
     public int getSelectedRow() { return table.getSelectedRow(); }
     public Object getValueAt(int row, int col) { return tableModel.getValueAt(row, col); }
 
-    public JButton getCreateButton()     { return createButton; }
-    public JButton getUpdateButton()     { return updateButton; }
-    public JButton getDeactivateButton() { return deactivateButton; }
-    public JButton getBackButton()       { return backButton; }
+    public JButton getCreateButton() { return createButton; }
+    public JButton getUpdateButton() { return updateButton; }
+    public JButton getBackButton()   { return backButton; }
 }
