@@ -4,6 +4,7 @@ import com.example.its.shared.dto.issue.RecommendationResponse;
 import com.example.its.util.TestDatabaseManager;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 // import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,15 +18,15 @@ class AssigneeRecommendationServiceTest {
 
     @BeforeAll
     static void setUp() {
-        TestDatabaseManager.resetDatabase();
+        // TestDatabaseManager.resetDatabase();
         recommendationService = new AssigneeRecommendationService();
     }
 
     // Fix: 윈도우 환경에 대응하기 위해 임시로 삭제합니다.
-    // @BeforeEach
-    // void resetDatabaseBeforeEachTest() {
-    //     TestDatabaseManager.resetDatabase();
-    // }
+    @BeforeEach
+    void resetDatabaseBeforeEachTest() {
+        TestDatabaseManager.resetDatabase();
+    }
 
     @Test
     void testCalculateScore_WithWorkloadPenalty() {
