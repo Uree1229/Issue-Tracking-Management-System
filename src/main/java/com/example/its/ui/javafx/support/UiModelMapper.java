@@ -165,7 +165,7 @@ public final class UiModelMapper {
     }
 
     public static Priority toBackendPriority(UiPriority priority) {
-        return priority == null ? Priority.MAJOR : Priority.valueOf(priority.name());
+        return priority == null ? null : Priority.valueOf(priority.name());
     }
 
     public static UiIssueStatus toUiIssueStatus(IssueStatus status) {
