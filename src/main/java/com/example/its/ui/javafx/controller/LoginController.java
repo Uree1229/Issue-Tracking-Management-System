@@ -1,6 +1,8 @@
 package com.example.its.ui.javafx.controller;
 
 import com.example.its.ItsApplication;
+import com.example.its.persistence.entity.Role;
+import com.example.its.shared.dto.account.AccountCreateRequest;
 import com.example.its.shared.dto.account.AccountResponse;
 import com.example.its.shared.dto.project.ProjectResponse;
 import com.example.its.ui.javafx.model.AuthenticatedUser;
@@ -86,9 +88,33 @@ public class LoginController {
     private void loginWithSeededCredentials(String loginId, String password) {
         loginIdField.setText(loginId);
         passwordField.setText(password);
+        ensureDemoAccountExists(loginId, password);
         performLogin(loginId, password);
     }
 
+    private void ensureDemoAccountExists(String loginId, String password) {
+        boolean accountExists = backendBridge().getActiveAccounts().stream()
+            .anyMatch(account -> loginId.equals(account.getLoginId()));
+
+        if (accountExists) {
+            return;
+        }
+
+        AccountCreateRequest request = switch (loginId) {
+            case "admin" -> new AccountCreateRequest("admin", password, "Admin", "admin@demo.local", Role.ADMIN);
+            case "pl1" -> new AccountCreateRequest("pl1", password, "Project Lead", "pl1@demo.local", Role.PL);
+            case "dev1" -> new AccountCreateRequest("dev1", password, "Developer", "dev1@demo.local", Role.DEV);
+            case "tester1" -> new AccountCreateRequest("tester1", password, "Tester", "tester1@demo.local", Role.TESTER);
+            default -> null;
+        };
+
+        if (request == null) {
+            return;
+        }
+
+        backendBridge().register(request);
+    }
+    
     private void performLogin(String loginId, String password) {
         try {
             AccountResponse response = backendBridge().login(loginId, password);
