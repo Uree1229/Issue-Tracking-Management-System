@@ -20,13 +20,13 @@ public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "comment_id")
-    private Long commentId;
+    private Integer commentId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private String createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_account_id", nullable = false)
@@ -42,12 +42,12 @@ public class Comment {
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now().toString();
         }
     }
 
     public Long getCommentId() {
-        return commentId;
+        return commentId != null ? commentId.longValue() : null;
     }
 
     public String getContent() {
@@ -59,7 +59,7 @@ public class Comment {
     }
 
     public LocalDateTime getCreatedAt() {
-        return createdAt;
+        return parseDateTime(createdAt);
     }
 
     public Account getAuthor() {
@@ -76,5 +76,18 @@ public class Comment {
 
     public void setIssue(Issue issue) {
         this.issue = issue;
+    }
+
+    // BE: static factory method 컨벤션 만족 위해 추가
+    public static Comment create(String content, Account author, Issue issue) {
+        Comment comment = new Comment();
+        comment.content = content;
+        comment.author = author;
+        comment.issue = issue;
+        return comment;
+    }
+
+    private static LocalDateTime parseDateTime(String value) {
+        return value != null ? LocalDateTime.parse(value.replace(' ', 'T')) : null;
     }
 }

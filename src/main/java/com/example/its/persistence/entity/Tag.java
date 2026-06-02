@@ -27,7 +27,7 @@ public class Tag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "tag_id")
-    private Long tagId;
+    private Integer tagId;
 
     @Column(nullable = false, length = 100)
     private String name;
@@ -45,16 +45,20 @@ public class Tag {
     protected Tag() {
     }
 
+    public static Tag create(String name, String description, Project project) {
+        Tag tag = new Tag();
+        tag.name = name;
+        tag.description = description;
+        tag.project = project;
+        return tag;
+    }
+
     public Long getTagId() {
-        return tagId;
+        return tagId != null ? tagId.longValue() : null;
     }
 
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getDescription() {

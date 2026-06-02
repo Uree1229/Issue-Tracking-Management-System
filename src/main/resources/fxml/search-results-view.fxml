@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.its.ui.javafx.controller.SearchResultsController"
+      spacing="18" styleClass="content-container search-results-shell">
+    <padding>
+        <Insets top="18" right="18" bottom="18" left="18"/>
+    </padding>
+
+    <HBox spacing="14" alignment="CENTER_LEFT" styleClass="panel-card">
+        <VBox spacing="6" HBox.hgrow="ALWAYS">
+            <Label text="Search Results" styleClass="page-title"/>
+            <Label fx:id="resultHeaderLabel" text="Matched Issues" wrapText="true" styleClass="landing-copy"/>
+        </VBox>
+        <Button mnemonicParsing="false" onAction="#backToSearch" text="Back to Search" styleClass="ghost-button"/>
+    </HBox>
+
+    <VBox spacing="12" styleClass="panel-card search-results-list-card" VBox.vgrow="ALWAYS">
+        <HBox spacing="12" alignment="CENTER_LEFT">
+            <Label text="Matched Issues" styleClass="section-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="resultSummaryLabel" text="0 issue(s) matched the current search." styleClass="landing-copy"/>
+        </HBox>
+
+        <TableView fx:id="resultTable" VBox.vgrow="ALWAYS" fixedCellSize="40" styleClass="search-results-table">
+            <columns>
+                <TableColumn fx:id="idColumn" prefWidth="80" text="ID"/>
+                <TableColumn fx:id="titleColumn" prefWidth="330" text="Title"/>
+                <TableColumn fx:id="statusColumn" prefWidth="110" text="Status"/>
+                <TableColumn fx:id="priorityColumn" prefWidth="110" text="Priority"/>
+                <TableColumn fx:id="reporterColumn" prefWidth="140" text="Reporter"/>
+                <TableColumn fx:id="assigneeColumn" prefWidth="150" text="Assignee"/>
+                <TableColumn fx:id="reportedAtColumn" prefWidth="150" text="Reported"/>
+            </columns>
+        </TableView>
+    </VBox>
+
+    <HBox spacing="16" alignment="CENTER_LEFT" styleClass="panel-card search-results-action-card">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Open a selected issue for full detail." styleClass="section-title"/>
+            <Label text="Open the detail window for close review, or jump to the Browser if you want to continue the workflow." wrapText="true" styleClass="landing-copy"/>
+        </VBox>
+        <Button mnemonicParsing="false" onAction="#openSelectedInInquiry" text="Open Details" styleClass="primary-button"/>
+        <Button mnemonicParsing="false" onAction="#openSelectedInBrowser" text="Open Browser" styleClass="ghost-button"/>
+    </HBox>
+</VBox>

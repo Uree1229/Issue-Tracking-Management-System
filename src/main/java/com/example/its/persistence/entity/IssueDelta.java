@@ -19,7 +19,7 @@ public class IssueDelta {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "delta_id")
-    private Long deltaId;
+    private Integer deltaId;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "history_id", nullable = false, unique = true)
@@ -57,7 +57,7 @@ public class IssueDelta {
     }
 
     public Long getDeltaId() {
-        return deltaId;
+        return deltaId != null ? deltaId.longValue() : null;
     }
 
     public IssueHistory getIssueHistory() {
@@ -161,5 +161,21 @@ public class IssueDelta {
 
     public void setNewStatus(IssueStatus newStatus) {
         this.newStatus = newStatus;
+    }
+
+    public static IssueDelta create(String oldTitle, String newTitle,
+                                    String oldContent, String newContent,
+                                    Priority oldPriority, Priority newPriority,
+                                    IssueStatus oldStatus, IssueStatus newStatus) {
+        IssueDelta delta = new IssueDelta();
+        delta.setOldTitle(oldTitle);
+        delta.setNewTitle(newTitle);
+        delta.setOldContent(oldContent);
+        delta.setNewContent(newContent);
+        delta.setOldPriority(oldPriority);
+        delta.setNewPriority(newPriority);
+        delta.setOldStatus(oldStatus);
+        delta.setNewStatus(newStatus);
+        return delta;
     }
 }

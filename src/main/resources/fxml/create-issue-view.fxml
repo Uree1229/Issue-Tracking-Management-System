@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.its.ui.javafx.controller.CreateIssueController"
+      spacing="18" styleClass="content-container create-issue-shell">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <VBox spacing="6">
+        <Label text="Create Issue" styleClass="page-title"/>
+    </VBox>
+
+    <HBox spacing="18" alignment="TOP_LEFT" VBox.vgrow="ALWAYS">
+        <VBox spacing="16" styleClass="create-form-card" HBox.hgrow="ALWAYS">
+            <padding>
+                <Insets top="22" right="24" bottom="22" left="24"/>
+            </padding>
+
+            <GridPane hgap="14" vgap="14">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="120" prefWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="Reporter" styleClass="admin-form-label"/>
+                <Label fx:id="reporterValueLabel" text="-" GridPane.columnIndex="1" styleClass="field-value"/>
+
+                <Label text="Project" GridPane.rowIndex="1" styleClass="admin-form-label"/>
+                <Label fx:id="projectValueLabel" text="project1" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="field-value"/>
+
+                <Label text="Initial status" GridPane.rowIndex="2" styleClass="admin-form-label"/>
+                <Label fx:id="statusValueLabel" text="NEW" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="field-value"/>
+
+                <Label text="Title" GridPane.rowIndex="3" styleClass="admin-form-label"/>
+                <TextField fx:id="titleField" promptText="Summarize the bug or request in one line" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="admin-input emphasized-input"/>
+
+                <Label text="Priority" GridPane.rowIndex="4" styleClass="admin-form-label"/>
+                <ComboBox fx:id="priorityCombo" prefWidth="220" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="admin-input"/>
+
+                <Label text="Tags" GridPane.rowIndex="5" styleClass="admin-form-label"/>
+                <VBox spacing="8" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button mnemonicParsing="false" onAction="#handleEditTags" text="Edit Tags" styleClass="ghost-button"/>
+                        <Label fx:id="selectedTagsLabel" text="No tags selected" wrapText="true" styleClass="field-value" HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                </VBox>
+
+                <Label text="Description" GridPane.rowIndex="6" styleClass="admin-form-label"/>
+                <TextArea fx:id="descriptionArea" wrapText="true" prefRowCount="9" promptText="Add reproduction steps, observed behavior, and expected behavior." GridPane.columnIndex="1" GridPane.rowIndex="6" styleClass="admin-text-area"/>
+
+                <Label text="Initial note" GridPane.rowIndex="7" styleClass="admin-form-label"/>
+                <TextArea fx:id="noteArea" wrapText="true" prefRowCount="4" promptText="Optional first comment to carry extra context into the issue timeline." GridPane.columnIndex="1" GridPane.rowIndex="7" styleClass="admin-text-area"/>
+            </GridPane>
+
+            <Label fx:id="formFeedbackLabel" text="" wrapText="true" styleClass="form-feedback"/>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button mnemonicParsing="false" onAction="#handleCreateIssue" text="Create Issue" styleClass="primary-button"/>
+                <Button mnemonicParsing="false" onAction="#handleReset" text="Reset" styleClass="ghost-button"/>
+            </HBox>
+        </VBox>
+    </HBox>
+</VBox>

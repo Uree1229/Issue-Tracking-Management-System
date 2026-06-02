@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.its.ui.javafx.controller.LoginController"
+      alignment="CENTER" styleClass="login-shell login-layout" spacing="0">
+    <VBox spacing="22" styleClass="login-hero" HBox.hgrow="ALWAYS">
+        <padding>
+            <Insets top="44" right="40" bottom="44" left="40"/>
+        </padding>
+
+        <Label text="Issue Tracking System" styleClass="login-hero-title"/>
+        <Region VBox.vgrow="ALWAYS"/>
+    </VBox>
+
+    <VBox styleClass="login-panel-wrap">
+        <padding>
+            <Insets top="0" right="0" bottom="0" left="0"/>
+        </padding>
+
+        <VBox spacing="18" styleClass="login-panel">
+            <Label text="Log In" styleClass="login-title"/>
+
+            <VBox spacing="8">
+                <Label text="Login ID" styleClass="field-label"/>
+                <TextField fx:id="loginIdField" promptText="Enter your login ID"/>
+            </VBox>
+
+            <VBox spacing="8">
+                <Label text="Password" styleClass="field-label"/>
+                <PasswordField fx:id="passwordField" promptText="Enter your password" onAction="#handleLogin"/>
+            </VBox>
+
+            <Label fx:id="errorLabel" styleClass="feedback-label" wrapText="true"/>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button mnemonicParsing="false" onAction="#handleLogin" text="Log In" styleClass="primary-button" HBox.hgrow="ALWAYS" maxWidth="1.7976931348623157E308"/>
+                <Button mnemonicParsing="false" onAction="#openRegister" text="Create Account" styleClass="ghost-button"/>
+            </HBox>
+
+            <Separator/>
+
+            <VBox spacing="10">
+                <Label text="Quick Demo Login" styleClass="login-section-title"/>
+                <HBox spacing="10">
+                    <Button mnemonicParsing="false" onAction="#loginAsAdmin" text="ADMIN" styleClass="ghost-button compact-button"/>
+                    <Button mnemonicParsing="false" onAction="#loginAsPl" text="PL" styleClass="ghost-button compact-button"/>
+                    <Button mnemonicParsing="false" onAction="#loginAsDev" text="DEV" styleClass="ghost-button compact-button"/>
+                    <Button mnemonicParsing="false" onAction="#loginAsTester" text="TESTER" styleClass="ghost-button compact-button"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </VBox>
+</HBox>

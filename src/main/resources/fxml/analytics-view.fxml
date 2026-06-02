@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.example.its.ui.javafx.controller.AnalyticsController"
+      spacing="18" styleClass="content-container analytics-shell">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <Label text="Analytics" styleClass="page-title"/>
+
+    <HBox spacing="14">
+        <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
+            <Label text="Total Issues" styleClass="metric-title"/>
+            <Label fx:id="totalIssuesValueLabel" text="0" styleClass="metric-value"/>
+        </VBox>
+        <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
+            <Label text="Open Queue" styleClass="metric-title"/>
+            <Label fx:id="openIssuesValueLabel" text="0" styleClass="metric-value"/>
+        </VBox>
+        <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
+            <Label text="Verification" styleClass="metric-title"/>
+            <Label fx:id="verificationValueLabel" text="0" styleClass="metric-value"/>
+        </VBox>
+        <VBox spacing="8" styleClass="metric-card" HBox.hgrow="ALWAYS">
+            <Label text="Closed" styleClass="metric-title"/>
+            <Label fx:id="closedIssuesValueLabel" text="0" styleClass="metric-value"/>
+        </VBox>
+    </HBox>
+
+    <HBox spacing="18" VBox.vgrow="ALWAYS">
+        <VBox spacing="14" styleClass="panel-card analytics-panel" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <Label text="Status Distribution" styleClass="section-title"/>
+            <BarChart fx:id="statusChart" legendVisible="false" categoryGap="16" VBox.vgrow="ALWAYS">
+                <xAxis>
+                    <CategoryAxis/>
+                </xAxis>
+                <yAxis>
+                    <NumberAxis forceZeroInRange="true"/>
+                </yAxis>
+            </BarChart>
+
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="Issue Trend" styleClass="section-title"/>
+                <Button fx:id="dailyTrendButton" text="Daily" onAction="#handleShowDailyTrend" styleClass="analytics-toggle-button"/>
+                <Button fx:id="monthlyTrendButton" text="Monthly" onAction="#handleShowMonthlyTrend" styleClass="analytics-toggle-button"/>
+            </HBox>
+            <LineChart fx:id="trendChart" legendVisible="false" createSymbols="true" VBox.vgrow="ALWAYS">
+                <xAxis>
+                    <CategoryAxis/>
+                </xAxis>
+                <yAxis>
+                    <NumberAxis forceZeroInRange="true"/>
+                </yAxis>
+            </LineChart>
+        </VBox>
+
+        <VBox spacing="14" styleClass="panel-card analytics-panel analytics-side-panel">
+            <Label text="Developer Workload" styleClass="section-title"/>
+            <BarChart fx:id="workloadChart" legendVisible="false" categoryGap="18" prefHeight="260">
+                <xAxis>
+                    <CategoryAxis/>
+                </xAxis>
+                <yAxis>
+                    <NumberAxis forceZeroInRange="true"/>
+                </yAxis>
+            </BarChart>
+
+            <Label text="Insights" styleClass="section-title"/>
+            <ListView fx:id="insightListView" prefHeight="250" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </HBox>
+</VBox>

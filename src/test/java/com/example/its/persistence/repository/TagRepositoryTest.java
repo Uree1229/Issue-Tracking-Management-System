@@ -1,0 +1,105 @@
+package com.example.its.persistence.repository;
+
+import com.example.its.persistence.entity.Tag;
+import com.example.its.util.TestDatabaseManager;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class TagRepositoryTest {
+
+    private static EntityManagerFactory entityManagerFactory;
+
+    private EntityManager entityManager;
+    private TagRepository tagRepository;
+
+    @BeforeAll
+    static void resetDatabaseBeforeAllTests() {
+        // 테스트 DB 초기화
+        TestDatabaseManager.resetDatabase();
+        entityManagerFactory = Persistence.createEntityManagerFactory("its-persistence-unit");
+    }
+
+    @AfterAll
+    static void closeEntityManagerFactory() {
+        if (entityManagerFactory != null) {
+            entityManagerFactory.close();
+        }
+    }
+
+    void setUpEntityManagerAndRepository() {
+        // EntityManager 생성 및 TagRepository 초기화
+        entityManager = entityManagerFactory.createEntityManager();
+        entityManager.getTransaction().begin();
+        tagRepository = new TagRepository(entityManager);
+    }
+
+    @AfterEach
+    void closeEntityManagerAfterEachTest() {
+        // 항상 트랜잭션 롤백 및 EntityManager 종료
+        if (entityManager != null) {
+            if (entityManager.getTransaction().isActive()) {
+                entityManager.getTransaction().rollback();
+            }
+            entityManager.close();
+        }
+    }
+
+    @Test
+    void testFindByProjectId() {
+        setUpEntityManagerAndRepository();
+
+        List<Tag> tags = tagRepository.findByProjectId(1L);
+
+        assertEquals(2, tags.size());
+        assertEquals("backend", tags.get(0).getName());
+        assertEquals("ui", tags.get(1).getName());
+    }
+
+    @Test
+    void testFindByProjectIdAndName() {
+        setUpEntityManagerAndRepository();
+
+        Optional<Tag> tag = tagRepository.findByProjectIdAndName(1L, "backend");
+
+        assertTrue(tag.isPresent());
+        assertEquals(1L, tag.get().getTagId());
+        assertEquals("Backend issues", tag.get().getDescription());
+    }
+
+    @Test
+    void testExistsByProjectIdAndName() {
+        setUpEntityManagerAndRepository();
+
+        Boolean exists = tagRepository.existsByProjectIdAndName(1L, "ui");
+
+        assertTrue(exists);
+    }
+
+    @Test
+    void testDeleteTagUsedByIssue() {
+        setUpEntityManagerAndRepository();
+        entityManager.createNativeQuery("delete from issue_tags").executeUpdate();
+        entityManager.createNativeQuery("insert into issue_tags (issue_id, tag_id) values (1, 1), (2, 2)")
+            .executeUpdate();
+
+        Tag tag = tagRepository.findById(1L)
+            .orElseThrow();
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> tagRepository.delete(tag)
+        );
+    }
+}

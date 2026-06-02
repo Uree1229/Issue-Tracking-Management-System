@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.its.ui.javafx.controller.IssueBrowserController"
+            styleClass="content-container">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <top>
+        <VBox spacing="16">
+            <Label text="Issue Browser" styleClass="page-title"/>
+            <HBox spacing="12" alignment="CENTER_LEFT">
+                <VBox spacing="6" HBox.hgrow="ALWAYS">
+                    <Label text="Keyword" styleClass="filter-label"/>
+                    <TextField fx:id="keywordField" promptText="Search by title, description, assignee, reporter..." HBox.hgrow="ALWAYS"/>
+                </VBox>
+                <VBox spacing="6">
+                    <Label text="Status" styleClass="filter-label"/>
+                    <ComboBox fx:id="statusFilterCombo" prefWidth="120"/>
+                </VBox>
+                <VBox spacing="6">
+                    <Label text="Priority" styleClass="filter-label"/>
+                    <ComboBox fx:id="priorityFilterCombo" prefWidth="120"/>
+                </VBox>
+                <VBox spacing="6">
+                    <Label text="Reporter" styleClass="filter-label"/>
+                    <ComboBox fx:id="reporterFilterCombo" prefWidth="140"/>
+                </VBox>
+                <VBox spacing="6">
+                    <Label text="Assignee" styleClass="filter-label"/>
+                    <ComboBox fx:id="assigneeFilterCombo" prefWidth="150"/>
+                </VBox>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button fx:id="createIssueButton" mnemonicParsing="false" onAction="#openCreateIssue" text="Create Issue" styleClass="primary-button compact-button"/>
+                <Button mnemonicParsing="false" onAction="#resetFilters" text="Reset" styleClass="ghost-button"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <SplitPane dividerPositions="0.34" styleClass="browser-split">
+            <items>
+                <VBox spacing="10" styleClass="panel-card">
+                    <Label text="Issue List" styleClass="section-title"/>
+                    <TableView fx:id="issueTable" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="idColumn" prefWidth="70" text="ID"/>
+                            <TableColumn fx:id="titleColumn" prefWidth="260" text="Title"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+
+                <VBox spacing="14" styleClass="panel-card detail-pane">
+                    <VBox spacing="14" styleClass="detail-inner-shell" VBox.vgrow="ALWAYS">
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                <Label fx:id="issueIdLabel" text="#" styleClass="subtle-label"/>
+                                <Label fx:id="issueTitleLabel" text="Select an issue" styleClass="detail-title"/>
+                            </VBox>
+                            <Label fx:id="statusBadgeLabel" text="-" styleClass="badge status-badge"/>
+                            <Label fx:id="priorityBadgeLabel" text="-" styleClass="badge priority-badge"/>
+                        </HBox>
+
+                        <GridPane hgap="12" vgap="10">
+                            <Label text="Reporter" styleClass="field-label"/>
+                            <Label fx:id="reporterValueLabel" text="-" GridPane.columnIndex="1" styleClass="field-value"/>
+                            <Label text="Assignee" GridPane.rowIndex="1" styleClass="field-label"/>
+                            <Label fx:id="assigneeValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="field-value"/>
+                            <Label text="Fixer" GridPane.rowIndex="2" styleClass="field-label"/>
+                            <Label fx:id="fixerValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="field-value"/>
+                            <Label text="Project" GridPane.rowIndex="3" styleClass="field-label"/>
+                            <Label fx:id="projectValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="3" styleClass="field-value"/>
+                            <Label text="Reported At" GridPane.rowIndex="4" styleClass="field-label"/>
+                            <Label fx:id="reportedAtValueLabel" text="-" GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="field-value"/>
+                            <Label text="Tags" GridPane.rowIndex="5" styleClass="field-label"/>
+                            <HBox spacing="10" alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.rowIndex="5">
+                                <Label fx:id="tagsValueLabel" text="-" wrapText="true" styleClass="field-value" HBox.hgrow="ALWAYS"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Button fx:id="editTagsButton" mnemonicParsing="false" onAction="#handleEditTags" text="Edit Tags" styleClass="ghost-button compact-button"/>
+                            </HBox>
+                        </GridPane>
+
+                        <VBox fx:id="recommendationSection" spacing="8" styleClass="detail-section-card">
+                            <Label text="Suggested Developers" styleClass="section-title"/>
+                            <ListView fx:id="recommendationListView" prefHeight="108"/>
+                        </VBox>
+
+                        <HBox fx:id="workflowButtonBar" spacing="10" alignment="CENTER_LEFT">
+                            <Button fx:id="assignButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Assign" styleClass="ghost-button"/>
+                            <Button fx:id="markFixedButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Mark Fixed" styleClass="ghost-button"/>
+                            <Button fx:id="resolveButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Resolve" styleClass="ghost-button"/>
+                            <Button fx:id="failButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Fail" styleClass="ghost-button"/>
+                            <Button fx:id="closeButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Close" styleClass="ghost-button"/>
+                            <Button fx:id="reopenButton" mnemonicParsing="false" onAction="#handleWorkflowAction" text="Reopen" styleClass="ghost-button"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                        </HBox>
+
+                        <VBox spacing="8" VBox.vgrow="ALWAYS">
+                            <Label text="Description" styleClass="section-title"/>
+                            <TextArea fx:id="descriptionArea" editable="false" wrapText="true" prefRowCount="6" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+
+                        <VBox spacing="8" VBox.vgrow="ALWAYS">
+                            <Label text="Comment History" styleClass="section-title"/>
+                            <ListView fx:id="commentListView" prefHeight="180" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+
+                        <VBox fx:id="commentSection" spacing="8" styleClass="detail-section-card">
+                            <Label text="Add Comment" styleClass="section-title"/>
+                            <TextArea fx:id="commentInputArea" wrapText="true" prefRowCount="3" promptText="Write a progress note, verification result, or follow-up comment..."/>
+                            <HBox spacing="10" alignment="CENTER_RIGHT">
+                                <Label fx:id="commentFeedbackLabel" text="" styleClass="form-feedback" HBox.hgrow="ALWAYS"/>
+                                <Button fx:id="saveCommentButton" mnemonicParsing="false" onAction="#handleAddComment" text="Save Comment" styleClass="primary-button compact-button"/>
+                            </HBox>
+                        </VBox>
+
+                    </VBox>
+                </VBox>
+            </items>
+        </SplitPane>
+    </center>
+</BorderPane>

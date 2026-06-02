@@ -1,5 +1,7 @@
 plugins {
     id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
 group = 'com.example'
@@ -7,12 +9,26 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
 repositories {
     mavenCentral()
+}
+
+def appMainClass = project.findProperty('appMainClass') ?: 'com.example.its.ItsApplication'
+
+application {
+    mainClass = appMainClass
+    applicationDefaultJvmArgs = [
+        '-Dorg.jboss.logging.provider=slf4j'
+    ]
+}
+
+javafx {
+    version = '21.0.2'
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.swing']
 }
 
 dependencies {
@@ -21,9 +37,11 @@ dependencies {
     implementation 'org.hibernate.orm:hibernate-community-dialects:6.4.4.Final'
 
     runtimeOnly 'org.xerial:sqlite-jdbc:3.45.3.0'
+    runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
 
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(Test).configureEach {
@@ -35,3 +53,34 @@ tasks.register('copyDatabase', Copy) {
     into(layout.buildDirectory.dir('database'))
 }
 
+tasks.named('run') {
+    dependsOn(tasks.named('copyDatabase'))
+    jvmArgs += ['-Dorg.jboss.logging.provider=slf4j']
+}
+
+tasks.register('runJavafx') {
+    group = 'application'
+    description = 'Runs the JavaFX client.'
+    dependsOn(tasks.named('run'))
+}
+
+tasks.register('renderSnapshots', JavaExec) {
+    group = 'application'
+    description = 'Renders JavaFX prototype screens into PNG snapshots.'
+    mainClass = 'com.example.its.ui.javafx.tools.ViewSnapshotExporter'
+    dependsOn(tasks.named('classes'))
+    doFirst {
+        def runTask = tasks.named('run', JavaExec).get()
+        classpath = runTask.classpath
+        jvmArgs = runTask.jvmArgs
+        systemProperties(runTask.systemProperties)
+    }
+}
+
+
+tasks.register('runSwing', JavaExec) {
+    group = 'application'
+    description = 'Run Swing UI'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.its.ui.swing.SwingApp'
+}
