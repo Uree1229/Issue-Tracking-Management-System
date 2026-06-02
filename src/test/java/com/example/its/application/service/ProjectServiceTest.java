@@ -26,7 +26,7 @@ class ProjectServiceTest {
         projectService = new ProjectService(new ProjectMapper());
     }
 
-    // Fix: 윈도우 환경에 대응하기 위해 임시로 삭제합니다.
+    // 윈도우 환경에서는 아래 메서드가 작동하지 않을 수 있습니다.
     @BeforeEach
     void resetDatabaseBeforeEachTest() {
         TestDatabaseManager.resetDatabase();
