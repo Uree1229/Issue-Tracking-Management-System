@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Java 17
+- Java 21
 - SQLite 3 CLI
 
 ## Build
