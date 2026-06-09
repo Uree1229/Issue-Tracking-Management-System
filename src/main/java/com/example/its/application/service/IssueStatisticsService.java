@@ -31,7 +31,10 @@ public class IssueStatisticsService {
             // 1. 전체 개수 조회
             long totalCount = statisticsQueryRepository.countByProjectId(projectId);
 
-            // 2. 상태별 통계 가공 (FE를 위해 모든 상태값을 0으로 기본 세팅해 둠.)
+            // 2. 상태별 통계 가공
+            // NOTE: FE를 위해 모든 상태값을 0으로 Zero Fill
+            // 예를들어, GROUP BY를 쓸때 데이터가 아예 0개인 Row는 기본적으로 반환되지 않음. 
+            // 이러한 경우 FE에서 오류가 나거나 이상이 생기는 것을 방지하기 위해서 Zero Fill.
             Map<IssueStatus, Long> statusCounts = new LinkedHashMap<>();
             for (IssueStatus status : IssueStatus.values()) {
                 statusCounts.put(status, 0L);
@@ -44,7 +47,12 @@ public class IssueStatisticsService {
                 statusCounts.put(status, count);
             }
 
-            // 3. 우선순위별 통계 가공 (마찬가지로 0으로 기본 세팅)
+            // 3. 우선순위별 통계 가공 
+            // NOTE: 마찬가지로 0으로 Zero Fill
+            // NOTE: 왜 그냥 HashMap이 아니라 LinkedHashMap을 썼는가?
+            // 그냥 HashMap은 데이터 넣는 순서를 보장하지 않고 자기 마음대로 순서를 섞어버림
+            // 근데 대시보드의 시계열 차트같은 것들은 순서가 엄격하게 지켜져야 함
+            // 따라서, 프론트엔드로 날아가는 데이터가 순서 정렬되어 날아갈 수 있도록 LinkedHashMap 사용
             Map<Priority, Long> priorityCounts = new LinkedHashMap<>();
             for (Priority priority : Priority.values()) {
                 priorityCounts.put(priority, 0L);

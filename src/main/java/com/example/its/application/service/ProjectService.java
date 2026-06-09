@@ -41,7 +41,8 @@ public class ProjectService {
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. ID: " + request.getCreatedByAccountId()));
 
             // 3. 정적 팩토리 메서드를 사용하여 엔티티 생성
-            // 04-29 회의내용에 따라 static factory method 사용하도록 수정
+            // NOTE: 04-29 회의내용에 따라 static factory method 사용하도록 수정
+            // 즉, 여기서 바로 new를 하여서 생성하지 않고, 메서드로 따로 분리하겠다는 의도임
             Project project = Project.create(request.getName(), request.getDescription(), creator);
 
             // 4. 생성 시 태그 추가 로직
@@ -133,8 +134,8 @@ public class ProjectService {
             ProjectRepository projectRepository = new ProjectRepository(entityManager);
             Project project = getProjectOrThrow(projectRepository, projectId);
 
-            // 정우님이 안내해주신 비즈니스 정책 반영하여 Fix
-            // 하위 이슈가 존재하는데 그 중 하나라도 CLOSED가 아니면 삭제 불가
+            // Fix: 정우님이 안내해주신 비즈니스 정책 반영
+            // 하위 이슈가 존재하는데 그 중 하나라도 CLOSED가 아니면 삭제 불가 정책 구현
             boolean hasUnclosedIssue = project.getIssues().stream()
                     .anyMatch(issue -> issue.getStatus() != IssueStatus.CLOSED);
 
