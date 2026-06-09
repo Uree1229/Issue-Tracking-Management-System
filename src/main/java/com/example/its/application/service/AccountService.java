@@ -23,7 +23,10 @@ public class AccountService {
     public AccountResponse authenticate(String loginId, String password) {
         return TransactionManager.execute(entityManager -> {
             AccountRepository accountRepository = new AccountRepository(entityManager);
-
+            
+            // NOTE: 수동으로 null 체크를 하기 귀찮고 까먹을수도 있으니,
+            // 아예 처음부터 ID 존재여부 검사는 .orElseThrow를 사용
+            // PW 일치하는지의 여부와 활성화 여부는 null 체크가 아닌 순수 비즈니스 로직이므로 if-throw 사용
             Account account = accountRepository.findByLoginId(loginId)
                     .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이디입니다."));
             if (!account.getPassword().equals(password)) {
@@ -96,6 +99,9 @@ public class AccountService {
     }
 
     // 5. 조회 및 유틸리티 (Fetchers & Helpers)
+    // NOTE: 단순 조회일지라도 AccountService 전체와 아키텍쳐를 동일하게 맞추고,
+    // 영속성 컨텍스트(세션)이 유지되어야 Lazy Loading이 발생하지 않아 Connection Pool을 안전하게 반환할 수 있으므로
+    // 일부러 전부 TransactionManager 통하여 실행되도록 강제
     public AccountResponse getAccount(Long accountId) {
         return TransactionManager.execute(entityManager -> {
             AccountRepository accountRepository = new AccountRepository(entityManager);
@@ -117,6 +123,8 @@ public class AccountService {
         });
     }
 
+    // NOTE: ID로 엔티티를 찾고, 만약 아이디가 없으면 Error를 던지는 작업은 반복되므로 따로 빼서 처리
+    // NOTE: 이건 DTO가 아니라 순수 Entity이므로 외부에서 조회못하도록 Private으로 선언
     private Account getAccountOrThrow(AccountRepository accountRepository, Long accountId) {
         return accountRepository.findById(accountId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 계정입니다. ID: " + accountId));

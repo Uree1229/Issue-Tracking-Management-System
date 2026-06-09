@@ -24,7 +24,7 @@ public class AssigneeRecommendationService {
     public AssigneeRecommendationService() {
     }
 
-    // 1. 태그 기반 담당자(DEV) 추천 알고리즘 (초기 구현, 나중에 더 고도화할 예정)
+    // 태그 기반 담당 개발자 추천 알고리즘
     public List<RecommendationResponse> recommendAssignees(Long projectId, List<Long> targetTagIds) {
         return TransactionManager.execute(entityManager -> {
             AccountRepository accountRepository = new AccountRepository(entityManager);
@@ -56,7 +56,7 @@ public class AssigneeRecommendationService {
         });
     }
 
-    // 2. 가중치 계산 및 점수 산출 모델 (다중 팩터 통합 알고리즘)
+    // 가중치 계산 및 점수 산출 모델 (다중 팩터 통합 알고리즘)
     /**
     본 소프트웨어의 ‘Tag 기반 담당 개발자 추천 엔진’은 단순히 태그의 일치 여부만을 확인하는 것이 아닌,
     데이터의 시계열적 가치와 현재 업무의 부하를 종합적으로 평가하는 
@@ -148,7 +148,9 @@ public class AssigneeRecommendationService {
                         }
                     }
                     
-                    // Jaccard 유사도 개념: 타겟 태그 중 몇 %를 커버하는가?
+                    // NOTE: Jaccard 유사도 개념 차용
+                    // 단 태그가 너무 많아서 오히려 손해를 보는 경우를 방지하기 위해서(예: 태그가 단 한개만 있는 신입 개발자가 오히려 딱 태그 하나가 우연히 잘 맞아서 만점을 맞는 상황 등)
+                    // 개발자가 태그 몇개를 가지고 있는지에 관계 없이 프로젝트의 타겟 태그 중에서 몇 %를 커버하는지만 계산
                     double coverageRatio = (double) matchCount / targetTagIds.size();
                     experienceScore += (10.0 * coverageRatio * decayFactor);
                 }
@@ -163,5 +165,3 @@ public class AssigneeRecommendationService {
         return Math.max(score, 0.0);
     }
 }
-
-
